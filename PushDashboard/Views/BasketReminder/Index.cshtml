@@ -1,0 +1,1167 @@
+@model List<PushDashboard.Models.BasketReminderSchedule>
+@{
+    ViewData["Title"] = "Sepet Hatırlatma";
+}
+
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="w-full px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Sepet Hatırlatma</h1>
+                    <p class="mt-2 text-gray-600">Terk edilmiş sepetler için kişiselleştirilmiş hatırlatma mesajları oluşturun ve yönetin.</p>
+                </div>
+                <button onclick="openCreateModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                    <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Yeni Hatırlatma
+                </button>
+            </div>
+        </div>
+
+        <!-- Reminders List -->
+        <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+            @if (Model.Any())
+            {
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hatırlatma Adı</th>
+                                <!-- Message column removed -->
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Zaman</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İletişim Kanalları</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach (var reminder in Model)
+                            {
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">@reminder.Name</div>
+                                    </td>
+                                    <!-- Message column content removed -->
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">@reminder.ReminderTimeForHours saat sonra</div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-wrap gap-1">
+                                            @{
+                                                var channels = new List<string>();
+                                                try
+                                                {
+                                                    channels = System.Text.Json.JsonSerializer.Deserialize<List<string>>(reminder.CommunicationChannels ?? "[]") ?? new List<string>();
+                                                }
+                                                catch
+                                                {
+                                                    channels = new List<string>();
+                                                }
+                                            }
+                                            @if (channels.Any())
+                                            {
+                                                @foreach (var channel in channels)
+                                                {
+                                                    @if (channel == "Email")
+                                                    {
+                                                        <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                                            </svg>
+                                                            E-posta
+                                                        </span>
+                                                    }
+                                                    else if (channel == "WhatsApp")
+                                                    {
+                                                        <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                                                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.097"/>
+                                                            </svg>
+                                                            WhatsApp
+                                                        </span>
+                                                    }
+
+                                                    else if (channel == "SMS")
+                                                    {
+                                                        <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                                            </svg>
+                                                            SMS
+                                                        </span>
+                                                    }
+                                                    else if (channel == "Telegram")
+                                                    {
+                                                        <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                                                                <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                                                            </svg>
+                                                            Telegram
+                                                        </span>
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-xs text-gray-500">Kanal seçilmemiş</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full @(reminder.IsActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800")">
+                                            @(reminder.IsActive ? "Aktif" : "Pasif")
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                        <button onclick="editReminder(@reminder.Id, '@Html.Raw(Html.Encode(reminder.Name))', '@Html.Raw(Html.Encode(reminder.NotificationContent))', @reminder.ReminderTimeForHours, @reminder.IsActive.ToString().ToLower(), @reminder.AllowResendForSentCustomers.ToString().ToLower(), '@Html.Raw(Html.Encode(reminder.CommunicationChannels))', '@Html.Raw(Html.Encode(reminder.ChannelMessages))')"
+                                                class="text-blue-600 hover:text-blue-900">Düzenle</button>
+                                        <button onclick="toggleStatus(@reminder.Id)" 
+                                                class="text-yellow-600 hover:text-yellow-900">@(reminder.IsActive ? "Pasif Yap" : "Aktif Yap")</button>
+                                        <button onclick="deleteReminder(@reminder.Id, '@Html.Raw(Html.Encode(reminder.Name))')" 
+                                                class="text-red-600 hover:text-red-900">Sil</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8V4a1 1 0 00-1-1H7a1 1 0 00-1 1v1m8 0V4.5"></path>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">Henüz hatırlatma yok</h3>
+                    <p class="mt-1 text-sm text-gray-500">İlk hatırlatmanızı oluşturmak için yukarıdaki butona tıklayın.</p>
+                </div>
+            }
+        </div>
+
+        <!-- Logs Section -->
+        <div class="mt-8 bg-white shadow-sm rounded-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">Hatırlatma Logları</h2>
+                    <button onclick="refreshLogs()" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        <svg class="mr-2 -ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Yenile
+                    </button>
+                </div>
+
+                <!-- Filters -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label for="filterSchedule" class="block text-sm font-medium text-gray-700 mb-1">Hatırlatma</label>
+                        <select id="filterSchedule" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Tümü</option>
+                            @foreach (var reminder in Model)
+                            {
+                                <option value="@reminder.Id">@reminder.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filterStatus" class="block text-sm font-medium text-gray-700 mb-1">Durum</label>
+                        <select id="filterStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Tümü</option>
+                            <option value="true">Başarılı</option>
+                            <option value="false">Başarısız</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filterStartDate" class="block text-sm font-medium text-gray-700 mb-1">Başlangıç Tarihi</label>
+                        <input type="date" id="filterStartDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="filterEndDate" class="block text-sm font-medium text-gray-700 mb-1">Bitiş Tarihi</label>
+                        <input type="date" id="filterEndDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="mt-4 flex space-x-2">
+                    <button onclick="applyFilters()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium">Filtrele</button>
+                    <button onclick="resetFilters()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm font-medium">Sıfırla</button>
+                </div>
+            </div>
+
+            <!-- Logs Container -->
+            <div id="logsContainer" class="overflow-hidden">
+                <div id="logsContent">
+                    <!-- Logs will be loaded here -->
+                </div>
+                
+                <!-- Loading Indicator -->
+                <div id="logsLoading" class="hidden py-8 text-center">
+                    <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="ml-2 text-gray-600">Loglar yükleniyor...</span>
+                </div>
+
+                <!-- Load More Button -->
+                <div id="loadMoreContainer" class="hidden py-4 text-center border-t border-gray-200">
+                    <button onclick="loadMoreLogs()" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Daha Fazla Yükle
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div id="reminderModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modalTitle" class="text-lg font-medium text-gray-900">Yeni Hatırlatma</h3>
+                <button type="button" onclick="closeModal()" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="reminderForm">
+                <input type="hidden" id="reminderId" value="0">
+                
+                <!-- Message Content Area Removed -->
+                <div class="mb-4">
+                    <label for="reminderName" class="block text-sm font-medium text-gray-700 mb-2">Hatırlatma Adı</label>
+                    <input type="text" id="reminderName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+
+                <!-- İletişim Kanalları -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">İletişim Kanalları</label>
+                    <div id="communicationChannels" class="space-y-2">
+                        <!-- Kanallar dinamik olarak yüklenecek -->
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">En az bir kanal seçmelisiniz.</p>
+                </div>
+
+                <!-- Template Sections Removed (Now Inline) -->
+
+                <div class="mb-4">
+                    <label for="reminderHours" class="block text-sm font-medium text-gray-700 mb-2">Kaç Saat Sonra</label>
+                    <select id="reminderHours" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">Seçiniz</option>
+                        <option value="1">1 saat sonra</option>
+                        <option value="2">2 saat sonra</option>
+                        <option value="6">6 saat sonra</option>
+                        <option value="12">12 saat sonra</option>
+                        <option value="24">24 saat sonra</option>
+                        <option value="48">48 saat sonra</option>
+                        <option value="72">72 saat sonra</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="reminderActive" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                        <span class="ml-2 text-sm text-gray-700">Aktif</span>
+                    </label>
+                </div>
+
+                <div class="mb-6">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="allowResendForSentCustomers" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Mesaj gönderilmiş müşteride tekrar tetiklensin</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500">Bu seçenek açık olduğunda, daha önce hatırlatma gönderilmiş müşterilere tekrar hatırlatma gönderilir.</p>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors">İptal</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification Container -->
+@section Scripts {
+    <script>
+        console.log('Basket Reminder page loaded');
+
+        let isEditMode = false;
+
+        // Message helpers removed
+
+        // Communication Channels
+        let availableChannels = [];
+        let whatsappTemplates = [];
+        let smsTemplates = [];
+        let emailTemplates = [];
+
+        async function loadCommunicationChannels() {
+            try {
+                const response = await fetch('/Settings/GetActiveChannels');
+                const result = await response.json();
+
+                if (result.success) {
+                    // Settings/GetActiveChannels format: { success: true, channels: { email: true, sms: false, whatsapp: true } }
+                    // Bu formattan availableChannels formatına dönüştür
+                    const channelsData = result.channels;
+                    availableChannels = [];
+                    
+                    if (channelsData.email !== undefined) {
+                        availableChannels.push({
+                            name: 'Email',
+                            displayName: 'E-posta',
+                            description: 'E-posta ile hatırlatma gönder',
+                            isActive: channelsData.email,
+                            colorClass: 'text-blue-600'
+                        });
+                    }
+                    
+                    if (channelsData.whatsapp !== undefined) {
+                        availableChannels.push({
+                            name: 'WhatsApp',
+                            displayName: 'WhatsApp',
+                            description: 'WhatsApp ile hatırlatma gönder',
+                            isActive: channelsData.whatsapp,
+                            colorClass: 'text-green-600'
+                        });
+                    }
+                    
+                    if (channelsData.sms !== undefined) {
+                        availableChannels.push({
+                            name: 'SMS',
+                            displayName: 'SMS',
+                            description: 'SMS ile hatırlatma gönder',
+                            isActive: channelsData.sms,
+                            colorClass: 'text-purple-600'
+                        });
+                    }
+                    
+                    renderChannelSelection();
+                } else {
+                    console.error('Error loading channels:', result.message);
+                    showNotification('İletişim kanalları yüklenirken hata oluştu.', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading channels:', error);
+                showNotification('İletişim kanalları yüklenirken hata oluştu.', 'error');
+            }
+        }
+
+        async function loadWhatsAppTemplates() {
+            try {
+                const response = await fetch('/TemplateModule/GetChannelTemplates?channelType=whatsapp&moduleType=BasketReminder');
+                const result = await response.json();
+
+                if (result.success) {
+                    // GetChannelTemplates format: { success: true, data: [...] }
+                    whatsappTemplates = result.data.map(t => ({
+                        id: t.id,
+                        name: t.name,
+                        category: t.category || 'Genel'
+                    }));
+                    renderWhatsAppTemplateOptions();
+                } else {
+                    console.error('Error loading WhatsApp templates:', result.message);
+                    showNotification('WhatsApp template\'leri yüklenirken hata oluştu.', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading WhatsApp templates:', error);
+                showNotification('WhatsApp template\'leri yüklenirken hata oluştu.', 'error');
+            }
+        }
+
+        function renderWhatsAppTemplateOptions() {
+            const select = document.getElementById('whatsappTemplate');
+            select.innerHTML = '<option value="">Template seçiniz...</option>';
+
+            whatsappTemplates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.id;
+                option.textContent = `${template.name} (${template.category})`;
+                select.appendChild(option);
+            });
+        }
+
+        async function loadSmsTemplates() {
+            try {
+                const response = await fetch('/TemplateModule/GetChannelTemplates?channelType=sms&moduleType=BasketReminder');
+                const result = await response.json();
+
+                if (result.success) {
+                    // GetChannelTemplates format: { success: true, data: [...] }
+                    smsTemplates = result.data.map(t => ({
+                        id: t.id,
+                        name: t.name,
+                        category: t.category || 'Genel'
+                    }));
+                    renderSmsTemplateOptions();
+                } else {
+                    console.error('Error loading SMS templates:', result.message);
+                    showNotification('SMS template\'leri yüklenirken hata oluştu.', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading SMS templates:', error);
+                showNotification('SMS template\'leri yüklenirken hata oluştu.', 'error');
+            }
+        }
+
+        function renderSmsTemplateOptions() {
+            const select = document.getElementById('smsTemplate');
+            select.innerHTML = '<option value="">Template seçiniz...</option>';
+
+            smsTemplates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.id;
+                option.textContent = `${template.name} (${template.category})`;
+                select.appendChild(option);
+            });
+        }
+
+        async function loadEmailTemplates() {
+            try {
+                const response = await fetch('/TemplateModule/GetChannelTemplates?channelType=email&moduleType=BasketReminder');
+                const result = await response.json();
+
+                if (result.success) {
+                    // GetChannelTemplates format: { success: true, data: [...] }
+                    emailTemplates = result.data.map(t => ({
+                        id: t.id,
+                        name: t.name,
+                        category: t.category || 'Genel'
+                    }));
+                    renderEmailTemplateOptions();
+                } else {
+                    console.error('Error loading Email templates:', result.message);
+                    showNotification('E-posta template\'leri yüklenirken hata oluştu.', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading Email templates:', error);
+                showNotification('E-posta template\'leri yüklenirken hata oluştu.', 'error');
+            }
+        }
+
+        function renderEmailTemplateOptions() {
+            const select = document.getElementById('emailTemplate');
+            select.innerHTML = '<option value="">Template seçiniz...</option>';
+
+            emailTemplates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.id;
+                option.textContent = `${template.name} (${template.category})`;
+                select.appendChild(option);
+            });
+        }
+
+        function renderChannelSelection() {
+            const container = document.getElementById('communicationChannels');
+            container.innerHTML = '';
+
+            availableChannels.forEach(channel => {
+                const channelWrapper = document.createElement('div');
+                channelWrapper.className = 'border rounded-lg mb-2 overflow-hidden';
+                
+                // Channel Header (Checkbox area)
+                const channelHeader = document.createElement('div');
+                channelHeader.className = 'flex items-center p-3 transition-colors';
+                
+                if (!channel.isActive) {
+                    channelHeader.classList.add('bg-gray-50');
+                    channelWrapper.classList.add('border-gray-200');
+                } else {
+                    channelHeader.classList.add('bg-white');
+                    channelWrapper.classList.add('border-gray-300', 'hover:border-blue-300');
+                }
+
+                const iconClass = getChannelIcon(channel.name);
+                const colorClass = channel.isActive ? channel.colorClass : 'text-gray-400';
+
+                channelHeader.innerHTML = `
+                    <div class="flex items-center flex-1">
+                        <input type="checkbox"
+                               id="channel_${channel.name}"
+                               value="${channel.name}"
+                               class="channel-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3"
+                               ${!channel.isActive ? 'disabled' : ''}>
+                        <div class="flex items-center">
+                            <i data-lucide="${iconClass}" class="w-5 h-5 ${colorClass} mr-2"></i>
+                            <div>
+                                <span class="font-medium ${channel.isActive ? 'text-gray-900' : 'text-gray-500'}">${channel.displayName}</span>
+                                <p class="text-xs ${channel.isActive ? 'text-gray-600' : 'text-gray-400'}">${channel.description}</p>
+                            </div>
+                        </div>
+                    </div>
+                    ${channel.isActive ? '<span class="text-xs text-green-600 font-medium">Aktif</span>' : '<span class="text-xs text-gray-400">Pasif</span>'}
+                `;
+
+                // Template Selector Container (Inline)
+                const templateContainer = document.createElement('div');
+                templateContainer.id = `template_container_${channel.name}`;
+                templateContainer.className = 'hidden bg-gray-50 p-3 border-t border-gray-200';
+                
+                // Template Selector HTML based on channel type
+                let templateSelectorHtml = '';
+                if (channel.name === 'WhatsApp' || channel.name === 'SMS' || channel.name === 'Email') {
+                    templateSelectorHtml = `
+                        <div class="flex flex-col gap-2">
+                            <label for="${channel.name.toLowerCase()}Template" class="text-xs font-medium text-gray-700">
+                                ${channel.displayName} Şablonu Seçin
+                            </label>
+                            <select id="${channel.name.toLowerCase()}Template" class="template-select w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Şablon seçiniz...</option>
+                            </select>
+                            <div class="text-xs text-blue-600 flex items-start mt-1">
+                                <svg class="w-3 h-3 mt-0.5 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                                <span>Bu kanal ile gönderilecek mesaj bu şablona göre oluşturulacaktır.</span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    templateSelectorHtml = `<p class="text-xs text-gray-500">Bu kanal için şablon seçimi gerekmemektedir.</p>`;
+                }
+                
+                templateContainer.innerHTML = templateSelectorHtml;
+
+                channelWrapper.appendChild(channelHeader);
+                channelWrapper.appendChild(templateContainer);
+                container.appendChild(channelWrapper);
+            });
+
+            // Re-render icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            // Add event listeners
+            document.querySelectorAll('.channel-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', handleChannelSelectionChange);
+            });
+        }
+
+        function handleChannelSelectionChange() {
+            const selectedChannels = getSelectedChannels();
+
+            // Toggle template containers based on selection
+            availableChannels.forEach(channel => {
+                const container = document.getElementById(`template_container_${channel.name}`);
+                if (container) {
+                    if (selectedChannels.includes(channel.name)) {
+                        container.classList.remove('hidden');
+                        
+                        // Load templates if needed
+                        if (channel.name === 'WhatsApp' && whatsappTemplates.length === 0) loadWhatsAppTemplates();
+                        if (channel.name === 'SMS' && smsTemplates.length === 0) loadSmsTemplates();
+                        if (channel.name === 'Email' && emailTemplates.length === 0) loadEmailTemplates();
+                    } else {
+                        container.classList.add('hidden');
+                        // Reset selection if unchecked? Maybe better to keep it in case of accidental uncheck
+                    }
+                }
+            });
+            
+            // Re-populate options if they were empty but data is now available
+            // This ensures that if loadXXXTemplates finishes AFTER the UI is shown, the options are updated
+            if (selectedChannels.includes('WhatsApp')) renderWhatsAppTemplateOptions();
+            if (selectedChannels.includes('SMS')) renderSmsTemplateOptions();
+            if (selectedChannels.includes('Email')) renderEmailTemplateOptions();
+        }
+
+        function getChannelIcon(channelName) {
+            switch (channelName) {
+                case 'Email': return 'mail';
+                case 'WhatsApp': return 'message-circle';
+                case 'SMS': return 'message-square';
+                case 'Telegram': return 'send';
+                default: return 'message-square';
+            }
+        }
+
+        function getSelectedChannels() {
+            const checkboxes = document.querySelectorAll('.channel-checkbox:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function setSelectedChannels(channels) {
+            document.querySelectorAll('.channel-checkbox').forEach(cb => {
+                cb.checked = channels.includes(cb.value);
+            });
+            // Template görünürlüğünü güncelle
+            handleChannelSelectionChange();
+        }
+
+        // Modal functions
+        async function openCreateModal() {
+            console.log('Opening create modal');
+            isEditMode = false;
+            document.getElementById('modalTitle').textContent = 'Yeni Hatırlatma';
+            document.getElementById('reminderForm').reset();
+            document.getElementById('reminderId').value = '0';
+            document.getElementById('reminderActive').checked = true;
+            document.getElementById('allowResendForSentCustomers').checked = false;
+
+            // İletişim kanallarını yükle
+            await loadCommunicationChannels();
+
+            // Varsayılan olarak aktif kanalları seç
+            const activeChannels = availableChannels.filter(c => c.isActive).map(c => c.name);
+            setSelectedChannels(activeChannels);
+
+            // Yeni tasarımda default kanalları seçtikten sonra, template containerlarını da açmamız lazım
+            // handleChannelSelectionChange bunu yapacak
+            handleChannelSelectionChange();
+
+            document.getElementById('reminderModal').classList.remove('hidden');
+        }
+        
+        async function editReminder(id, name, message, hours, isActive, allowResendForSentCustomers, communicationChannels, channelMessages) {
+            console.log('Editing reminder:', {id, name, message, hours, isActive, allowResendForSentCustomers, communicationChannels, channelMessages});
+            isEditMode = true;
+            document.getElementById('modalTitle').textContent = 'Hatırlatmayı Düzenle';
+            document.getElementById('reminderId').value = id;
+            document.getElementById('reminderName').value = name;
+            // reminderMessage removed
+            document.getElementById('reminderHours').value = hours;
+            document.getElementById('reminderActive').checked = isActive;
+            document.getElementById('allowResendForSentCustomers').checked = allowResendForSentCustomers;
+
+            // İletişim kanallarını yükle
+            await loadCommunicationChannels();
+
+            // Seçili kanalları ayarla
+            try {
+                const selectedChannels = JSON.parse(communicationChannels || '[]');
+                setSelectedChannels(selectedChannels);
+                
+                // Seçili kanallara göre template containerlarını aç
+                handleChannelSelectionChange();
+
+                const channelMessagesObj = JSON.parse(channelMessages || '{}');
+
+                // Template seçimlerini geri yükle
+                // Wait for template loading promises
+                const promises = [];
+                if (selectedChannels.includes('WhatsApp')) promises.push(loadWhatsAppTemplates());
+                if (selectedChannels.includes('SMS')) promises.push(loadSmsTemplates());
+                if (selectedChannels.includes('Email')) promises.push(loadEmailTemplates());
+                
+                await Promise.all(promises);
+
+                // Now set values
+                if (selectedChannels.includes('WhatsApp') && channelMessagesObj.WhatsApp && channelMessagesObj.WhatsApp.templateId) {
+                    const el = document.getElementById('whatsappTemplate');
+                    if(el) el.value = channelMessagesObj.WhatsApp.templateId;
+                }
+
+                if (selectedChannels.includes('SMS') && channelMessagesObj.SMS && channelMessagesObj.SMS.templateId) {
+                    const el = document.getElementById('smsTemplate');
+                    if(el) el.value = channelMessagesObj.SMS.templateId;
+                }
+
+                if (selectedChannels.includes('Email') && channelMessagesObj.Email && channelMessagesObj.Email.templateId) {
+                    const el = document.getElementById('emailTemplate');
+                    if(el) el.value = channelMessagesObj.Email.templateId;
+                }
+
+            } catch (e) {
+                console.error('Error parsing communication settings:', e);
+                // Varsayılan olarak Email seç
+                setSelectedChannels(['Email']);
+                handleChannelSelectionChange();
+            }
+
+            document.getElementById('reminderModal').classList.remove('hidden');
+        }
+        
+        function closeModal() {
+            console.log('Closing modal');
+            document.getElementById('reminderModal').classList.add('hidden');
+        }
+        
+        // Form submit
+        document.addEventListener('DOMContentLoaded', function() {
+            // Event listeners for message features removed
+
+            document.getElementById('reminderForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                console.log('Form submitted');
+                
+                const selectedChannels = getSelectedChannels();
+                if (selectedChannels.length === 0) {
+                    showNotification('En az bir iletişim kanalı seçmelisiniz.', 'warning');
+                    return;
+                }
+
+                // Template zorunluluk kontrolleri
+                const isWhatsAppSelected = selectedChannels.includes('WhatsApp');
+                // Use optional chaining or element check because element might not exist if channel invalid?
+                // Actually they are dynamically created.
+                const whatsappTemplateEl = document.getElementById('whatsappTemplate');
+                const whatsappTemplateId = whatsappTemplateEl ? whatsappTemplateEl.value : '';
+
+                const isSmsSelected = selectedChannels.includes('SMS');
+                const smsTemplateEl = document.getElementById('smsTemplate');
+                const smsTemplateId = smsTemplateEl ? smsTemplateEl.value : '';
+
+                const isEmailSelected = selectedChannels.includes('Email');
+                const emailTemplateEl = document.getElementById('emailTemplate');
+                const emailTemplateId = emailTemplateEl ? emailTemplateEl.value : '';
+
+                if (isWhatsAppSelected && !whatsappTemplateId) {
+                    showNotification('WhatsApp kanalı seçiliyken template seçimi zorunludur.', 'warning');
+                    return;
+                }
+                if (isSmsSelected && !smsTemplateId) {
+                    showNotification('SMS kanalı seçiliyken template seçimi zorunludur.', 'warning');
+                    return;
+                }
+                if (isEmailSelected && !emailTemplateId) {
+                    showNotification('E-posta kanalı seçiliyken template seçimi zorunludur.', 'warning');
+                    return;
+                }
+
+                // Channel messages objesini hazırla
+                // Mesaj içeriği artık boş
+                const channelMessages = {
+                    default: "" 
+                };
+
+                // Template bilgilerini ekle
+                if (isWhatsAppSelected && whatsappTemplateId) {
+                    const selectedTemplate = whatsappTemplates.find(t => t.id === whatsappTemplateId);
+                    channelMessages.WhatsApp = {
+                        templateId: whatsappTemplateId,
+                        templateName: selectedTemplate ? selectedTemplate.name : ''
+                    };
+                }
+
+                if (isSmsSelected && smsTemplateId) {
+                    const selectedTemplate = smsTemplates.find(t => t.id == smsTemplateId);
+                    channelMessages.SMS = {
+                        templateId: smsTemplateId,
+                        templateName: selectedTemplate ? selectedTemplate.name : ''
+                    };
+                }
+
+                if (isEmailSelected && emailTemplateId) {
+                    const selectedTemplate = emailTemplates.find(t => t.id == emailTemplateId);
+                    channelMessages.Email = {
+                        templateId: emailTemplateId,
+                        templateName: selectedTemplate ? selectedTemplate.name : ''
+                    };
+                }
+
+                const formData = {
+                    id: parseInt(document.getElementById('reminderId').value),
+                    name: document.getElementById('reminderName').value.trim(),
+                    message: "", // Empty message
+                    hours: parseInt(document.getElementById('reminderHours').value),
+                    isActive: document.getElementById('reminderActive').checked,
+                    allowResendForSentCustomers: document.getElementById('allowResendForSentCustomers').checked,
+                    communicationChannels: JSON.stringify(selectedChannels),
+                    channelMessages: JSON.stringify(channelMessages)
+                };
+
+                if (!formData.name || !formData.hours) {
+                    showNotification('Lütfen tüm alanları doldurun.', 'warning');
+                    return;
+                }
+
+                if (selectedChannels.length === 0) {
+                    showNotification('En az bir iletişim kanalı seçmelisiniz.', 'warning');
+                    return;
+                }
+                
+                const url = isEditMode ? '/BasketReminder/Update' : '/BasketReminder/Create';
+                
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        closeModal();
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showNotification('Hata: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Bir hata oluştu.', 'error');
+                });
+            });
+            
+            // Close modal when clicking outside
+            document.getElementById('reminderModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+        });
+        
+        // Delete function
+        function deleteReminder(id, name) {
+            showConfirmationDialog('Sil', `"${name}" hatırlatmasını silmek istediğinizden emin misiniz?`, 'Sil', 'İptal', () => {
+                fetch('/BasketReminder/Delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id: id })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showNotification('Hata: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Bir hata oluştu.', 'error');
+                });
+            });
+        }
+        
+        // Toggle status function
+        function toggleStatus(id) {
+            fetch('/BasketReminder/ToggleStatus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: id })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification('Hata: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Bir hata oluştu.', 'error');
+            });
+        }
+        
+        // ================== LOGS FUNCTIONALITY ==================
+        
+        let logsCurrentPage = 1;
+        let logsLoading = false;
+        let logsAllLoaded = false;
+        
+        // Load logs with filters
+        async function loadLogs(resetPage = false) {
+            if (logsLoading || logsAllLoaded) return;
+            
+            if (resetPage) {
+                logsCurrentPage = 1;
+                logsAllLoaded = false;
+                document.getElementById('logsContent').innerHTML = '';
+            }
+            
+            logsLoading = true;
+            showLogsLoading(true);
+            
+            try {
+                const scheduleId = document.getElementById('filterSchedule').value;
+                const status = document.getElementById('filterStatus').value;
+                const startDate = document.getElementById('filterStartDate').value;
+                const endDate = document.getElementById('filterEndDate').value;
+                
+                const params = new URLSearchParams({
+                    page: logsCurrentPage,
+                    pageSize: 20
+                });
+                
+                if (scheduleId) params.append('scheduleId', scheduleId);
+                if (status !== '') params.append('isSuccessful', status);
+                if (startDate) params.append('startDate', startDate);
+                if (endDate) params.append('endDate', endDate);
+                
+                const response = await fetch(`/BasketReminder/GetScheduleLogs?${params.toString()}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (data.logs.length === 0 && logsCurrentPage === 1) {
+                        showEmptyLogsState();
+                    } else {
+                        appendLogs(data.logs);
+                        
+                        // Check if there are more pages based on hasMore flag
+                        if (!data.hasMore) {
+                            logsAllLoaded = true;
+                            document.getElementById('loadMoreContainer').classList.add('hidden');
+                        } else {
+                            document.getElementById('loadMoreContainer').classList.remove('hidden');
+                        }
+                    }
+                } else {
+                    showNotification('Loglar yüklenirken hata oluştu: ' + data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error loading logs:', error);
+                showNotification('Loglar yüklenirken hata oluştu.', 'error');
+            } finally {
+                logsLoading = false;
+                showLogsLoading(false);
+            }
+        }
+        
+        // Initialize global logs store
+        window.basketReminderLogs = window.basketReminderLogs || {};
+
+        function appendLogs(logs) {
+            const container = document.getElementById('logsContent');
+            
+            // Create table if first load
+            if (logsCurrentPage === 1 && container.innerHTML.trim() === '') {
+                container.innerHTML = `
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hatırlatma</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Müşteri</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sepet ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detay</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="logsTableBody">
+                        </tbody>
+                    </table>
+                `;
+            }
+            
+            const tbody = document.getElementById('logsTableBody');
+            
+            logs.forEach(log => {
+                // Store log in global object
+                window.basketReminderLogs[log.id || log.Id] = log;
+
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                
+                const formattedDate = new Date(log.sentAt).toLocaleString('tr-TR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${log.scheduleName || '-'}
+                        <div class="text-xs text-gray-500">${log.reminderTimeText}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${log.customerName || 'Bilinmiyor'}</div>
+                        <div class="text-sm text-gray-500">${log.customerEmail || '-'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${log.basketExternalId}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${log.statusBadgeClass}">
+                            ${log.statusText}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <button onclick="showLogDetail('${log.id || log.Id}')" class="text-blue-600 hover:text-blue-900">
+                            Görüntüle
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        function showEmptyLogsState() {
+            document.getElementById('logsContent').innerHTML = `
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">Henüz log yok</h3>
+                    <p class="mt-1 text-sm text-gray-500">Hatırlatma gönderildiğinde loglar burada görünecek.</p>
+                </div>
+            `;
+            document.getElementById('loadMoreContainer').classList.add('hidden');
+        }
+        
+        function showLogsLoading(show) {
+            const loadingEl = document.getElementById('logsLoading');
+            if (show) {
+                loadingEl.classList.remove('hidden');
+            } else {
+                loadingEl.classList.add('hidden');
+            }
+        }
+        
+        function escapeForAttribute(str) {
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+        
+        function loadMoreLogs() {
+            logsCurrentPage++;
+            loadLogs(false);
+        }
+        
+        function refreshLogs() {
+            loadLogs(true);
+        }
+        
+        function applyFilters() {
+            loadLogs(true);
+        }
+        
+        function resetFilters() {
+            document.getElementById('filterSchedule').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            loadLogs(true);
+        }
+        
+        function showLogDetail(logId) {
+            const logData = window.basketReminderLogs[logId];
+            
+            if (!logData) {
+                console.error("Log data not found for id:", logId);
+                return;
+            }
+
+            const detailContent = `
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Tarih</label>
+                        <p class="text-sm text-gray-900">${new Date(logData.sentAt).toLocaleString('tr-TR')}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Hatırlatma</label>
+                        <p class="text-sm text-gray-900">${logData.scheduleName || '-'} (${logData.reminderTimeText})</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Sepet ID</label>
+                        <p class="text-sm text-gray-900">${logData.basketExternalId}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Müşteri</label>
+                        <p class="text-sm text-gray-900">${logData.customerName || 'Bilinmiyor'}</p>
+                        <p class="text-sm text-gray-500">${logData.customerEmail || '-'}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Durum</label>
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${logData.statusBadgeClass}">
+                            ${logData.statusText}
+                        </span>
+                    </div>
+                    ${logData.notificationContent ? `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Mesaj İçeriği</label>
+                            <p class="text-sm text-gray-900 bg-gray-50 p-2 rounded">${logData.notificationContent}</p>
+                        </div>
+                    ` : ''}
+                    ${logData.errorMessage ? `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Hata Mesajı</label>
+                            <p class="text-sm text-red-600 bg-red-50 p-2 rounded">${logData.errorMessage}</p>
+                        </div>
+                    ` : ''}
+                    
+                    ${logData.channel ? `
+                        <div>
+                             <label class="block text-sm font-medium text-gray-700">Kanal</label>
+                             <p class="text-sm text-gray-900">${logData.channel}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            showLogDetailModal(detailContent);
+        }
+        
+        function showLogDetailModal(content) {
+            const confirmModal = document.createElement('div');
+            confirmModal.id = 'logDetailModalTemp';
+            confirmModal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center';
+            confirmModal.innerHTML = `
+                <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 transform transition-all">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-medium text-gray-900">Log Detayları</h3>
+                            <button onclick="closeLogDetailModalTemp()" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="mb-6">
+                            ${content}
+                        </div>
+                        <div class="flex justify-end">
+                            <button onclick="closeLogDetailModalTemp()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors">
+                                Kapat
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(confirmModal);
+            
+            // Close on outside click
+            confirmModal.addEventListener('click', (e) => {
+                if (e.target === confirmModal) {
+                    closeLogDetailModalTemp();
+                }
+            });
+        }
+        
+        window.closeLogDetailModalTemp = function() {
+            const modal = document.getElementById('logDetailModalTemp');
+            if (modal) {
+                document.body.removeChild(modal);
+            }
+        };
+        
+        // Setup infinite scroll on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load initial logs
+            loadLogs(true);
+            
+            // Setup infinite scroll
+            const logsContainer = document.getElementById('logsContainer');
+            logsContainer.addEventListener('scroll', () => {
+                const { scrollTop, scrollHeight, clientHeight } = logsContainer;
+                if (scrollTop + clientHeight >= scrollHeight - 100) {
+                    if (!logsLoading && !logsAllLoaded) {
+                        loadMoreLogs();
+                    }
+                }
+            });
+            
+            // Filter change listeners
+            document.getElementById('filterSchedule').addEventListener('change', () => {
+                loadLogs(true);
+            });
+        });
+    </script>
+}

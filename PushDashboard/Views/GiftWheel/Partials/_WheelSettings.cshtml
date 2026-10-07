@@ -1,0 +1,890 @@
+﻿@using PushDashboard.ViewModels
+@model GiftWheelViewModel
+
+<style>
+.collapsible-content { max-height: 1500px; transition: max-height 0.3s ease; }
+.collapsible-content.collapsed { max-height: 0; }
+</style>
+
+<div class="space-y-4 md:space-y-8">
+    <form id="wheelSettingsForm" class="space-y-4 md:space-y-8">
+        <!-- Appearance Settings -->
+        <div class="bg-gray-50 rounded-xl p-2 md:p-4 border border-gray-100">
+            <h4 class="text-md font-medium text-gray-900 mb-3 md:mb-4 flex items-center">
+                <i class="fas fa-palette mr-2 text-indigo-600"></i>
+                Görünüm Ayarları
+            </h4>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <!-- Wheel Title -->
+                <div>
+                    <label for="wheelTitle" class="block text-sm font-medium text-gray-700 mb-2">
+                        Çark Başlığı
+                    </label>
+                    <input type="text" id="wheelTitle" name="wheelTitle"
+                           value="@(Model.Settings?.WheelTitle ?? "Çarkı Çevir, Hediyeni Kazan!")"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           maxlength="200" required>
+                </div>
+
+                <!-- Wheel Subtitle -->
+                <div>
+                    <label for="wheelSubtitle" class="block text-sm font-medium text-gray-700 mb-2">
+                        Alt Başlık
+                    </label>
+                    <input type="text" id="wheelSubtitle" name="wheelSubtitle"
+                           value="@(Model.Settings?.WheelSubtitle ?? "Şansını dene ve harika hediyeler kazan")"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           maxlength="300">
+                </div>
+
+                <!-- Button Text -->
+                <div>
+                    <label for="buttonText" class="block text-sm font-medium text-gray-700 mb-2">
+                        Buton Metni
+                    </label>
+                    <input type="text" id="buttonText" name="buttonText"
+                           value="@(Model.Settings?.ButtonText ?? "Çarkı Çevir")"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           maxlength="50" required>
+                </div>
+
+                <!-- Wheel Size -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="wheelSize" class="block text-sm font-medium text-gray-700">
+                            Çark Boyutu (piksel)
+                        </label>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="useDefaultSize" name="useDefaultSize" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" @(Model.Settings?.WheelSize == 0 ? "checked" : "")>
+                            <label for="useDefaultSize" class="ml-2 block text-sm text-gray-900">
+                                Varsayılanı Kullan
+                            </label>
+                        </div>
+                    </div>
+                    <input type="range" id="wheelSize" name="wheelSize"
+                           value="@(Model.Settings?.WheelSize ?? 300)"
+                           min="200" max="500" step="10"
+                           class="w-full disabled:opacity-50 disabled:cursor-not-allowed">
+                    <div class="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>200px</span>
+                        <span id="wheelSizeValue">@(Model.Settings?.WheelSize ?? 300)px</span>
+                        <span>500px</span>
+                    </div>
+                </div>
+
+                <!-- Layout -->
+                <div>
+                    <label for="layout" class="block text-sm font-medium text-gray-700 mb-2">
+                        Yerleşim Düzeni
+                    </label>
+                    <select id="layout" name="layout"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        @{
+                            var currentLayout = Model.Settings?.Layout ?? "row";
+                        }
+                        <option value="column" selected="@(currentLayout == "column")">Dikey (Alt alta)</option>
+                        <option value="row" selected="@(currentLayout == "row")">Yatay (Yan yana)</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Masaüstünde çark ve formun yerleşimi</p>
+                </div>
+
+                <!-- Button Position Settings -->
+                <div class="md:col-span-2">
+                    <div class="border rounded-xl overflow-hidden transition-all duration-200 border-gray-200 bg-white">
+                        <div class="p-4">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                                    <i class="fas fa-hand-pointer text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-800">Çark Butonu Pozisyonu</div>
+                                    <div class="text-xs text-gray-500">Sabit butonun konumu ve alt mesafesi</div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <!-- Row 1: Button Position + Bottom Distance -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <!-- Button Position (Left/Right) -->
+                                    <div>
+                                        <label for="buttonPosition" class="block text-xs font-medium text-gray-500 mb-1">
+                                            Buton Konumu
+                                        </label>
+                                        <select id="buttonPosition" name="buttonPosition"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            @{
+                                                var currentButtonPosition = Model.Settings?.ButtonPosition ?? "right";
+                                            }
+                                            <option value="left" selected="@(currentButtonPosition == "left")">Sol</option>
+                                            <option value="right" selected="@(currentButtonPosition == "right")">Sağ</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Desktop Bottom Distance Slider -->
+                                    <div>
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label for="buttonBottomPx" class="text-xs font-medium text-gray-500">
+                                                Alt Mesafe
+                                            </label>
+                                            <span id="buttonBottomPxValue" class="text-xs font-semibold text-blue-600">@(Model.Settings?.ButtonBottomPx ?? 20)px</span>
+                                        </div>
+                                        <input type="range" id="buttonBottomPx" name="buttonBottomPx"
+                                               value="@(Model.Settings?.ButtonBottomPx ?? 20)"
+                                               min="0" max="200" step="5"
+                                               class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                                        <div class="flex justify-between text-[10px] text-gray-400 mt-0.5">
+                                            <span>0px</span>
+                                            <span>200px</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Row 2: Mobile Custom Checkbox + Mobile Slider -->
+                                <div class="border-t border-gray-100 pt-4">
+                                    @{
+                                        var currentBottomPx = Model.Settings?.ButtonBottomPx ?? 20;
+                                        var currentMobileBottomPx = Model.Settings?.ButtonMobileBottomPx ?? 20;
+                                        var useMobileCustom = currentBottomPx != currentMobileBottomPx;
+                                    }
+                                    <div class="flex items-center mb-3">
+                                        <input type="checkbox" id="useMobileCustomBottom"
+                                               @if (useMobileCustom) { <text>checked</text> }
+                                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                        <label for="useMobileCustomBottom" class="ml-2 text-sm text-gray-700">
+                                            Mobil için farklı alt mesafe kullan
+                                        </label>
+                                    </div>
+
+                                    <!-- Mobile Bottom Distance Slider (hidden by default) -->
+                                    <div id="mobileBottomSection" class="@(useMobileCustom ? "" : "hidden")">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label for="buttonMobileBottomPx" class="text-xs font-medium text-gray-500">
+                                                Mobil Alt Mesafe
+                                            </label>
+                                            <span id="buttonMobileBottomPxValue" class="text-xs font-semibold text-blue-600">@(currentMobileBottomPx)px</span>
+                                        </div>
+                                        <input type="range" id="buttonMobileBottomPx" name="buttonMobileBottomPx"
+                                               value="@(currentMobileBottomPx)"
+                                               min="0" max="200" step="5"
+                                               class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                                        <div class="flex justify-between text-[10px] text-gray-400 mt-0.5">
+                                            <span>0px</span>
+                                            <span>200px</span>
+                                        </div>
+                                    </div>
+                                    <!-- Hidden input for when checkbox is unchecked (uses desktop value) -->
+                                    <input type="hidden" id="buttonMobileBottomPxHidden" name="buttonMobileBottomPxHidden" value="@(currentMobileBottomPx)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logo Upload -->
+                <div class="md:col-span-2">
+                    <!-- Logo Toggle Card -->
+                    <div class="border rounded-xl overflow-hidden transition-all duration-200 @(!string.IsNullOrEmpty(Model.Settings?.LogoUrl) ? "border-indigo-200 bg-indigo-50/30" : "border-gray-200 bg-white")">
+                        <div class="flex items-center justify-between p-4 cursor-pointer select-none" id="logoToggleHeader">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                                    <i class="fas fa-image text-indigo-600"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-800">Merkez Logo</div>
+                                    <div class="text-xs text-gray-500">Çarkın ortasında logo göster</div>
+                                </div>
+                            </div>
+                            <button type="button" id="enableLogo"
+                                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 @(!string.IsNullOrEmpty(Model.Settings?.LogoUrl) ? "bg-indigo-600" : "bg-gray-200")"
+                                    data-enabled="@(!string.IsNullOrEmpty(Model.Settings?.LogoUrl) ? "true" : "false")">
+                                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform @(!string.IsNullOrEmpty(Model.Settings?.LogoUrl) ? "translate-x-6" : "translate-x-1")"></span>
+                            </button>
+                        </div>
+
+                        <div id="logoUploadSection" class="border-t border-gray-100 p-4 @(!string.IsNullOrEmpty(Model.Settings?.LogoUrl) ? "" : "hidden")">
+                            <div class="flex flex-col sm:flex-row items-start gap-4">
+                                <!-- Image Preview -->
+                                <div class="relative w-full sm:w-24 h-24 sm:h-24 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 self-center sm:self-start">
+                                    <img id="logoPreview" src="@Model.Settings?.LogoUrl" alt="Logo" class="w-full h-full object-contain @(string.IsNullOrEmpty(Model.Settings?.LogoUrl) ? "hidden" : "")">
+                                    <i id="logoPlaceholder" class="fas fa-image text-gray-300 text-2xl @(!string.IsNullOrEmpty(Model.Settings?.LogoUrl) ? "hidden" : "")"></i>
+                                </div>
+
+                                <div class="flex-1 w-full space-y-3">
+                                    <div>
+                                        <label for="logoUrl" class="block text-xs font-medium text-gray-500 mb-1">Logo URL'si</label>
+                                        <input type="text" id="logoUrl" name="logoUrl"
+                                               value="@Model.Settings?.LogoUrl"
+                                               placeholder="https://..."
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-500 mb-1">Veya Bilgisayardan Yükle</label>
+                                        <input type="file" id="logoFile" accept=".png,.jpg,.jpeg,.svg"
+                                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors">
+                                        <p class="text-xs text-gray-500 mt-1">PNG, JPG, JPEG, SVG. Maks: 2MB.</p>
+                                    </div>
+
+                                    <!-- Logo Size Slider -->
+                                    <div>
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label for="logoSizePercentage" class="text-xs font-medium text-gray-500">Logo Boyutu</label>
+                                            <span id="logoSizeValue" class="text-xs font-semibold text-indigo-600">%@(Model.Settings?.LogoSizePercentage > 0 ? Model.Settings.LogoSizePercentage : 15)</span>
+                                        </div>
+                                        <input type="range" id="logoSizePercentage" name="logoSizePercentage"
+                                               value="@(Model.Settings?.LogoSizePercentage > 0 ? Model.Settings.LogoSizePercentage : 15)"
+                                               min="5" max="40" step="1"
+                                               class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                                        <div class="flex justify-between text-[10px] text-gray-400 mt-0.5">
+                                            <span>Küçük</span>
+                                            <span>Büyük</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Logo Animation -->
+                                    <div class="flex items-center mt-2">
+                                        <input type="checkbox" id="logoAnimation" name="logoAnimation"
+                                               @if (Model.Settings?.LogoAnimation != false) { <text>checked</text> }
+                                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                        <label for="logoAnimation" class="ml-2 text-sm text-gray-700">
+                                            Logo Animasyonu (Nefes alma efekti)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Background Image -->
+                <div class="md:col-span-2">
+                    <div class="border rounded-xl overflow-hidden transition-all duration-200 @(!string.IsNullOrEmpty(Model.Settings?.BackgroundImageUrl) ? "border-purple-200 bg-purple-50/30" : "border-gray-200 bg-white")">
+                        <div class="flex items-center justify-between p-4 cursor-pointer select-none" id="bgImageToggleHeader">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                                    <i class="fas fa-photo-video text-purple-600"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-800">Arkaplan Görseli</div>
+                                    <div class="text-xs text-gray-500">Modal arka planına görsel ekle</div>
+                                </div>
+                            </div>
+                            <button type="button" id="enableBgImage"
+                                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 @(!string.IsNullOrEmpty(Model.Settings?.BackgroundImageUrl) ? "bg-purple-600" : "bg-gray-200")"
+                                    data-enabled="@(!string.IsNullOrEmpty(Model.Settings?.BackgroundImageUrl) ? "true" : "false")">
+                                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform @(!string.IsNullOrEmpty(Model.Settings?.BackgroundImageUrl) ? "translate-x-6" : "translate-x-1")"></span>
+                            </button>
+                        </div>
+
+                        <div id="bgImageUploadSection" class="border-t border-gray-100 p-4 @(!string.IsNullOrEmpty(Model.Settings?.BackgroundImageUrl) ? "" : "hidden")">
+                            <div class="flex flex-col sm:flex-row items-start gap-4">
+                                <!-- Image Preview -->
+                                <div class="relative w-full sm:w-32 h-20 sm:h-20 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 self-center sm:self-start">
+                                    <img id="bgImagePreview" src="@Model.Settings?.BackgroundImageUrl" alt="Background" class="w-full h-full object-cover @(string.IsNullOrEmpty(Model.Settings?.BackgroundImageUrl) ? "hidden" : "")">
+                                    <i id="bgImagePlaceholder" class="fas fa-mountain text-gray-300 text-2xl @(!string.IsNullOrEmpty(Model.Settings?.BackgroundImageUrl) ? "hidden" : "")"></i>
+                                </div>
+
+                                <div class="flex-1 w-full space-y-3">
+                                    <div>
+                                        <label for="backgroundImageUrl" class="block text-xs font-medium text-gray-500 mb-1">Görsel URL'si</label>
+                                        <input type="text" id="backgroundImageUrl" name="backgroundImageUrl"
+                                               value="@Model.Settings?.BackgroundImageUrl"
+                                               placeholder="https://..."
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-500 mb-1">Veya Bilgisayardan Yükle</label>
+                                        <input type="file" id="bgImageFile" accept=".png,.jpg,.jpeg,.webp"
+                                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 transition-colors">
+                                        <p class="text-xs text-gray-500 mt-1">PNG, JPG, JPEG, WEBP. Maks: 5MB. Önerilen: Dikey; 1080x1920. Yatay için 1920x1080.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Color Settings -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                <div>
+                    <label for="primaryColorPicker" class="block text-sm font-medium text-gray-700 mb-2">
+                        Birincil Renk
+                    </label>
+                    <div class="flex items-center space-x-3">
+                        <input type="color" id="primaryColorPicker"
+                               value="@(Model.Settings?.PrimaryColor ?? "#02379c")"
+                               class="h-10 w-16 border border-gray-300 rounded-lg cursor-pointer">
+                        <input type="text" id="primaryColor" name="primaryColor"
+                               value="@(Model.Settings?.PrimaryColor ?? "#02379c")"
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                               pattern="^#[0-9A-Fa-f]{6}$">
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Buton ve vurgu renkleri</p>
+                </div>
+
+                <div>
+                    <label for="secondaryColorPicker" class="block text-sm font-medium text-gray-700 mb-2">
+                        İkincil Renk
+                    </label>
+                    <div class="flex items-center space-x-3">
+                        <input type="color" id="secondaryColorPicker"
+                               value="@(Model.Settings?.SecondaryColor ?? "#1f2937")"
+                               class="h-10 w-16 border border-gray-300 rounded-lg cursor-pointer">
+                        <input type="text" id="secondaryColor" name="secondaryColor"
+                               value="@(Model.Settings?.SecondaryColor ?? "#1f2937")"
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                               pattern="^#[0-9A-Fa-f]{6}$">
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Çark merkez renkleri</p>
+                </div>
+
+                <div>
+                    <label for="modalTextColorPicker" class="block text-sm font-medium text-gray-700 mb-2">
+                        Yazı Rengi
+                    </label>
+                    <div class="flex items-center space-x-3">
+                        <input type="color" id="modalTextColorPicker"
+                               value="@(string.IsNullOrEmpty(Model.Settings?.ModalTextColor) ? "#1f2937" : Model.Settings.ModalTextColor)"
+                               class="h-10 w-16 border border-gray-300 rounded-lg cursor-pointer">
+                        <input type="text" id="modalTextColor" name="modalTextColor"
+                               value="@(string.IsNullOrEmpty(Model.Settings?.ModalTextColor) ? "#1f2937" : Model.Settings.ModalTextColor)"
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                               pattern="^#[0-9A-Fa-f]{6}$">
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Başlık, alt başlık ve form yazıları</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Behavior Settings -->
+        <div class="bg-gray-50 rounded-xl p-2 md:p-4 border border-gray-100">
+            <h4 class="text-md font-medium text-gray-900 mb-3 md:mb-4 flex items-center">
+                <i class="fas fa-cogs mr-2 text-indigo-600"></i>
+                Davranış Ayarları
+            </h4>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <!-- Max Spins Per Day -->
+                <div>
+                    <label for="maxSpinsPerDay" class="block text-sm font-medium text-gray-700 mb-2">
+                        Günlük Maksimum Çevirme
+                    </label>
+                    <select id="maxSpinsPerDay" name="maxSpinsPerDay"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        @for (int i = 1; i <= 10; i++)
+                        {
+                            var isSelected = Model.Settings?.MaxSpinsPerDay == i;
+                            <option value="@i" selected="@isSelected">@i kez</option>
+                        }
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Aynı telefon numarası günde kaç kez çevirebilir</p>
+                </div>
+
+                <!-- Win Frequency Days -->
+                <div>
+                    <label for="winFrequencyDays" class="block text-sm font-medium text-gray-700 mb-2">
+                        Kazanma Sıklığı
+                    </label>
+                    <select id="winFrequencyDays" name="winFrequencyDays"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        @{
+                            var frequencyOptions = new Dictionary<int, string>
+                            {
+                                { 0, "Sınırsız (Her gün kazanabilir)" },
+                                { 7, "Haftada 1 kez" },
+                                { 30, "Ayda 1 kez" },
+                                { 90, "3 Ayda 1 kez" },
+                                { 180, "6 Ayda 1 kez" },
+                                { 365, "Yılda 1 kez" }
+                            };
+                            var currentFrequency = Model.Settings?.WinFrequencyDays ?? 0;
+                        }
+                        @foreach (var option in frequencyOptions)
+                        {
+                            <option value="@option.Key" selected="@(currentFrequency == option.Key)">@option.Value</option>
+                        }
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Aynı telefon numarası ne sıklıkla ödül kazanabilir</p>
+                </div>
+
+                <!-- Show Confetti -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Konfeti Efekti
+                    </label>
+                    <div class="flex items-center">
+                        <button type="button" id="showConfettiToggle"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 @(Model.Settings?.ShowConfetti != false ? "bg-indigo-600" : "bg-gray-200")"
+                                data-enabled="@(Model.Settings?.ShowConfetti != false ? "true" : "false")">
+                            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform @(Model.Settings?.ShowConfetti != false ? "translate-x-6" : "translate-x-1")"></span>
+                        </button>
+                        <span class="ml-3 text-sm text-gray-700">Kazanınca konfeti göster</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Required Fields -->
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 mb-3">
+                    Gerekli Bilgiler
+                </label>
+                <div class="space-y-3">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="requirePhone" name="requirePhone"
+                               @if (Model.Settings?.RequirePhone != false) { <text>checked</text> }
+                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label for="requirePhone" class="ml-3 text-sm text-gray-700">
+                            Telefon numarası zorunlu
+                        </label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="requireEmail" name="requireEmail"
+                               @if (Model.Settings?.RequireEmail == true) { <text>checked</text> }
+                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label for="requireEmail" class="ml-3 text-sm text-gray-700">
+                            E-posta adresi zorunlu
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Message Settings -->
+        <div class="bg-gray-50 rounded-xl p-2 md:p-4 border border-gray-100">
+            <button type="button" class="collapsible-trigger w-full flex items-center justify-between text-left py-2 cursor-pointer hover:opacity-80 transition-opacity" data-target="messageSettingsContent">
+                <h4 class="text-md font-medium text-gray-900 flex items-center">
+                    <i class="fas fa-comment mr-2 text-indigo-600"></i>
+                    Mesaj Ayarları
+                </h4>
+                <i class="fas fa-chevron-down collapsible-icon text-gray-500 transition-transform duration-200" style="transform: rotate(-90deg);"></i>
+            </button>
+            <div id="messageSettingsContent" class="collapsible-content overflow-hidden collapsed">
+            <div class="pt-2 pb-4">
+            <!-- Hidden notification template field -->
+            <input type="hidden" id="notificationTemplate" name="notificationTemplate"
+                   value="@(Model.Settings?.NotificationTemplate ?? "🎉 Tebrikler {name}! {prize} kazandınız. Hemen alışverişe başlayın: {siteUrl}")">
+
+            <div class="space-y-4">
+                <!-- Win Message -->
+                <div>
+                    <label for="winMessage" class="block text-sm font-medium text-gray-700 mb-2">
+                        Kazanma Mesajı
+                    </label>
+                    <input type="text" id="winMessage" name="winMessage"
+                           value="@(Model.Settings?.WinMessage ?? "Tebrikler! {prize} kazandınız!")"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           maxlength="200" required>
+                    <p class="text-xs text-gray-500 mt-1">
+                        <code>{prize}</code> yer tutucusunu kullanabilirsiniz
+                    </p>
+                </div>
+
+                <!-- Lose Message -->
+                <div>
+                    <label for="loseMessage" class="block text-sm font-medium text-gray-700 mb-2">
+                        Kaybetme Mesajı
+                    </label>
+                    <input type="text" id="loseMessage" name="loseMessage"
+                           value="@(Model.Settings?.LoseMessage ?? "Bu sefer olmadı, tekrar deneyin!")"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           maxlength="200" required>
+                </div>
+
+                <!-- WhatsApp Template Selection -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex flex-col sm:flex-row items-start">
+                        <div class="flex-shrink-0 mb-3 sm:mb-0">
+                            <i class="fab fa-whatsapp text-green-500 mt-1 text-xl sm:text-base"></i>
+                        </div>
+                        <div class="ml-0 sm:ml-3 flex-1 w-full">
+                            <h5 class="text-sm font-medium text-blue-800 mb-2">
+                                WhatsApp Bildirim Şablonu
+                            </h5>
+                            <p class="text-sm text-blue-700 mb-3">
+                                Hediye çarkı kazananlarına gönderilecek WhatsApp şablonunu seçin.
+                            </p>
+                            
+                            <!-- Hidden Inputs matching ID pattern expected by selectTemplate -->
+                            <input type="hidden" id="setting-whatsapp-template-id" name="WhatsappTemplateId" value="@Model.Settings?.WhatsappTemplateId">
+                            <input type="hidden" id="setting-whatsapp-template-name" name="WhatsappTemplateName" value="@Model.Settings?.WhatsappTemplateName">
+
+                            <div class="flex flex-col items-start space-y-3 w-full">
+                                <div class="flex items-center space-x-2 w-full">
+                                    <button type="button"
+                                            onclick="openTemplateSelector('whatsapp', 'WhatsApp', 'GiftWheel')"
+                                            class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                        <i class="fas fa-list-ul mr-2"></i>
+                                        Şablon Seç
+                                    </button>
+
+                                    <button type="button"
+                                            id="clear-template-whatsapp"
+                                            onclick="clearTemplateSelection('whatsapp')"
+                                            class="@(string.IsNullOrEmpty(Model.Settings?.WhatsappTemplateName) ? "hidden " : "")inline-flex items-center px-3 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                        <i class="fas fa-times mr-2"></i>
+                                        Kaldır
+                                    </button>
+                                    
+                                    <div id="selected-template-whatsapp" class="flex-1 px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm text-gray-700 min-h-[38px] flex items-center">
+                                         @if (!string.IsNullOrEmpty(Model.Settings?.WhatsappTemplateName))
+                                         {
+                                             <span class="font-medium">@Model.Settings.WhatsappTemplateName</span>
+                                         }
+                                         else
+                                         {
+                                             <span class="text-gray-400 italic">Şablon seçimi zorunlu</span>
+                                         }
+                                    </div>
+                                </div>
+                                <p class="text-xs text-blue-600">
+                                    <i class="fas fa-info-circle mr-1"></i> Şablon seçimi zorunludur.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+            </div>
+        </div>
+
+        <!-- Legal Settings -->
+        <div class="bg-gray-50 rounded-xl p-2 md:p-4 border border-gray-100">
+            <button type="button" class="collapsible-trigger w-full flex items-center justify-between text-left py-2 cursor-pointer hover:opacity-80 transition-opacity" data-target="legalSettingsContent">
+                <h4 class="text-md font-medium text-gray-900 flex items-center">
+                    <i class="fas fa-file-contract mr-2 text-indigo-600"></i>
+                    Yasal Metinler
+                </h4>
+                <i class="fas fa-chevron-down collapsible-icon text-gray-500 transition-transform duration-200" style="transform: rotate(-90deg);"></i>
+            </button>
+            <div id="legalSettingsContent" class="collapsible-content overflow-hidden collapsed">
+            <div class="pt-2 pb-4 space-y-6">
+                <!-- Privacy Policy (KVKK) URL -->
+                <div>
+                    <label for="privacyPolicyUrl" class="block text-sm font-medium text-gray-700 mb-2">
+                        Kişisel Verilerin Korunması İzni Metni Linki
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="url" id="privacyPolicyUrl" name="privacyPolicyUrl"
+                               value="@Model.Settings?.PrivacyPolicyUrl"
+                               placeholder="Entegrasyon ayarlarından yönetilmektedir"
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-500"
+                               maxlength="500" disabled>
+                    </div>
+                     <p class="text-xs text-blue-600 mt-1"><i class="fas fa-info-circle mr-1"></i> Bu alan Entegrasyon > Ayarlar sayfasından otomatik olarak çekilmektedir.</p>
+                </div>
+
+                <!-- Terms (ETK) URL -->
+                <div>
+                    <label for="termsUrl" class="block text-sm font-medium text-gray-700 mb-2">
+                        Ticari Elektronik İleti İzni Metni Linki
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="url" id="termsUrl" name="termsUrl"
+                               value="@Model.Settings?.TermsUrl"
+                               placeholder="Entegrasyon ayarlarından yönetilmektedir"
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-500"
+                               maxlength="500" disabled>
+                    </div>
+                     <p class="text-xs text-blue-600 mt-1"><i class="fas fa-info-circle mr-1"></i> Bu alan Entegrasyon > Ayarlar sayfasından otomatik olarak çekilmektedir.</p>
+                </div>
+            </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ================== Button Position Preview System ==================
+    let buttonPreviewTimeout = null;
+    let buttonPreviewElement = null;
+
+    // Create preview button element
+    function createPreviewButton() {
+        if (buttonPreviewElement) return buttonPreviewElement;
+
+        const primaryColor = document.getElementById('primaryColor')?.value || '#6366f1';
+        buttonPreviewElement = document.createElement('div');
+        buttonPreviewElement.id = 'buttonPositionPreview';
+        buttonPreviewElement.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                        <path d="M20 7h-1.209A4.92 4.92 0 0 0 19 5.5C19 3.57 17.43 2 15.5 2c-1.622 0-2.705 1.482-3.404 3.085C11.498 3.527 10.122 2 8.5 2 6.57 2 5 3.57 5 5.5c0 .596.079 1.089.209 1.5H4c-1.103 0-2 .897-2 2v2c0 1.103.897 2 2 2v7c0 1.103.897 2 2 2h12c1.103 0 2-.897 2-2v-7c1.103 0 2-.897 2-2V9c0-1.103-.897-2-2-2z"/>
+                    </svg>
+                </div>
+                <span style="font-weight: 600; font-size: 13px; color: white;">Çark Butonu</span>
+            </div>
+        `;
+        buttonPreviewElement.style.cssText = `
+            position: fixed;
+            padding: 10px 16px;
+            background: ${primaryColor};
+            border-radius: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 999999;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+        `;
+        document.body.appendChild(buttonPreviewElement);
+        return buttonPreviewElement;
+    }
+
+    // Show preview button at specified position
+    function showButtonPreview() {
+        const preview = createPreviewButton();
+        const position = document.getElementById('buttonPosition')?.value || 'right';
+        const bottomPx = parseInt(document.getElementById('buttonBottomPx')?.value) || 20;
+        const primaryColor = document.getElementById('primaryColor')?.value || '#6366f1';
+
+        // Update color
+        preview.style.background = primaryColor;
+
+        // Set position
+        preview.style.bottom = bottomPx + 'px';
+        if (position === 'left') {
+            preview.style.left = '24px';
+            preview.style.right = 'auto';
+        } else {
+            preview.style.right = '24px';
+            preview.style.left = 'auto';
+        }
+
+        // Show with animation
+        preview.style.opacity = '1';
+        preview.style.transform = 'scale(1)';
+
+        // Clear existing timeout
+        if (buttonPreviewTimeout) {
+            clearTimeout(buttonPreviewTimeout);
+        }
+
+        // Hide after 2 seconds
+        buttonPreviewTimeout = setTimeout(() => {
+            preview.style.opacity = '0';
+            preview.style.transform = 'scale(0.9)';
+        }, 2000);
+    }
+
+    // Button position slider
+    const buttonBottomSlider = document.getElementById('buttonBottomPx');
+    const buttonBottomValue = document.getElementById('buttonBottomPxValue');
+    const buttonPositionSelect = document.getElementById('buttonPosition');
+
+    if (buttonBottomSlider && buttonBottomValue) {
+        buttonBottomSlider.addEventListener('input', function() {
+            buttonBottomValue.textContent = this.value + 'px';
+            showButtonPreview();
+
+            // Sync to mobile if checkbox unchecked
+            const useMobileCustom = document.getElementById('useMobileCustomBottom');
+            if (useMobileCustom && !useMobileCustom.checked) {
+                const mobileSlider = document.getElementById('buttonMobileBottomPx');
+                const mobileValue = document.getElementById('buttonMobileBottomPxValue');
+                if (mobileSlider) mobileSlider.value = this.value;
+                if (mobileValue) mobileValue.textContent = this.value + 'px';
+            }
+        });
+    }
+
+    // Button position select
+    if (buttonPositionSelect) {
+        buttonPositionSelect.addEventListener('change', function() {
+            showButtonPreview();
+        });
+    }
+
+    // Mobile custom bottom checkbox
+    const useMobileCustomCheckbox = document.getElementById('useMobileCustomBottom');
+    const mobileBottomSection = document.getElementById('mobileBottomSection');
+    const mobileBottomSlider = document.getElementById('buttonMobileBottomPx');
+    const mobileBottomValue = document.getElementById('buttonMobileBottomPxValue');
+
+    if (useMobileCustomCheckbox && mobileBottomSection) {
+        useMobileCustomCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                mobileBottomSection.classList.remove('hidden');
+            } else {
+                mobileBottomSection.classList.add('hidden');
+                // Sync mobile value to desktop value
+                if (buttonBottomSlider && mobileBottomSlider) {
+                    mobileBottomSlider.value = buttonBottomSlider.value;
+                    if (mobileBottomValue) {
+                        mobileBottomValue.textContent = buttonBottomSlider.value + 'px';
+                    }
+                }
+            }
+        });
+    }
+
+    // Mobile bottom slider
+    if (mobileBottomSlider && mobileBottomValue) {
+        mobileBottomSlider.addEventListener('input', function() {
+            mobileBottomValue.textContent = this.value + 'px';
+        });
+    }
+    // ================== End Button Position Preview System ==================
+
+    document.querySelectorAll('.collapsible-trigger').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const targetId = this.dataset.target;
+            const content = document.getElementById(targetId);
+            const icon = this.querySelector('.collapsible-icon');
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.classList.add('collapsed');
+                icon.style.transform = 'rotate(-90deg)';
+            }
+        });
+    });
+
+    // Wheel size slider
+    const wheelSizeSlider = document.getElementById('wheelSize');
+    const wheelSizeValue = document.getElementById('wheelSizeValue');
+    const useDefaultSizeCheckbox = document.getElementById('useDefaultSize');
+
+    // Handle use default size logic
+    function toggleWheelSize() {
+        if (useDefaultSizeCheckbox.checked) {
+            wheelSizeSlider.disabled = true;
+            wheelSizeSlider.classList.add('opacity-50');
+            wheelSizeValue.textContent = 'Varsayılan';
+        } else {
+            wheelSizeSlider.disabled = false;
+            wheelSizeSlider.classList.remove('opacity-50');
+            wheelSizeValue.textContent = wheelSizeSlider.value + 'px';
+        }
+    }
+
+    useDefaultSizeCheckbox.addEventListener('change', toggleWheelSize);
+
+    // Initial state check
+    toggleWheelSize();
+
+    wheelSizeSlider.addEventListener('input', function() {
+        wheelSizeValue.textContent = this.value + 'px';
+    });
+
+    // Color picker sync - Primary Color
+    const primaryColorPicker = document.getElementById('primaryColorPicker');
+    const primaryColorText = document.getElementById('primaryColor');
+
+    // Function to update preview with current colors
+    function updatePreviewColors() {
+        const primaryColor = primaryColorText.value || '#02379c';
+        const secondaryColor = secondaryColorText.value || '#1f2937';
+
+        // Update preview button color
+        const previewButton = document.getElementById('previewSpinButton');
+        if (previewButton) {
+            previewButton.style.backgroundColor = primaryColor;
+            previewButton.style.borderColor = primaryColor;
+        }
+
+        // Update preview title color
+        const previewTitle = document.getElementById('previewTitle');
+        if (previewTitle) {
+            previewTitle.style.color = secondaryColor;
+        }
+
+        // Preview container background stays neutral
+        const previewContainer = document.getElementById('previewContainer');
+        if (previewContainer) {
+            previewContainer.style.backgroundColor = '#f3f4f6'; // Neutral gray
+        }
+
+        // Store colors globally for preview modal
+        window.previewPrimaryColor = primaryColor;
+        window.previewSecondaryColor = secondaryColor;
+    }
+
+    primaryColorPicker.addEventListener('input', function() {
+        primaryColorText.value = this.value;
+        updatePreviewColors();
+    });
+
+    primaryColorText.addEventListener('input', function() {
+        if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) {
+            primaryColorPicker.value = this.value;
+            updatePreviewColors();
+        }
+    });
+
+    // Color picker sync - Secondary Color
+    const secondaryColorPicker = document.getElementById('secondaryColorPicker');
+    const secondaryColorText = document.getElementById('secondaryColor');
+
+    secondaryColorPicker.addEventListener('input', function() {
+        secondaryColorText.value = this.value;
+        updatePreviewColors();
+    });
+
+    secondaryColorText.addEventListener('input', function() {
+        if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) {
+            secondaryColorPicker.value = this.value;
+            updatePreviewColors();
+        }
+    });
+
+    // Color picker sync - Modal Text Color
+    const modalTextColorPicker = document.getElementById('modalTextColorPicker');
+    const modalTextColorText = document.getElementById('modalTextColor');
+
+    modalTextColorPicker.addEventListener('input', function() {
+        modalTextColorText.value = this.value;
+        updatePreviewColors();
+    });
+
+    modalTextColorText.addEventListener('input', function() {
+        if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) {
+            modalTextColorPicker.value = this.value;
+            updatePreviewColors();
+        }
+    });
+
+    // Initialize preview colors on page load
+    updatePreviewColors();
+
+    // Confetti toggle
+    const confettiToggle = document.getElementById('showConfettiToggle');
+    confettiToggle.addEventListener('click', function() {
+        const isEnabled = this.dataset.enabled === 'true';
+        const newState = !isEnabled;
+
+        this.dataset.enabled = newState.toString();
+
+        if (newState) {
+            this.classList.remove('bg-gray-200');
+            this.classList.add('bg-indigo-600');
+            this.querySelector('span').classList.remove('translate-x-1');
+            this.querySelector('span').classList.add('translate-x-6');
+        } else {
+            this.classList.remove('bg-indigo-600');
+            this.classList.add('bg-gray-200');
+            this.querySelector('span').classList.remove('translate-x-6');
+            this.querySelector('span').classList.add('translate-x-1');
+        }
+
+        // Önizlemeye konfeti ayarını yansıt
+        updatePreviewConfetti(newState);
+    });
+
+    // Konfeti ayarını önizlemeye yansıt
+    function updatePreviewConfetti(enabled) {
+        // Global değişkeni güncelle (önizleme modalı açıksa)
+        if (typeof window.updatePreviewShowConfetti === 'function') {
+            window.updatePreviewShowConfetti(enabled);
+        }
+    }
+});
+</script>

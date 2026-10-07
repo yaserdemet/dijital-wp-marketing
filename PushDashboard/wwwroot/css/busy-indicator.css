@@ -1,0 +1,123 @@
+/* Busy Indicator Styles */
+
+/* Base container for overlay and fullscreen */
+.busy-indicator-overlay,
+.busy-indicator-fullscreen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050; /* Above bootstrap modals usually (1050) */
+}
+
+/* Overlay Specifics */
+.busy-indicator-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.7);
+    border-radius: inherit; /* Inherit border radius from parent if possible */
+    cursor: wait;
+}
+
+/* Fullscreen Specifics */
+.busy-indicator-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 9999; /* Topmost */
+}
+
+/* Inline Specifics */
+.busy-indicator-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Spinner Animation */
+.busy-spinner {
+    display: inline-block;
+    border-style: solid;
+    border-radius: 50%;
+    animation: busy-spin 0.75s linear infinite;
+    -webkit-animation: busy-spin 0.75s linear infinite;
+}
+
+@keyframes busy-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Sizes */
+.busy-spinner-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 2px;
+}
+
+.busy-spinner-md {
+    width: 2rem;
+    height: 2rem;
+    border-width: 3px;
+}
+
+.busy-spinner-lg {
+    width: 4rem;
+    height: 4rem;
+    border-width: 4px;
+}
+
+/* Colors */
+.busy-spinner-primary {
+    border-color: rgba(var(--theme-color-rgb), 0.2);
+    border-top-color: var(--theme-color);
+}
+
+.busy-spinner-white {
+    border-color: rgba(255, 255, 255, 0.2);
+    border-top-color: #ffffff;
+}
+
+.busy-spinner-gray {
+    border-color: rgba(108, 117, 125, 0.2);
+    border-top-color: #6c757d;
+}
+
+/* Text */
+.busy-text {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #495057;
+}
+
+.busy-indicator-inline .busy-text {
+    margin-top: 0;
+}
+
+.busy-spinner-white ~ .busy-text {
+    color: #fff;
+}
+
+/* Utility to ensure parent is relative for overlay */
+.busy-relative {
+    position: relative !important;
+}
+
+/* Visually hidden for accessibility */
+.busy-visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}

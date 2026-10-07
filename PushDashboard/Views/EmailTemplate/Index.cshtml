@@ -1,0 +1,605 @@
+@model PushDashboard.ViewModels.EmailTemplateIndexViewModel
+
+@{
+    ViewData["Title"] = "Mail Şablonları";
+}
+
+<div class="mb-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">Mail Şablonları</h2>
+            <p class="text-gray-600">Email şablonlarınızı yönetin ve özelleştirin</p>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button type="button" id="readyTemplatesBtn"
+                    class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center mr-2">
+                <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Hazır Şablonlar
+            </button>
+            <button type="button" id="createTemplateBtn"
+                    class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center">
+                <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Yeni Şablon Ekle
+            </button>
+            <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+                @Model.UserTemplates.Values.SelectMany(x => x).Count() şablon
+            </span>
+        </div>
+    </div>
+</div>
+
+    @if (!Model.UserTemplates.Any())
+    {
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+                <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Henüz Özel Şablonunuz Yok</h3>
+            <p class="text-gray-600 mb-6">Yeni bir şablon oluşturarak başlayın veya hazır şablonları kullanın.</p>
+            <button type="button" onclick="$('#createTemplateBtn').click()" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                Yeni Şablon Oluştur
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach (var group in Model.UserTemplates)
+            {
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-primary to-primary-dark text-white px-6 py-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold">@group.Key</h3>
+                            <span class="bg-white bg-opacity-20 text-white text-sm font-medium px-2 py-1 rounded-full">
+                                @group.Value.Count
+                            </span>
+                        </div>
+                    </div>
+                    <div class="divide-y divide-gray-200">
+                        @foreach (var template in group.Value.OrderByDescending(t => t.UpdatedAt))
+                        {
+                            <div class="template-item p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-200"
+                                 data-template-id="@(template.Id)"
+                                 data-company-template-id="@template.Id">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <h4 class="text-sm font-semibold text-gray-900 mb-1">@template.Name</h4>
+                                        <p class="text-sm text-gray-600 mb-2 line-clamp-2">@template.Description</p>
+                                        <div class="flex items-center space-x-2 text-xs text-gray-500">
+                                            <span>Son güncelleme: @template.UpdatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4 flex-shrink-0">
+                                        <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+<!-- Template Editor Modal -->
+<div id="templateModal" class="fixed inset-0 z-50 hidden overflow-hidden">
+    <div class="flex items-center justify-center h-full px-4 py-4 text-center sm:p-6">
+        <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" id="modalBackdrop"></div>
+
+        <div class="inline-block w-full max-w-[95%] h-[90vh] flex flex-col overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
+            <div class="flex items-center justify-between p-4 pb-4 border-b border-gray-200 flex-shrink-0">
+                <h3 class="text-lg font-semibold text-gray-900" id="templateModalLabel">
+                    <svg class="w-5 h-5 inline mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span id="templateName">Şablon Düzenle</span>
+                </h3>
+                <button type="button" class="text-gray-400 hover:text-gray-600" id="closeModalBtn">
+                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto md:overflow-hidden p-6">
+                <form id="templateForm" class="md:h-full flex flex-col">
+                    <input type="hidden" id="templateId" name="templateId" />
+
+                    <div class="mb-4 flex-shrink-0">
+                        <label for="templateSubject" class="block text-sm font-medium text-gray-700 mb-2">Email Konusu</label>
+                        <input type="text" id="templateSubject" name="subject" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+                        <p class="mt-1 text-sm text-gray-500">Değişkenler için {{değişkenAdı}} formatını kullanın</p>
+                    </div>
+
+                    <div class="mb-4 flex-shrink-0">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Kullanılabilir Değişkenler</h4>
+                        <div id="variablesList" class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-2 border border-gray-200 rounded-md bg-gray-50">
+                            <!-- Variables will be populated here -->
+                        </div>
+                    </div>
+
+                    <div class="flex-1 flex gap-6 md:overflow-hidden min-h-[400px] md:min-h-0">
+                        <!-- Editor & Preview Area -->
+                        <div class="flex-1 flex gap-4 md:overflow-hidden">
+                            <div class="flex-1 flex flex-col md:overflow-hidden">
+                                <div class="flex-1 flex flex-col border border-gray-300 rounded-md overflow-hidden">
+                                    <div class="flex justify-between items-center p-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+                                        <label for="templateContent" class="block text-sm font-medium text-gray-700 mb-0">Email İçeriği</label>
+                                        <button type="button" id="mobileFullScreenPreviewBtn" class="md:hidden text-primary hover:text-primary-dark text-sm font-medium flex items-center">
+                                            <svg class="w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                            Önizle
+                                        </button>
+                                    </div>
+                                    <textarea id="templateContent" name="content" required
+                                              class="flex-1 w-full px-3 py-2 border-0 focus:ring-0 font-mono text-sm resize-none"></textarea>
+                                </div>
+                                <p class="mt-1 text-sm text-gray-500">HTML formatında içerik girebilirsiniz</p>
+                            </div>
+                            <div class="hidden md:flex flex-col items-center">
+                                <div id="templatePreview" class="flex-1 border border-gray-300 rounded-md bg-gray-100 overflow-hidden flex flex-col resize-x w-[500px] min-w-[320px] max-w-full">
+                                    <div class="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+                                        <label class="block text-sm font-medium text-gray-700">
+                                            Canlı Önizleme
+                                        </label>
+                                        <button type="button" id="fullScreenPreviewBtn" class="text-gray-500 hover:text-primary" title="Tam Ekran">
+                                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <!-- Fake Email Header -->
+                                    <div class="bg-white border-b border-gray-200 p-4 flex-shrink-0">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">
+                                                    P
+                                                </div>
+                                                <div>
+                                                    <div class="font-semibold text-gray-900">Dijitaldesin <span class="text-gray-500 font-normal">&lt;info@dijitaldesin.com&gt;</span></div>
+                                                    <div class="text-sm text-gray-500">Alıcı: Müşteri Adı &lt;musteri@example.com&gt;</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-sm text-gray-500">
+                                                @DateTime.Now.ToString("dd MMM yyyy HH:mm")
+                                            </div>
+                                        </div>
+                                        <div class="text-lg font-medium text-gray-900 border-t border-gray-100 pt-3" id="previewSubject">
+                                            <!-- Subject will be shown here -->
+                                        </div>
+                                    </div>
+                                    <!-- Email Body -->
+                                    <div class="flex-1 overflow-auto p-4 bg-white" id="previewBody">
+                                        <!-- Content will be shown here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="flex justify-between space-x-3 p-4 border-t border-gray-200 flex-shrink-0">
+                <div>
+                    <button type="button" id="deleteBtn"
+                            class="px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-300 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 flex gap-2 items-center"
+                            style="display: none;">
+                        <svg class="w-4 h-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Sil
+                    </button>
+                </div>
+                <div class="flex space-x-3">
+                    <button type="button" id="resetBtn"
+                            class="px-4 py-2 text-sm font-medium text-yellow-700 bg-yellow-100 border border-yellow-300 rounded-md hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-500 flex gap-2 items-center">
+                        <svg class="w-4 h-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Sıfırla
+                    </button>
+                    <button type="button" id="cancelBtn"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary flex gap-2 items-center">
+                        <svg class="w-4 h-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        İptal
+                    </button>
+                    <button type="button" id="saveTemplateBtn"
+                            class="px-4 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary flex gap-2 items-center">
+                        <svg class="w-4 h-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        </svg>
+                        Kaydet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div id="previewModal" class="fixed inset-0 z-[60] hidden overflow-hidden">
+    <div class="flex items-center justify-center h-full px-4 py-4 text-center sm:p-6">
+        <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" id="previewModalBackdrop"></div>
+
+        <div class="inline-block w-full max-w-[95%] h-[90vh] flex flex-col overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    <svg class="w-5 h-5 inline mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    Şablon Önizlemesi
+                </h3>
+                <button type="button" class="text-gray-400 hover:text-gray-600" id="closePreviewBtn">
+                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-hidden p-0 md:p-4 bg-gray-100">
+                <div class="h-full w-full border border-gray-300 rounded-md bg-white overflow-hidden flex flex-col shadow-sm">
+                    <!-- Fake Email Header -->
+                    <div class="bg-white border-b border-gray-200 p-4 flex-shrink-0">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">
+                                    P
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-gray-900">Dijitaldesin <span class="text-gray-500 font-normal">&lt;info@dijitaldesin.com&gt;</span></div>
+                                    <div class="text-sm text-gray-500">Alıcı: Müşteri Adı &lt;musteri@example.com&gt;</div>
+                                </div>
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                @DateTime.Now.ToString("dd MMM yyyy HH:mm")
+                            </div>
+                        </div>
+                        <div class="text-lg font-medium text-gray-900 border-t border-gray-100 pt-3" id="fullScreenPreviewSubject">
+                            <!-- Subject will be shown here -->
+                        </div>
+                    </div>
+                    <!-- Email Body -->
+                    <div class="flex-1 overflow-auto p-4 bg-white" id="fullScreenPreviewBody">
+                        <!-- Content will be shown here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end p-4 border-t border-gray-200 flex-shrink-0">
+                <button type="button" id="closePreviewModalBtn"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary">
+                    <svg class="w-4 h-4 inline mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Kapat
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Create Template Modal -->
+<div id="createTemplateModal" class="fixed inset-0 z-50 hidden overflow-hidden">
+    <div class="flex items-center justify-center h-full px-4 py-4 text-center sm:p-6">
+        <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" id="createModalBackdrop"></div>
+
+        <div class="inline-block w-full max-w-[95%] h-[90vh] flex flex-col overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
+            <div class="flex items-center justify-between p-4 pb-4 border-b border-gray-200 flex-shrink-0">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    <svg class="w-5 h-5 inline mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Yeni Mail Şablonu Oluştur
+                </h3>
+                <button type="button" class="text-gray-400 hover:text-gray-600" id="closeCreateModalBtn">
+                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto md:overflow-hidden p-6">
+                <form id="createTemplateForm" class="md:h-full flex flex-col">
+                    <input type="hidden" id="commonModuleId" name="moduleId" />
+                    <div class="flex-shrink-0 grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
+                        <div>
+                            <label for="createTemplateName" class="block text-sm font-medium text-gray-700 mb-2">
+                                Şablon Adı *
+                            </label>
+                            <input type="text" id="createTemplateName" name="name"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                   placeholder="Şablon adını girin" required>
+                        </div>
+
+                        <div>
+                            <label for="createTemplateCategory" class="block text-sm font-medium text-gray-700 mb-2">
+                                Kategori *
+                            </label>
+                            <select id="createTemplateCategory" name="category"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                                <option value="">Kategori seçin</option>
+                                <option value="Müşteri">Müşteri</option>
+                                <option value="Sepet">Sepet</option>
+                                <option value="Sipariş">Sipariş</option>
+                                <option value="Genel">Genel</option>
+                            </select>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label for="createTemplateDescription" class="block text-sm font-medium text-gray-700 mb-2">
+                                Açıklama *
+                            </label>
+                            <input type="text" id="createTemplateDescription" name="description"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                   placeholder="Şablon açıklamasını girin" required>
+                        </div>
+
+                        <div class="md:col-span-2">
+                             <!-- Variables Helper -->
+                             <div class="mb-2">
+                                 <label class="block text-sm font-medium text-gray-700 mb-1">Değişkenler</label>
+                                 <div id="createVariablesList" class="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-md border border-gray-200 min-h-[40px]">
+                                     <span class="text-xs text-gray-400">Modül seçildiğinde değişkenler burada görünecektir.</span>
+                                 </div>
+                             </div>
+                        </div>
+                    </div>
+
+                    <div class="flex-shrink-0 mb-4">
+                        <label for="createTemplateSubject" class="block text-sm font-medium text-gray-700 mb-2">
+                            Email Konusu *
+                        </label>
+                        <input type="text" id="createTemplateSubject" name="subject"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                               placeholder="Email konusunu girin" required>
+                        <p class="text-xs text-gray-500 mt-1">
+                            Değişkenler için {{değişkenAdı}} formatını kullanın
+                        </p>
+                    </div>
+
+                    <div class="flex-1 flex gap-6 md:overflow-hidden min-h-[400px] md:min-h-0">
+                        <!-- Editor & Preview -->
+                        <div class="flex-1 flex gap-4 md:overflow-hidden">
+                            <div class="flex-1 flex flex-col md:overflow-hidden">
+                                <div class="flex-1 flex flex-col border border-gray-300 rounded-md overflow-hidden">
+                                    <div class="flex justify-between items-center p-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+                                        <label for="createTemplateContent" class="block text-sm font-medium text-gray-700 mb-0">
+                                            Email İçeriği *
+                                        </label>
+                                        <button type="button" id="createMobileFullScreenPreviewBtn" class="md:hidden text-primary hover:text-primary-dark text-sm font-medium flex items-center">
+                                            <svg class="w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                            Önizle
+                                        </button>
+                                    </div>
+                                    <textarea id="createTemplateContent" name="content" required
+                                              class="flex-1 w-full px-3 py-2 border-0 focus:ring-0 font-mono text-sm resize-none"
+                                              placeholder="Email içeriğini girin (HTML desteklenir)"></textarea>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    HTML formatında içerik girebilirsiniz. Değişkenler için {{değişkenAdı}} formatını kullanın.
+                                </p>
+                            </div>
+                            <div class="hidden md:flex flex-col items-center">
+                                <div id="createTemplatePreview" class="flex-1 border border-gray-300 rounded-md bg-gray-100 overflow-hidden flex flex-col resize-x w-[500px] min-w-[320px] max-w-full">
+                                    <div class="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+                                        <label class="block text-sm font-medium text-gray-700">
+                                            Canlı Önizleme
+                                        </label>
+                                        <button type="button" id="createFullScreenPreviewBtn" class="text-gray-500 hover:text-primary" title="Tam Ekran">
+                                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <!-- Fake Email Header -->
+                                    <div class="bg-white border-b border-gray-200 p-4 flex-shrink-0">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">
+                                                    P
+                                                </div>
+                                                <div>
+                                                    <div class="font-semibold text-gray-900">Dijitaldesin <span class="text-gray-500 font-normal">&lt;info@dijitaldesin.com&gt;</span></div>
+                                                    <div class="text-sm text-gray-500">Alıcı: Müşteri Adı &lt;musteri@example.com&gt;</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-sm text-gray-500">
+                                                @DateTime.Now.ToString("dd MMM yyyy HH:mm")
+                                            </div>
+                                        </div>
+                                        <div class="text-lg font-medium text-gray-900 border-t border-gray-100 pt-3" id="createPreviewSubject">
+                                            <!-- Subject will be shown here -->
+                                        </div>
+                                    </div>
+                                    <!-- Email Body -->
+                                    <div class="flex-1 overflow-auto p-4 bg-white" id="createPreviewBody">
+                                        <!-- Content will be shown here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-6 border-t border-gray-200 mt-6 space-x-3 flex-shrink-0">
+                        <button type="button" id="cancelCreateBtn"
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary">
+                            <svg class="w-4 h-4 inline mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            İptal
+                        </button>
+                        <button type="submit" id="saveCreateBtn"
+                                class="px-4 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary">
+                            <svg class="w-4 h-4 inline mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Şablonu Oluştur
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Ready Templates Modal -->
+<div id="readyTemplatesModal" class="fixed inset-0 z-50 hidden overflow-hidden">
+    <div class="flex items-center justify-center h-full px-4 py-4 text-center sm:p-6">
+        <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" id="readyModalBackdrop"></div>
+
+        <div class="inline-block w-full max-w-5xl flex flex-col overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg" style="max-height: 90vh;">
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0 bg-gray-50">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        <svg class="w-5 h-5 inline mr-2 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        Hazır Şablonlar
+                    </h3>
+                    <p class="text-xs text-gray-500 mt-1">Sektörel standartlara uygun hazır Email şablonları</p>
+                </div>
+                <button type="button" class="text-gray-400 hover:text-gray-600 focus:outline-none" id="closeReadyModalBtn">
+                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 bg-gray-50/50">
+                @if (!Model.SystemTemplates.Any())
+                {
+                    <div class="text-center py-10">
+                        <p class="text-gray-500">Hazır şablon bulunamadı.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        @foreach (var group in Model.SystemTemplates)
+                        {
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                <div class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <h3 class="text-lg font-semibold">@group.Key</h3>
+                                        </div>
+                                        <span class="bg-white bg-opacity-20 text-white text-sm font-medium px-2 py-1 rounded-full">
+                                            @group.Value.Count
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="divide-y divide-gray-200">
+                                    @foreach (var template in group.Value.OrderBy(t => t.SortOrder))
+                                    {
+                                        <div class="p-4 hover:bg-gray-50 transition-colors duration-200 group">
+                                            <div class="flex items-start justify-between mb-3">
+                                                <div class="flex-1">
+                                                    <h4 class="text-sm font-semibold text-gray-900 mb-1">@template.Name</h4>
+                                                    <p class="text-sm text-gray-600 mb-2">@template.Description</p>
+                                                    
+                                                     @if (template.ModuleId.HasValue)
+                                                    {
+                                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                            Modül Gerekli
+                                                        </span>
+                                                    }
+                                                </div>
+                                            </div>
+                                            <button type="button" class="w-full mt-2 flex items-center justify-center px-4 py-2 border border-green-600 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-green-50 focus:outline-none transition-colors use-template-btn"
+                                                    data-template-id="@template.Id" onclick="closeReadyModal()">
+                                                <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                                                </svg>
+                                                Bu Şablonu Kullan
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="p-4 border-t border-gray-200 bg-white flex justify-between items-center flex-shrink-0">
+                <span class="text-xs text-gray-500">
+                    <i class="fas fa-info-circle mr-1"></i>Eklediğiniz şablonları sonradan düzenleyebilirsiniz.
+                </span>
+                <button type="button" id="closeReadyModalBtnBottom"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary">
+                    Kapat
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Module Type Selection Modal -->
+<div id="moduleSelectionModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="moduleSelectionLabel" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen p-4 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+        <div class="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-5xl w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="moduleSelectionLabel">
+                                Şablon Türü Seçimi
+                            </h3>
+                            <button type="button" class="text-gray-400 hover:text-gray-500 focus:outline-none" id="closeModuleSelectionBtn">
+                                <span class="sr-only">Kapat</span>
+                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="mt-4">
+                            <!-- Helper Text -->
+                            <p class="text-sm text-gray-500 mb-4">
+                                Lütfen oluşturmak istediğiniz şablon için bir modül (veri kaynağı) seçin.
+                            </p>
+                            
+                            <!-- The Partial with Options -->
+                            <partial name="_TemplateModuleSelector" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" id="confirmModuleSelectionBtn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    Devam Et
+                </button>
+                <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" id="cancelModuleSelectionBtn">
+                    İptal
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @Html.AntiForgeryToken()
+    <script src="~/js/template-module-selector.js" asp-append-version="true"></script>
+    <script src="~/js/email-templates.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,849 @@
+@using PushDashboard.ViewModels
+@model OrderStatusNotificationIndexViewModel
+@{
+    ViewData["Title"] = "Bildirim Yönetimi";
+    
+    // Status Icon Helper
+    string GetStatusIcon(string status) {
+        return status switch {
+            "1" => "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Z M12 6v6l4 2", // Clock (Beklemede)
+            "2" => "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Z M9 12l2 2 4-4", // Check Circle (Onaylandı)
+            "3" => "M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z M12 22V12 M3.29 7 12 12l8.71-5 M7.5 4.27l9 5.15", // Box (Hazırlanıyor)
+            "4" => "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z", // Truck placeholder -> Info (Kargoya Verildi - generic icon used here, replaced with specific below)
+            "5" => "M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8 M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", // Home (Teslim Edildi)
+            "6" => "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Z M15 9l-6 6 M9 9l6 6", // X Circle (İptal)
+            "7" => "M9 14 4 9l5-5 M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11", // Refresh (İade)
+            _ => "M4 6h16M4 12h16M4 18h16" // Default List
+        };
+    }
+
+    // Specific Truck Icon for status 4
+    string truckIcon = "M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z";    
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+    .range-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 6px;
+        background: #e2e8f0;
+        border-radius: 9999px;
+        outline: none;
+    }
+    .range-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--theme-600);
+        cursor: pointer;
+        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 2px solid white;
+    }
+    .range-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.08);
+    }
+    .range-slider::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--theme-600);
+        cursor: pointer;
+        border: 2px solid white;
+        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .range-slider::-moz-range-thumb:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.08);
+    }
+</style>
+
+<main class="min-h-screen bg-gray-50/50 pb-20">
+    <!-- Sticky Header -->
+    <div class="sticky top-2 lg:top-4 z-20 px-2 lg:px-6 mb-4 lg:mb-6">
+        <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0 bg-white border border-gray-200 rounded-xl px-4 py-3 lg:px-6 lg:py-4">
+            <div class="flex items-center gap-3 lg:gap-4 w-full md:w-auto">
+                <div class="min-w-0">
+                    <h2 class="text-lg lg:text-xl font-semibold text-gray-900 truncate">Otomasyon Kuralları</h2>
+                    <div class="flex items-center gap-2 text-xs lg:text-sm text-gray-500 truncate">
+                        <span class="truncate">Sipariş durumlarına göre tetiklenecek senaryoları yönetin</span>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:flex md:items-center gap-2 lg:gap-3 w-full md:w-auto mt-2 md:mt-0 justify-end">
+                <div class="flex items-center justify-center md:justify-start px-3 py-1 bg-primary-50 text-primary rounded-full text-xs font-medium border border-primary-100 flex-shrink-0 w-full md:w-auto">
+                    <span class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary mr-2"></span>
+                    <span class="hidden md:inline">Otomatik Kayıt Devrede</span>
+                    <span class="inline md:hidden">Oto-Kayıt</span>
+                </div>
+                <!-- Save Bar Desktop -->
+                <div id="save-bar" class="hidden items-center gap-2 md:contents w-full md:w-auto col-span-2">
+                     <div class="flex items-center hidden lg:flex">
+                         <div class="w-1.5 h-1.5 bg-amber-400 rounded-full mr-2"></div>
+                         <span class="text-xs text-amber-600 font-medium whitespace-nowrap">Değişiklikler yapıldı</span>
+                     </div>
+                     <button onclick="resetChanges()" class="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors whitespace-nowrap w-full md:w-auto">Vazgeç</button>
+                     <button onclick="saveAllChanges()" id="save-btn" class="px-3 md:px-4 py-2 text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors text-xs font-medium flex items-center justify-center md:justify-start gap-1.5 whitespace-nowrap w-full md:w-auto">
+                         <i class="fas fa-save"></i> Kaydet
+                     </button>
+                </div>
+                <a href="/Integration" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                     <i class="fas fa-sliders-h text-gray-400"></i>
+                     <span class="hidden md:inline">Kanal Ayarları</span>
+                     <span class="inline md:hidden">Kanallar</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-[1600px] mx-auto px-2 lg:px-6 py-4">
+        <div class="flex flex-col md:flex-row gap-6 relative">
+        
+        <!-- Sidebar Navigation -->
+        <div class="w-full md:w-72 flex-none z-10 shrink-0 md:sticky md:top-32 bg-white md:bg-transparent border-b md:border-b-0 border-gray-100 py-4 md:py-0 overflow-x-auto md:overflow-visible custom-scrollbar">
+            <h3 class="px-2 text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 hidden md:block">Süreç Adımları</h3>
+            <div class="flex flex-row md:flex-col space-x-3 md:space-x-0 md:space-y-1 min-w-max md:min-w-0 p-1">
+                @{
+                    var statusOrder = new[] { "1", "2", "3", "4", "5", "6", "7" };
+                    var orderedNotifications = Model.Notifications
+                        .OrderBy(n => Array.IndexOf(statusOrder, n.OrderStatus) >= 0 ? Array.IndexOf(statusOrder, n.OrderStatus) : 99)
+                        .ToList();
+                }
+
+                @foreach (var notification in orderedNotifications)
+                {
+                    <button onclick="selectStatus('@notification.OrderStatus')"
+                            id="tab-btn-@notification.OrderStatus"
+                            class="w-auto md:w-full group relative flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 status-tab-btn hover:bg-gray-50 hover:text-gray-900 text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary/30 whitespace-nowrap md:whitespace-normal border border-transparent">
+                        
+                        <div class="flex-shrink-0 mr-3 w-8 h-8 rounded-lg bg-gray-100 text-gray-500 group-hover:bg-primary-50 group-hover:text-primary flex items-center justify-center transition-colors status-icon-bg">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                @if(notification.OrderStatus == "4") {
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2 M15 18H9 M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14 M9 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z M19 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"></path>
+                                } else {
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="@GetStatusIcon(notification.OrderStatus)"></path>
+                                }
+                            </svg>
+                        </div>
+
+                        <div class="flex-1 text-left">
+                            <span class="block text-gray-900 font-medium">@notification.OrderStatusDisplayName</span>
+                            <span id="mini-status-@notification.OrderStatus" class="text-xs font-normal @(notification.IsActive ? "text-emerald-600" : "text-gray-400")">
+                                @(notification.IsActive ? "Aktif" : "Pasif")
+                            </span>
+                        </div>
+
+                        <!-- Active Indicator Dot -->
+                         <div class="absolute right-3 w-1.5 h-1.5 rounded-full transition-colors @(notification.IsActive ? "bg-emerald-400" : "bg-gray-200")" id="indicator-dot-@notification.OrderStatus"></div>
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 min-w-0 pb-10">
+             @foreach (var notification in orderedNotifications)
+             {
+                 <div id="content-@notification.OrderStatus" class="status-content hidden animate-fade-in-up" data-status="@notification.OrderStatus">
+                     
+                     <!-- Hero Card -->
+                     <div class="bg-white rounded-xl border border-gray-200 p-8 mb-6 relative overflow-hidden group">
+                         <div class="absolute top-0 right-0 p-8 opacity-20 transform translate-x-8 -translate-y-8 pointer-events-none group-hover:scale-110 transition-transform duration-700">
+                             <svg class="w-32 h-32 text-primary-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="@GetStatusIcon(notification.OrderStatus)"></path>
+                             </svg>
+                         </div>
+
+                         <div class="flex flex-col md:flex-row justify-between relative z-10">
+                             <div class="mb-4 md:mb-0 flex-1">
+                                 <div class="flex flex-wrap items-center gap-2 mb-2">
+                                     <h2 class="text-xl md:text-3xl font-bold text-gray-900 tracking-tight">@notification.OrderStatusDisplayName</h2>
+                                     <span class="px-2.5 py-0.5 rounded-md bg-gray-100 text-gray-500 text-xs font-mono">#@notification.OrderStatus</span>
+                                 </div>
+                                 <p class="text-gray-500 text-sm mb-4">Bu durumdaki siparişler için kurallarınızı belirleyin.</p>
+
+                                 <!-- Compact Stats & History -->
+                                 <div class="flex items-center gap-2">
+                                     <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-50 rounded-lg border border-primary-100 custom-stat-badge">
+                                         <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Gönderilen</span>
+                                         <span class="text-sm font-bold text-gray-900 leading-none">@notification.TotalNotificationsSent</span>
+                                     </div>
+
+                                     <button onclick="showHistory('@notification.OrderStatus', '@notification.OrderStatusDisplayName')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:text-primary hover:border-primary-100 transition-colors whitespace-nowrap">
+                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8 M3 3v5h5 M12 7v5l4 2"></path></svg>
+                                         Geçmiş
+                                     </button>
+                                 </div>
+                             </div>
+                             
+                             <!-- Master Toggle -->
+                             <div class="flex-none self-start mt-4 md:mt-0 w-full md:w-auto">
+                                <div class="flex items-center justify-between md:justify-start space-x-3 bg-gray-50/80 p-1.5 rounded-full border border-gray-200">
+                                 <button type="button" 
+                                         onclick="setMasterStatus('@notification.OrderStatus', false)"
+                                         id="btn-off-@notification.OrderStatus"
+                                         class="flex-1 md:flex-none px-4 py-1.5 rounded-full text-sm font-medium transition-colors @(!notification.IsActive ? "bg-white text-gray-800 ring-1 ring-gray-200" : "text-gray-500 hover:text-gray-700")">
+                                     Pasif
+                                 </button>
+                                 <button type="button" 
+                                         onclick="setMasterStatus('@notification.OrderStatus', true)"
+                                         id="btn-on-@notification.OrderStatus"
+                                         class="flex-1 md:flex-none px-4 py-1.5 rounded-full text-sm font-medium transition-colors @(notification.IsActive ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" : "text-gray-500 hover:text-gray-700")">
+                                     Aktif
+                                 </button>
+                                 <!-- Hidden Checkbox for form logic -->
+                                 <input type="checkbox" id="toggle-@notification.OrderStatus" class="hidden status-master-toggle" 
+                                        data-status="@notification.OrderStatus" @(notification.IsActive ? "checked" : "")>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+
+                     <!-- Settings Area -->
+                     <div id="settings-area-@notification.OrderStatus" class="space-y-6 transition-all duration-500 @(notification.IsActive ? "" : "opacity-60 grayscale-[0.8] pointer-events-none")">
+                         
+                         <!-- Channels Grid -->
+                         <div class="grid grid-cols-1 gap-6">
+                             
+                             <!-- Email Card -->
+                             <div class="bg-white rounded-xl border border-gray-200 transition-shadow duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)] overflow-hidden">
+                                 <div class="p-6">
+                                     <div class="flex items-start justify-between">
+                                         <div class="flex items-center space-x-4">
+                                            <div class="w-12 h-12 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center border border-violet-100">
+                                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M22 7l-8.991 5.727a2 2 0 0 1-2.009 0L2 7"></path></svg>
+                                            </div>
+                                            <div>
+                                                <h4 class="text-lg font-semibold text-gray-900">E-posta</h4>
+                                                <p class="text-sm text-gray-500">Müşteriye HTML formatında e-posta gönderir.</p>
+                                            </div>
+                                         </div>
+                                         
+                                         <!-- Toggle -->
+                                         <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="email-enable-@notification.OrderStatus" 
+                                                   class="sr-only peer channel-checkbox"
+                                                   data-status="@notification.OrderStatus"
+                                                   data-channel="email"
+                                                   @(notification.EmailNotificationEnabled ? "checked" : "")>
+                                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                        </label>
+                                     </div>
+
+                                     <!-- Collapsible Content -->
+                                     <div id="email-content-@notification.OrderStatus" class="mt-6 pl-16 grid transition-all duration-300 grid-rows-[0fr] @(notification.EmailNotificationEnabled ? "grid-rows-[1fr]" : "")">
+                                         <div class="overflow-hidden">
+                                             <label class="block text-sm font-medium text-gray-700 mb-2">Kullanılacak Şablon</label>
+                                             <div class="relative max-w-md">
+                                                 <select id="email-template-@notification.OrderStatus" class="block w-full pl-4 pr-10 py-2.5 text-gray-700 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-colors appearance-none setting-input">
+                                                     <option value="">Şablon Seçiniz...</option>
+                                                     @foreach(var t in Model.EmailTemplates) {
+                                                         <!option value="@t.Id" @(notification.EmailTemplateId == t.Id ? "selected" : "")>@t.Name</!option>
+                                                     }
+                                                 </select>
+                                                 <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                                                 </div>
+                                             </div>
+                                             @if(!Model.ActiveChannels.HasEmail){
+                                                 <div class="mt-3 flex items-center text-xs text-amber-700 bg-amber-50 border border-amber-100 px-3 py-2 rounded-lg">
+                                                     <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                                                     SMTP Ayarları yapılmamış.
+                                                 </div>
+                                             }
+                                         </div>
+                                     </div>
+                                 </div>
+                             </div>
+
+                            <!-- SMS Card -->
+                             <div class="bg-white rounded-xl border border-gray-200 transition-shadow duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)] overflow-hidden">
+                                 <div class="p-6">
+                                     <div class="flex items-start justify-between">
+                                         <div class="flex items-center space-x-4">
+                                            <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center border border-sky-100">
+                                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z M12 18h.01"></path></svg>
+                                            </div>
+                                            <div>
+                                                <h4 class="text-lg font-semibold text-gray-900">SMS</h4>
+                                                <p class="text-sm text-gray-500">Kısa mesaj ile bilgilendirme sağlar.</p>
+                                            </div>
+                                         </div>
+                                         
+                                         <!-- Toggle -->
+                                         <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="sms-enable-@notification.OrderStatus" 
+                                                   class="sr-only peer channel-checkbox"
+                                                   data-status="@notification.OrderStatus"
+                                                   data-channel="sms"
+                                                   @(notification.SmsNotificationEnabled ? "checked" : "")>
+                                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                        </label>
+                                     </div>
+
+                                     <!-- Collapsible Content -->
+                                     <div id="sms-content-@notification.OrderStatus" class="mt-6 pl-16 grid transition-all duration-300 grid-rows-[0fr] @(notification.SmsNotificationEnabled ? "grid-rows-[1fr]" : "")">
+                                         <div class="overflow-hidden">
+                                             <label class="block text-sm font-medium text-gray-700 mb-2">Kullanılacak Şablon</label>
+                                             <div class="relative max-w-md">
+                                                 <select id="sms-template-@notification.OrderStatus" class="block w-full pl-4 pr-10 py-2.5 text-gray-700 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-colors appearance-none setting-input">
+                                                     <option value="">Şablon Seçiniz...</option>
+                                                     @foreach(var t in Model.SmsTemplates) {
+                                                         <!option value="@t.Id" @(notification.SmsTemplateId == t.Id ? "selected" : "")>@t.Name</!option>
+                                                     }
+                                                 </select>
+                                                  <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                                                 </div>
+                                             </div>
+                                              @if(!Model.ActiveChannels.HasSms){
+                                                 <div class="mt-3 flex items-center text-xs text-amber-700 bg-amber-50 border border-amber-100 px-3 py-2 rounded-lg">
+                                                     <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                                                     SMS bakiyesi veya ayar eksik.
+                                                 </div>
+                                             }
+                                         </div>
+                                     </div>
+                                 </div>
+                             </div>
+
+                             <!-- WhatsApp Card -->
+                             <div class="bg-white rounded-xl border border-gray-200 transition-shadow duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)] overflow-hidden">
+                                 <div class="p-6">
+                                     <div class="flex items-start justify-between">
+                                         <div class="flex items-center space-x-4">
+                                            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+                                                 <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.008-.57-.008-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                                            </div>
+                                            <div>
+                                                <h4 class="text-lg font-semibold text-gray-900">WhatsApp</h4>
+                                                <p class="text-sm text-gray-500">Resmi WhatsApp Business API üzerinden gönderim.</p>
+                                            </div>
+                                         </div>
+                                         
+                                         <!-- Toggle -->
+                                         <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="whatsapp-enable-@notification.OrderStatus" 
+                                                   class="sr-only peer channel-checkbox"
+                                                   data-status="@notification.OrderStatus"
+                                                   data-channel="whatsapp"
+                                                   @(notification.WhatsAppNotificationEnabled ? "checked" : "")>
+                                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                        </label>
+                                     </div>
+
+                                     <!-- Collapsible Content -->
+                                     <div id="whatsapp-content-@notification.OrderStatus" class="mt-6 pl-16 grid transition-all duration-300 grid-rows-[0fr] @(notification.WhatsAppNotificationEnabled ? "grid-rows-[1fr]" : "")">
+                                         <div class="overflow-hidden">
+                                             <label class="block text-sm font-medium text-gray-700 mb-2">Kullanılacak Şablon</label>
+                                             <div class="relative max-w-md">
+                                                 <select id="whatsapp-template-@notification.OrderStatus" class="block w-full pl-4 pr-10 py-2.5 text-gray-700 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-colors appearance-none setting-input">
+                                                     <option value="">Şablon Seçiniz...</option>
+                                                     @foreach(var t in Model.WhatsAppTemplates) {
+                                                         <!option value="@t.WhatsappId" @(notification.WhatsAppTemplateId == t.WhatsappId ? "selected" : "")>@t.Name</!option>
+                                                     }
+                                                 </select>
+                                                  <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                                                 </div>
+                                             </div>
+                                              @if(!Model.ActiveChannels.HasWhatsApp){
+                                                 <div class="mt-3 flex items-center text-xs text-amber-700 bg-amber-50 border border-amber-100 px-3 py-2 rounded-lg">
+                                                     <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                                                     Entegrasyon tamamlanmamış.
+                                                 </div>
+                                             }
+                                         </div>
+                                     </div>
+                                 </div>
+                             </div>
+
+                             <!-- Timing Card -->
+                             <div class="bg-primary-50 rounded-xl border border-primary-100 p-6 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-8">
+                                 <div class="flex-none">
+                                     <div class="w-12 h-12 rounded-xl bg-white border border-primary-100 text-primary flex items-center justify-center">
+                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 2h4 M12 14l3-3 M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"></path></svg>
+                                     </div>
+                                 </div>
+                                 <div class="flex-1 w-full">
+                                     <h4 class="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">Gönderim Zamanlaması</h4>
+                                     <div class="relative pt-1">
+                                         <div class="flex justify-between mb-2">
+                                            <span class="text-xs font-medium inline-block text-primary px-2 py-0.5 rounded-md bg-white border border-primary-100" id="delay-label-@notification.OrderStatus">
+                                                @(notification.DelayMinutes == 0 ? "Anında Gönderim" : $"{notification.DelayMinutes} Dakika Sonra")
+                                            </span>
+                                             <div class="text-right">
+                                                <input type="number" 
+                                                       id="delay-input-@notification.OrderStatus"
+                                                       min="0" max="10000" 
+                                                       value="@notification.DelayMinutes" 
+                                                       class="w-20 text-right p-1 text-sm bg-transparent border-b border-gray-300 focus:border-primary focus:ring-0 setting-input"
+                                                       oninput="updateDelaySlider('@notification.OrderStatus', this.value)">
+                                                <span class="text-xs text-gray-500 ml-1">dk</span>
+                                             </div>
+                                         </div>
+                                         <div class="relative h-8 mb-2 flex items-center">
+                                            <input type="range" 
+                                                    id="delay-slider-@notification.OrderStatus"
+                                                    min="0" max="240" step="5"
+                                                    value="@(notification.DelayMinutes > 240 ? 240 : notification.DelayMinutes)" 
+                                                    class="range-slider setting-input bg-gray-200"
+                                                    oninput="updateDelayInput('@notification.OrderStatus', this.value)">
+                                         </div>
+                                          <div class="flex justify-between text-xs text-gray-400 font-medium">
+                                             <span>Hemen</span>
+                                             <span>1 Saat</span>
+                                             <span>2 Saat</span>
+                                             <span>4 Saat+</span>
+                                         </div>
+                                     </div>
+                                 </div>
+                             </div>
+
+                         </div>
+                     </div>
+                 </div>
+             }
+        </div>
+    </div>
+    </div>
+</main>
+
+@section Scripts {
+    <script>
+        let historyDialog;
+        let activeStatus = '@(orderedNotifications.FirstOrDefault()?.OrderStatus ?? "")';
+        let dirtyStatuses = new Set();
+        
+        document.addEventListener('DOMContentLoaded', () => {
+             if(activeStatus) selectStatus(activeStatus);
+             
+             // Initialize history dialog
+             historyDialog = new PushDialog({
+                 title: 'Bildirim Geçmişi',
+                 size: '4xl',
+                 scrollBehavior: 'inside',
+                 onClose: () => {} // Cleanup if needed
+             });
+
+             // Attach listeners
+             document.querySelectorAll('.setting-input, .channel-checkbox, .status-master-toggle').forEach(el => {
+                 el.addEventListener('change', (e) => {
+                     const statusContent = e.target.closest('.status-content');
+                     if(statusContent) {
+                         const status = statusContent.getAttribute('data-status');
+                         markDirty(status);
+                         updateStatusPreview(status);
+                     }
+                 });
+             });
+             
+             // Checkbox toggle animations
+             document.querySelectorAll('.channel-checkbox').forEach(cb => {
+                 cb.addEventListener('change', (e) => {
+                     const status = e.target.getAttribute('data-status');
+                     const channel = e.target.getAttribute('data-channel');
+                     const contentDiv = document.getElementById(`${channel}-content-${status}`);
+                     if(e.target.checked) {
+                         contentDiv.classList.remove('grid-rows-[0fr]');
+                         contentDiv.classList.add('grid-rows-[1fr]');
+                     } else {
+                         contentDiv.classList.remove('grid-rows-[1fr]');
+                         contentDiv.classList.add('grid-rows-[0fr]');
+                     }
+                 });
+             });
+        });
+
+        function selectStatus(status) {
+            // Hide all
+            document.querySelectorAll('.status-content').forEach(el => el.classList.add('hidden'));
+            
+            // Sidebar styles
+            document.querySelectorAll('.status-tab-btn').forEach(el => {
+                el.classList.remove('bg-primary-50', 'text-primary', 'border-primary-100');
+                el.classList.add('text-gray-600', 'border-transparent');
+                
+                // Reset icon bg
+                const iconBg = el.querySelector('.status-icon-bg');
+                iconBg.classList.remove('bg-white', 'text-primary');
+                iconBg.classList.add('bg-gray-100', 'text-gray-500');
+            });
+            
+            // Show content
+            const content = document.getElementById(`content-${status}`);
+            if(content) content.classList.remove('hidden');
+            
+            // Highlight Tab
+            const tab = document.getElementById(`tab-btn-${status}`);
+            if(tab) {
+                tab.classList.remove('text-gray-600', 'border-transparent');
+                tab.classList.add('bg-primary-50', 'text-primary', 'border-primary-100');
+                
+                const iconBg = tab.querySelector('.status-icon-bg');
+                iconBg.classList.remove('bg-gray-100', 'text-gray-500');
+                iconBg.classList.add('bg-white', 'text-primary');
+            }
+            
+            activeStatus = status;
+        }
+
+        function setMasterStatus(status, isActive) {
+            const checkbox = document.getElementById(`toggle-${status}`);
+            const btnOn = document.getElementById(`btn-on-${status}`);
+            const btnOff = document.getElementById(`btn-off-${status}`);
+            const area = document.getElementById(`settings-area-${status}`);
+            
+            checkbox.checked = isActive;
+            
+            if(isActive) {
+                btnOn.className = "px-4 py-1.5 rounded-full text-sm font-medium transition-colors bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100";
+                btnOff.className = "px-4 py-1.5 rounded-full text-sm font-medium transition-colors text-gray-500 hover:text-gray-700";
+                area.classList.remove('opacity-60', 'grayscale-[0.8]', 'pointer-events-none');
+            } else {
+                btnOn.className = "px-4 py-1.5 rounded-full text-sm font-medium transition-colors text-gray-500 hover:text-gray-700";
+                btnOff.className = "px-4 py-1.5 rounded-full text-sm font-medium transition-colors bg-white text-gray-800 ring-1 ring-gray-200";
+                area.classList.add('opacity-60', 'grayscale-[0.8]', 'pointer-events-none');
+            }
+            
+            markDirty(status);
+            updateStatusPreview(status);
+        }
+
+        function updateDelayInput(status, val) {
+            document.getElementById(`delay-input-${status}`).value = val;
+            updateDelayLabel(status, val);
+            markDirty(status);
+        }
+        
+        function updateDelaySlider(status, val) {
+            // Cap slider visual at 240 but keep input value
+            const sliderVal = val > 240 ? 240 : val;
+            document.getElementById(`delay-slider-${status}`).value = sliderVal;
+            updateDelayLabel(status, val);
+            markDirty(status);
+        }
+
+        function updateDelayLabel(status, val) {
+            const label = document.getElementById(`delay-label-${status}`);
+            if(val == 0) label.innerText = "Anında Gönderim";
+            else label.innerText = `${val} Dakika Sonra`;
+        }
+        
+        function markDirty(status) {
+            dirtyStatuses.add(status);
+            document.getElementById('save-bar').classList.remove('hidden');
+            document.getElementById('save-bar').classList.add('flex');
+        }
+        
+        function updateStatusPreview(status) {
+            const isActive = document.getElementById(`toggle-${status}`).checked;
+            const miniStatus = document.getElementById(`mini-status-${status}`);
+            const dot = document.getElementById(`indicator-dot-${status}`);
+            
+            if(isActive) {
+                miniStatus.innerText = "Aktif";
+                miniStatus.className = "text-xs font-normal text-emerald-600";
+                dot.className = "absolute right-3 w-1.5 h-1.5 rounded-full transition-colors bg-emerald-400";
+            } else {
+                miniStatus.innerText = "Pasif";
+                miniStatus.className = "text-xs font-normal text-gray-400";
+                dot.className = "absolute right-3 w-1.5 h-1.5 rounded-full transition-colors bg-gray-200";
+            }
+        }
+        
+        function resetChanges() {
+             showConfirmationDialog('Değişiklikleri Geri Al', 'Tüm değişiklikleri geri almak istediğinize emin misiniz?', 'Evet', 'İptal', () => {
+                 window.location.reload();
+             });
+        }
+
+        async function saveAllChanges() {
+            if(dirtyStatuses.size === 0) return;
+            
+            const btn = document.getElementById('save-btn');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '...';
+             
+            try {
+                const promises = Array.from(dirtyStatuses).map(status => {
+                     const data = {
+                         orderStatus: status,
+                         isActive: document.getElementById(`toggle-${status}`).checked,
+                         emailNotificationEnabled: document.getElementById(`email-enable-${status}`).checked,
+                         emailTemplateId: document.getElementById(`email-template-${status}`).value ? parseInt(document.getElementById(`email-template-${status}`).value) : null,
+                         smsNotificationEnabled: document.getElementById(`sms-enable-${status}`).checked,
+                         smsTemplateId: document.getElementById(`sms-template-${status}`).value ? parseInt(document.getElementById(`sms-template-${status}`).value) : null,
+                         whatsAppNotificationEnabled: document.getElementById(`whatsapp-enable-${status}`).checked,
+                         whatsAppTemplateId: document.getElementById(`whatsapp-template-${status}`).value || null,
+                         delayMinutes: parseInt(document.getElementById(`delay-input-${status}`).value) || 0
+                     };
+                     
+                     return fetch('/OrderStatus/SaveNotificationSettings', {
+                         method: 'POST',
+                         headers: {
+                             'Content-Type': 'application/json',
+                             'RequestVerificationToken': document.getElementsByName('__RequestVerificationToken')[0].value
+                         },
+                         body: JSON.stringify(data)
+                     });
+                });
+                
+                await Promise.all(promises);
+                
+                dirtyStatuses.clear();
+                // Hide save bar
+                document.getElementById('save-bar').classList.remove('flex');
+                document.getElementById('save-bar').classList.add('hidden');
+                
+                Toast.success("Ayarlar başarıyla kaydedildi");
+                
+            } catch (error) {
+                console.error("Save error", error);
+                Toast.error("Kaydetme hatası oluştu.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        }
+
+        // History Logic - Helpers
+        let currentHistoryStatus = null;
+        let currentHistoryPage = 1;
+        const historyPageSize = 20;
+        let historyIsLoading = false;
+        let historyHasMore = true;
+
+        function showHistory(status, statusName) {
+            currentHistoryStatus = status;
+            currentHistoryPage = 1;
+            historyHasMore = true;
+            historyIsLoading = false;
+            
+            historyDialog.setTitle(`${statusName} - Bildirim Geçmişi`);
+            
+            // Set initial skeleton structure with scrollable area + load more
+            historyDialog.setContent(`
+                <div class="flex flex-col h-full bg-white relative">
+                    <div class="flex-1 overflow-visible flex flex-col">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50 flex-none sticky top-0 z-10">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/4">Sipariş</th>
+                                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/4">Müşteri Detayı</th>
+                                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/4">İşlem Tarihi</th>
+                                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/4">Bildirim Kanalları</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-rows" class="divide-y divide-gray-100 bg-white">
+                                    <!-- Rows will be injected here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Empty State Container -->
+                        <div id="history-empty" class="hidden flex flex-col items-center justify-center py-16 px-4 text-center">
+                             <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 text-gray-400">
+                               <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900">Kayıt Bulunamadı</h3>
+                            <p class="mt-1 text-sm text-gray-500">Bu durum için henüz bir bildirim geçmişi bulunmamaktadır.</p>
+                        </div>
+
+                        <!-- Initial Loading Spinner -->
+                        <div id="history-initial-loader" class="flex flex-col items-center justify-center py-20 transition-opacity">
+                             <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-3"></div>
+                             <div class="text-sm font-medium text-gray-500">Veriler Yükleniyor...</div>
+                        </div>
+
+                        <!-- Load More Button Area -->
+                        <div id="history-load-more-container" class="hidden py-6 text-center border-t border-gray-100 bg-gray-50/50">
+                            <button onclick="loadNextHistoryPage()" id="btn-load-more" class="inline-flex items-center px-6 py-2 border border-gray-200 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-primary transition-colors">
+                                Daha Fazla Yükle
+                            </button>
+                            <div id="loader-append" class="hidden">
+                                <div class="inline-flex items-center px-4 py-2 font-semibold text-sm text-gray-500">
+                                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    Yükleniyor...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+            
+            historyDialog.open();
+            
+            // Initial Fetch
+            fetchHistoryPage(status, 1);
+        }
+
+        async function loadNextHistoryPage() {
+            if(historyIsLoading || !historyHasMore) return;
+            currentHistoryPage++;
+            await fetchHistoryPage(currentHistoryStatus, currentHistoryPage);
+        }
+
+        async function fetchHistoryPage(status, page) {
+            historyIsLoading = true;
+            
+            // UI State updates
+            const initialLoader = document.getElementById('history-initial-loader');
+            const loadMoreBtn = document.getElementById('btn-load-more');
+            const appendLoader = document.getElementById('loader-append');
+            const loadMoreContainer = document.getElementById('history-load-more-container');
+            
+            if(page > 1) {
+                if(loadMoreBtn) loadMoreBtn.classList.add('hidden');
+                if(appendLoader) appendLoader.classList.remove('hidden');
+            }
+
+            try {
+                // Fetch larger page size if needed, or stick to chunks
+                const response = await fetch(`/OrderStatus/GetOrderStatusLogs?orderStatus=${status}&page=${page}&pageSize=${historyPageSize}`);
+                if (!response.ok) throw new Error('Network response');
+                
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    // Hide initial loader
+                    if(initialLoader) initialLoader.classList.add('hidden');
+
+                    const tbody = document.getElementById('history-rows');
+                    
+                    if(result.data.length === 0 && page === 1) {
+                        const emptyDiv = document.getElementById('history-empty');
+                        if(emptyDiv) emptyDiv.classList.remove('hidden');
+                        if(tbody) tbody.innerHTML = '';
+                        historyHasMore = false;
+                    } else if (result.data.length > 0) {
+                        const newRows = result.data.map(log => createHistoryRow(log)).join('');
+                        if(tbody) tbody.insertAdjacentHTML('beforeend', newRows);
+                        
+                        // Check if we should show load more
+                        if(result.data.length < historyPageSize) {
+                            historyHasMore = false;
+                        }
+                    } else {
+                        historyHasMore = false; 
+                    }
+                    
+                    // Final UI Update for Load More visibility
+                    if(loadMoreContainer) {
+                        if(historyHasMore) {
+                            loadMoreContainer.classList.remove('hidden');
+                            loadMoreBtn.classList.remove('hidden');
+                            appendLoader.classList.add('hidden');
+                        } else {
+                            // If we have data but no more pages, maybe show a "End of list" text or just hide button
+                            if(page > 1 || (tbody && tbody.children.length > 0)) {
+                                loadMoreContainer.classList.add('hidden'); // Just hide
+                            } else {
+                                loadMoreContainer.classList.add('hidden');
+                            }
+                        }
+                    }
+
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (e) {
+                console.error(e);
+                if(page === 1) {
+                    if(initialLoader) initialLoader.innerHTML = '<span class="text-red-500">Hata oluştu.</span>';
+                }
+            } finally {
+                historyIsLoading = false;
+            }
+        }
+
+        function createHistoryRow(log) {
+            let channelsHtml = '';
+            try {
+                let channels = [];
+                if(log.notificationChannels && log.notificationChannels.startsWith('[')) {
+                     channels = JSON.parse(log.notificationChannels);
+                } else if (log.notificationChannels) {
+                     channels = [log.notificationChannels];
+                }
+                
+                channelsHtml = channels.map(c => {
+                    const lowerC = c.toLowerCase().replace(/"/g, '');
+                    let iconSvg = '';
+                    let colorClass = 'text-gray-400 bg-gray-50'; 
+
+                    // Large Icons mapping
+                    if(lowerC.includes('mail')) { 
+                        colorClass = 'text-violet-600 bg-violet-50 border-violet-100';
+                        iconSvg = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>`;
+                    }
+                    else if(lowerC.includes('sms')) { 
+                        colorClass = 'text-sky-600 bg-sky-50 border-sky-100';
+                        iconSvg = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>`;
+                    }
+                    else if(lowerC.includes('what')) { 
+                        colorClass = 'text-emerald-600 bg-emerald-50 border-emerald-100';
+                        iconSvg = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118 .571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>`;
+                    }
+
+                    return `
+                        <div class="flex items-center justify-center w-9 h-9 rounded-lg ${colorClass} border transition-colors" title="${c}">
+                            ${iconSvg}
+                        </div>`;
+                }).join('');
+            } catch(e) { 
+                channelsHtml = `<span class="text-xs text-gray-500">${log.notificationChannels || '-'}</span>`; 
+            }
+
+            return `
+            <tr class="hover:bg-gray-50 group transition-colors border-b border-gray-100 last:border-0 text-left animate-fade-in-up">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-primary-50 text-primary rounded-lg mr-3 transition-colors">
+                           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        </div>
+                        <div>
+                            <div class="text-sm font-semibold text-gray-900">#${log.orderNumber}</div>
+                            <div class="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mt-0.5">Sipariş No</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="flex flex-col">
+                        <div class="text-sm font-medium text-gray-900">${log.customerName || '<span class="hidden"></span>'}</div>
+                        <div class="text-xs text-gray-500 mt-0.5 font-mono bg-gray-50 inline-block px-1.5 py-0.5 rounded border border-gray-100 w-fit">${log.customerEmail || '-'}</div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex flex-col">
+                        <div class="text-sm font-medium text-gray-900">${new Date(log.statusChangedAt).toLocaleDateString('tr-TR')}</div>
+                        <div class="text-xs text-gray-500 mt-0.5">${new Date(log.statusChangedAt).toLocaleTimeString('tr-TR')}</div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    ${log.notificationSent 
+                        ? `<div class="flex flex-wrap gap-2 items-center">${channelsHtml}</div>` 
+                        : `<span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                             <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                             Gönderilmedi
+                           </span>`
+                    }
+                </td>
+            </tr>
+            `;
+        }
+
+        function closeHistory() {
+            // Deprecated, handled by PushDialog
+        }
+    </script>
+}

@@ -1,0 +1,1358 @@
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    requestAnimationFrame(() => {
+        initializeDashboard();
+
+        if (typeof hideLoadingSkeleton === 'function') {
+            hideLoadingSkeleton();
+        }
+
+        // Add entrance animations
+        addEntranceAnimations();
+
+        // Initialize enhanced stats
+        if (typeof initializeEnhancedStats === 'function') {
+            initializeEnhancedStats();
+        }
+
+        // Initialize charts
+        if (typeof initializeEnhancedCharts === 'function') {
+            initializeEnhancedCharts();
+        }
+    });
+
+    // Set up real-time updates
+    setupRealTimeUpdates();
+
+    // Set up refresh button
+    setupRefreshButton();
+
+    // Set up tooltip
+    setupTooltip();
+
+    // Set up quick actions
+    setupQuickActions();
+
+    // Set up micro-interactions
+    setupMicroInteractions();
+
+    // Set up parallax effects
+    setupParallaxEffects();
+});
+
+function initializeDashboard() {
+    console.log('Enhanced Dashboard initialized');
+    updateLastUpdateTime();
+
+    // Add floating animations to key elements
+    addFloatingAnimations();
+
+    // Initialize tooltips
+    initializeTooltips();
+}
+
+function addEntranceAnimations() {
+    // Animate stats cards
+    const statsCards = document.querySelectorAll('#statsContainer > div');
+    statsCards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px) scale(0.95)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0) scale(1)';
+        }, index * 50);
+    });
+
+    // Animate other sections with stagger effect
+    const sections = document.querySelectorAll('.bg-white, .bg-gradient-to-r, .bg-gradient-to-br');
+    sections.forEach((section, index) => {
+        if (!section.closest('#statsContainer')) {
+            section.style.opacity = '0';
+            section.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                section.style.transition = 'all 0.4s ease-out';
+                section.style.opacity = '1';
+                section.style.transform = 'translateY(0)';
+            }, 100 + index * 50);
+        }
+    });
+}
+
+function setupMicroInteractions() {
+    // Enhanced hover effects for cards (Main content only)
+    const cards = document.querySelectorAll('main .group');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            // Check if element is in sidebar or shouldn't be animated
+            if (this.closest('#desktopSidebar') || this.closest('#mobileSidebar')) return;
+
+            this.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            this.style.transform = 'translateY(-8px) scale(1.02)';
+            this.style.filter = 'brightness(1.05)';
+
+            // Add glow effect
+            this.classList.add('glow');
+        });
+
+        card.addEventListener('mouseleave', function() {
+             // Check if element is in sidebar or shouldn't be animated
+            if (this.closest('#desktopSidebar') || this.closest('#mobileSidebar')) return;
+
+            this.style.transform = 'translateY(0) scale(1)';
+            this.style.filter = 'brightness(1)';
+            this.classList.remove('glow');
+        });
+    });
+
+    // Add click ripple effect to buttons
+    const buttons = document.querySelectorAll('main button, main .cursor-pointer');
+    buttons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            // Check if element is in sidebar
+            if (this.closest('#desktopSidebar') || this.closest('#mobileSidebar')) return;
+
+            createRippleEffect(e, this);
+
+            // Add success feedback
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+        });
+    });
+
+    // Add floating animation to icons
+    const icons = document.querySelectorAll('main svg');
+    icons.forEach(icon => {
+        // Check if element is in sidebar
+        if (icon.closest('#desktopSidebar') || icon.closest('#mobileSidebar')) return;
+
+        icon.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        icon.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.15) rotate(10deg)';
+        });
+        icon.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1) rotate(0deg)';
+        });
+    });
+
+    // Add progress bar animations
+    const progressBars = document.querySelectorAll('[data-width]');
+    progressBars.forEach(bar => {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const width = bar.getAttribute('data-width');
+                    setTimeout(() => {
+                        bar.style.width = width;
+                    }, 500);
+                    observer.unobserve(bar);
+                }
+            });
+        });
+        observer.observe(bar);
+    });
+}
+
+function createRippleEffect(event, element) {
+    const ripple = document.createElement('span');
+    const rect = element.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = event.clientX - rect.left - size / 2;
+    const y = event.clientY - rect.top - size / 2;
+
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = x + 'px';
+    ripple.style.top = y + 'px';
+    ripple.classList.add('ripple');
+
+    element.style.position = 'relative';
+    element.style.overflow = 'hidden';
+    element.appendChild(ripple);
+
+    setTimeout(() => {
+        ripple.remove();
+    }, 600);
+}
+
+function addFloatingAnimations() {
+    // Add floating animation to specific elements
+    const floatingElements = document.querySelectorAll('.animate-pulse, .animate-bounce');
+    floatingElements.forEach((element, index) => {
+        element.style.animationDelay = `${index * 0.5}s`;
+        element.classList.add('floating');
+    });
+}
+
+function initializeTooltips() {
+    // Simple tooltip implementation
+    const tooltipElements = document.querySelectorAll('[title]');
+    tooltipElements.forEach(element => {
+        element.addEventListener('mouseenter', function(e) {
+            showTooltip(e, this.getAttribute('title'));
+        });
+        element.addEventListener('mouseleave', hideTooltip);
+    });
+}
+
+function showTooltip(event, text) {
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tooltip';
+    tooltip.textContent = text;
+    tooltip.style.cssText = `
+        position: absolute;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        z-index: 1000;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        left: ${event.pageX + 10}px;
+        top: ${event.pageY - 30}px;
+    `;
+
+    document.body.appendChild(tooltip);
+    setTimeout(() => tooltip.style.opacity = '1', 10);
+}
+
+function hideTooltip() {
+    const tooltips = document.querySelectorAll('.tooltip');
+    tooltips.forEach(tooltip => {
+        tooltip.style.opacity = '0';
+        setTimeout(() => tooltip.remove(), 300);
+    });
+}
+
+function setupParallaxEffects() {
+    let ticking = false;
+
+    function updateParallax() {
+        const scrolled = window.pageYOffset;
+        const parallaxElements = document.querySelectorAll('.parallax');
+
+        parallaxElements.forEach(element => {
+            const speed = element.dataset.speed || 0.5;
+            const yPos = -(scrolled * speed);
+            element.style.transform = `translateY(${yPos}px)`;
+        });
+
+        ticking = false;
+    }
+
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            requestAnimationFrame(updateParallax);
+            ticking = true;
+        }
+    });
+}
+
+function setupRealTimeUpdates() {
+    // Real-time updates disabled for better performance
+    // Users can manually refresh using the refresh button
+    console.log("Auto-refresh disabled for better performance. Use refresh button for manual updates.");
+
+    // Optional: Add periodic indicator update without data refresh
+    setInterval(function() {
+        updateLastUpdateTime();
+    }, 60000); // Update time display every minute
+}
+
+function setupRefreshButton() {
+    const refreshBtn = document.getElementById("refreshBtn");
+    if (refreshBtn) {
+        refreshBtn.addEventListener("click", function() {
+            // Sayfayı direkt refresh et
+            location.reload();
+        });
+    }
+}
+
+function setupQuickActions() {
+    // Enhanced birthday notifications with better feedback
+    window.sendBirthdayNotifications = async function() {
+        const button = event.target;
+        const originalText = button.innerHTML;
+
+        try {
+            // Show enhanced loading state
+            button.disabled = true;
+            button.classList.add('loading');
+            button.innerHTML = `
+                <div class="flex items-center justify-center">
+                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Gönderiliyor...</span>
+                </div>
+            `;
+
+            const response = await fetch('/Birthday/SendNotifications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showSuccessAnimation(button);
+                showNotification('🎉 Doğum günü bildirimleri başarıyla gönderildi!', 'success');
+                refreshDashboardData();
+            } else {
+                showErrorAnimation(button);
+                showNotification('❌ Hata: ' + result.message, 'error');
+            }
+        } catch (error) {
+            console.error('Error sending birthday notifications:', error);
+            showErrorAnimation(button);
+            showNotification('❌ Bildirimler gönderilirken bir hata oluştu.', 'error');
+        } finally {
+            // Restore button state with animation
+            button.disabled = false;
+            button.classList.remove('loading');
+            button.innerHTML = originalText;
+        }
+    };
+}
+
+async function refreshDashboardData() {
+    try {
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.classList.add('animate-spin');
+        }
+
+        const response = await fetch('/Home/GetRealTimeData');
+        const result = await response.json();
+
+        if (result.success) {
+            updateDashboardElements(result.data);
+            updateLastUpdateTime();
+
+            // Show success feedback
+            showNotification('📊 Dashboard güncellendi', 'success');
+        } else {
+            console.error('Failed to refresh dashboard data:', result.message);
+            showNotification('⚠️ Veri güncellenirken hata oluştu', 'warning');
+        }
+    } catch (error) {
+        console.error('Error refreshing dashboard data:', error);
+        showNotification('❌ Bağlantı hatası', 'error');
+    } finally {
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.classList.remove('animate-spin');
+        }
+    }
+}
+
+// Refresh Dashboard Data without notification (for initial load and sync)
+async function refreshDashboardDataSilent() {
+    try {
+        const response = await fetch('/Home/GetRealTimeData');
+        const result = await response.json();
+
+        if (result.success) {
+            // Sadece son güncelleme zamanını güncelle, dashboard elementlerini güncelleme
+            // (CountUp kütüphanesi ile çakışmayı önlemek için)
+            updateLastUpdateTime();
+        } else {
+            console.error('Failed to refresh dashboard data:', result.message);
+        }
+    } catch (error) {
+        console.error('Error refreshing dashboard data:', error);
+    }
+}
+
+function updateDashboardElements(data) {
+    // Enhanced update with animations
+    const updates = [
+        { id: 'creditBalance', value: data.creditBalance },
+        { id: 'activeModules', value: data.activeModules },
+        { id: 'notificationsToday', value: data.notificationsToday },
+        { id: 'integrationSuccessToday', value: data.integrationSuccessToday },
+        { id: 'integrationFailedToday', value: data.integrationFailedToday }
+    ];
+
+    updates.forEach(update => {
+        const element = document.getElementById(update.id);
+        if (element && update.value !== undefined) {
+            // Sadece text'i güncelle, HTML'i değiştirme (ikon çiftlenmesini önle)
+            const currentValue = element.textContent.trim();
+            const newValue = String(update.value);
+
+            if (currentValue !== newValue) {
+                // Add update animation
+                element.style.transform = 'scale(1.1)';
+                element.style.transition = 'transform 0.3s ease';
+
+                setTimeout(() => {
+                    // Counter class'ı varsa, sadece sayıyı güncelle
+                    if (element.classList.contains('counter')) {
+                        element.textContent = newValue;
+                    } else {
+                        element.textContent = newValue;
+                    }
+                    element.style.transform = 'scale(1)';
+                }, 150);
+            }
+        }
+    });
+}
+
+function updateLastUpdateTime() {
+    const lastUpdate = document.getElementById('lastUpdate');
+    if (lastUpdate) {
+        const now = new Date();
+        lastUpdate.textContent = now.toLocaleTimeString('tr-TR', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        // Add update animation
+        lastUpdate.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+            lastUpdate.style.transform = 'scale(1)';
+        }, 200);
+    }
+}
+
+function showSuccessAnimation(element) {
+    element.style.transform = 'scale(1.05)';
+    element.style.background = 'linear-gradient(45deg, #10b981, #34d399)';
+    element.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.5)';
+
+    setTimeout(() => {
+        element.style.transform = 'scale(1)';
+        element.style.background = '';
+        element.style.boxShadow = '';
+    }, 500);
+}
+
+function showErrorAnimation(element) {
+    element.style.animation = 'shake 0.5s ease-in-out';
+    element.style.background = 'linear-gradient(45deg, #ef4444, #f87171)';
+
+    setTimeout(() => {
+        element.style.animation = '';
+        element.style.background = '';
+    }, 500);
+}
+
+// Add enhanced CSS
+const enhancedStyle = document.createElement('style');
+enhancedStyle.textContent = `
+    .ripple {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.6);
+        transform: scale(0);
+        animation: ripple-animation 0.6s linear;
+        pointer-events: none;
+    }
+
+    @@keyframes ripple-animation {
+        to {
+            transform: scale(4);
+            opacity: 0;
+        }
+    }
+
+    @@keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+
+    .floating {
+        animation: floating 3s ease-in-out infinite;
+    }
+
+    @@keyframes floating {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+
+    .glow {
+        box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+        transition: box-shadow 0.3s ease;
+    }
+
+    .pulse-slow {
+        animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    .loading {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .loading::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        animation: loading-shimmer 1.5s infinite;
+    }
+
+    @@keyframes loading-shimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+`;
+document.head.appendChild(enhancedStyle);
+
+// Sync All Data Function - Müşteriler, Sepetler ve Entegrasyonları Senkronize Et
+async function syncAllData() {
+    console.log('syncAllData function called');
+
+    const syncBtn = document.getElementById('syncAllBtn');
+    const syncBtnText = document.getElementById('syncAllBtnText');
+
+    console.log('syncBtn:', syncBtn);
+    console.log('syncBtnText:', syncBtnText);
+
+    if (!syncBtn || !syncBtnText) {
+        console.error('Button or text element not found!');
+        return;
+    }
+
+    const icon = syncBtn.querySelector('svg');
+    const originalText = syncBtnText.textContent;
+
+    console.log('Starting sync process...');
+
+    try {
+        // Butonu devre dışı bırak
+        syncBtn.disabled = true;
+        syncBtn.classList.add('opacity-75', 'cursor-not-allowed');
+
+        // Animate icon rotation
+        icon.style.transform = 'rotate(360deg)';
+        icon.style.transition = 'transform 0.6s ease';
+        syncBtnText.textContent = 'Senkronize ediliyor...';
+
+        // Adım 1: Müşteriler ve Sepetleri Senkronize Et
+        const response = await fetch('/Home/SyncAll', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+            }
+        });
+
+        const data = await response.json();
+        let overallSuccess = data.success;
+        let messages = [data.message];
+        let integrationsSuccess = false;
+
+        // Adım 2: Entegrasyonları Senkronize Et
+        try {
+            const integrationsResult = await syncAllIntegrations();
+            integrationsSuccess = integrationsResult.success;
+
+            if (integrationsResult.success) {
+                messages.push(integrationsResult.message);
+                if (integrationsResult.errors && integrationsResult.errors.length > 0) {
+                    messages.push('<br><strong>Hatalar:</strong><br>' + integrationsResult.errors.join('<br>'));
+                }
+            } else {
+                messages.push('Entegrasyonlar: ' + integrationsResult.message);
+                if (integrationsResult.errors && integrationsResult.errors.length > 0) {
+                    messages.push('<br><strong>Hatalar:</strong><br>' + integrationsResult.errors.join('<br>'));
+                }
+                overallSuccess = false;
+            }
+        } catch (error) {
+            console.error('Error syncing integrations:', error);
+            messages.push('Entegrasyonlar: Senkronizasyon başarısız - ' + error.message);
+            overallSuccess = false;
+        }
+
+        if (overallSuccess) {
+            // Success feedback
+            syncBtnText.textContent = 'Tamamlandı!';
+            syncBtn.classList.remove('bg-white');
+            syncBtn.classList.add('bg-gray-100');
+
+            // Senkronizasyon bildirimi göster
+            const combinedMessage = messages.join(' <br> ');
+            showNotification('✅ ' + combinedMessage, 'success');
+
+            // Tooltip'i güncelle
+            updateSyncInfoTooltip();
+
+            // Dashboard'u sessizce güncelle (bildirim göstermeden)
+            refreshDashboardDataSilent();
+
+            setTimeout(() => {
+                // Reset button state
+                syncBtn.disabled = false;
+                syncBtn.classList.remove('opacity-75', 'cursor-not-allowed', 'bg-gray-100');
+                syncBtn.classList.add('bg-white');
+                syncBtnText.textContent = originalText;
+                icon.style.transform = 'rotate(0deg)';
+            }, 2000);
+        } else if (integrationsSuccess && !data.success) {
+            // Partial Success feedback (Main sync failed, but integrations succeeded)
+            syncBtnText.textContent = 'Kısmen Tamamlandı';
+            syncBtn.classList.remove('bg-white');
+            syncBtn.classList.add('bg-yellow-50', 'text-yellow-600');
+
+            // Senkronizasyon bildirimi göster (Warning)
+            const combinedMessage = messages.join(' <br> ');
+            showNotification('⚠️ ' + combinedMessage, 'warning');
+
+            // Tooltip'i güncelle
+            updateSyncInfoTooltip();
+
+            // Dashboard'u sessizce güncelle
+            refreshDashboardDataSilent();
+
+            setTimeout(() => {
+                // Reset button state
+                syncBtn.disabled = false;
+                syncBtn.classList.remove('opacity-75', 'cursor-not-allowed', 'bg-yellow-50', 'text-yellow-600');
+                syncBtn.classList.add('bg-white');
+                syncBtnText.textContent = originalText;
+                icon.style.transform = 'rotate(0deg)';
+            }, 3000);
+        } else {
+            // Error feedback
+            syncBtnText.textContent = 'Hata!';
+            syncBtn.classList.remove('bg-white');
+            syncBtn.classList.add('bg-red-50', 'text-red-600');
+
+            // Hata bildirimi göster
+            const combinedMessage = messages.join(' <br> ');
+            showNotification('❌ Hata: ' + combinedMessage, 'error');
+
+            setTimeout(() => {
+                // Reset button state
+                syncBtn.disabled = false;
+                syncBtn.classList.remove('opacity-75', 'cursor-not-allowed', 'bg-red-50', 'text-red-600');
+                syncBtn.classList.add('bg-white');
+                syncBtnText.textContent = originalText;
+                icon.style.transform = 'rotate(0deg)';
+            }, 2000);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+
+        // Error feedback
+        syncBtnText.textContent = 'Hata!';
+        syncBtn.classList.remove('bg-white');
+        syncBtn.classList.add('bg-red-50', 'text-red-600');
+
+        setTimeout(() => {
+            // Reset button state
+            syncBtn.disabled = false;
+            syncBtn.classList.remove('opacity-75', 'cursor-not-allowed', 'bg-red-50', 'text-red-600');
+            syncBtn.classList.add('bg-white');
+            syncBtnText.textContent = originalText;
+            icon.style.transform = 'rotate(0deg)';
+        }, 2000);
+    }
+}
+
+// Tüm entegrasyonları senkronize et (Entegrasyonlar sayfasından taşındı)
+async function syncAllIntegrations() {
+    console.log('syncAllIntegrations called from dashboard');
+
+    try {
+        const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]');
+        if (!csrfToken) {
+            return { success: false, message: 'Güvenlik token\'ı bulunamadı' };
+        }
+
+        // Entegrasyonlar sayfasından tüm senkronize et butonlarını bul
+        // Dashboard'da bu butonlar olmayabileceği için, backend'den entegrasyonları al
+        const response = await fetch('/Integration/GetAllIntegrations', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': csrfToken.value
+            }
+        });
+
+        if (!response.ok) {
+            return { success: false, message: 'Entegrasyonlar alınamadı' };
+        }
+
+        const integrationsData = await response.json();
+        if (!integrationsData.success || !integrationsData.integrations) {
+            return { success: false, message: 'Entegrasyon listesi boş' };
+        }
+
+        let successCount = 0;
+        let failureCount = 0;
+        const results = [];
+        const errors = [];
+
+        // Tüm entegrasyonları sırayla senkronize et
+        for (const integration of integrationsData.integrations) {
+            try {
+                const syncResponse = await fetch('/Integration/SyncIntegration', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': csrfToken.value
+                    },
+                    body: JSON.stringify({
+                        integrationId: integration.id
+                    })
+                });
+
+                const syncData = await syncResponse.json();
+                if (syncData.success) {
+                    successCount++;
+                    results.push(`✓ ${integration.name}`);
+                } else {
+                    failureCount++;
+                    results.push(`✗ ${integration.name}`);
+                    errors.push(`${integration.name}: ${syncData.message || 'Bilinmeyen hata'}`);
+                }
+            } catch (error) {
+                failureCount++;
+                results.push(`✗ ${integration.name}`);
+                errors.push(`${integration.name}: ${error.message || 'Bağlantı hatası'}`);
+            }
+
+            // Kısa bir gecikme ekle
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+
+        const message = `Entegrasyonlar: ${successCount} başarılı, ${failureCount} başarısız`;
+        return {
+            success: successCount > 0,
+            message: message,
+            details: results,
+            errors: errors
+        };
+    } catch (error) {
+        console.error('Error in syncAllIntegrations:', error);
+        return { success: false, message: 'Entegrasyon senkronizasyonu başarısız: ' + error.message };
+    }
+}
+
+// Son güncelleme zamanını güncelle (Yenile veya Dashboard click'i)
+function updateLastUpdateTime() {
+    const now = new Date();
+    const formattedTime = now.toLocaleString('tr-TR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+
+    // Son güncelleme zamanını güncelle (kısa gösterim + full timestamp title)
+    const lastUpdateTimeElement = document.getElementById('lastUpdateTime');
+    if (lastUpdateTimeElement) {
+        const timeEl = lastUpdateTimeElement.querySelector('time');
+        if (timeEl) {
+            timeEl.textContent = 'Az önce';
+            // store full timestamp in data-full to use with custom tooltip
+            timeEl.setAttribute('data-full', formattedTime);
+            // remove native title to prevent default browser tooltip
+            timeEl.removeAttribute('title');
+        } else {
+            // Fallback: eğer <time> yoksa doğrudan elemente yaz
+            lastUpdateTimeElement.textContent = 'Az önce';
+            lastUpdateTimeElement.setAttribute('data-full', formattedTime);
+            lastUpdateTimeElement.removeAttribute('title');
+        }
+    }
+}
+
+// Son senkronizasyon zamanını güncelle (Senkronize Et click'i)
+function updateLastSyncTime() {
+    const now = new Date();
+    const formattedTime = now.toLocaleString('tr-TR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+
+    // Son senkronizasyon zamanını güncelle (kısa gösterim + full timestamp title)
+    const lastSyncTimeElement = document.getElementById('lastSyncTime');
+    if (lastSyncTimeElement) {
+        const timeEl = lastSyncTimeElement.querySelector('time');
+        if (timeEl) {
+            timeEl.textContent = 'Az önce';
+            timeEl.setAttribute('data-full', formattedTime);
+            timeEl.removeAttribute('title');
+        } else {
+            lastSyncTimeElement.textContent = 'Az önce';
+            lastSyncTimeElement.setAttribute('data-full', formattedTime);
+            lastSyncTimeElement.removeAttribute('title');
+        }
+    }
+}
+
+// Senkronizasyon bilgisi tooltip'ini güncelle
+function updateSyncInfoTooltip() {
+    updateLastSyncTime();
+    updateLastUpdateTime();
+}
+
+// Setup Tooltip
+function setupTooltip() {
+    console.log('Setting up tooltip...');
+
+    const syncInfoBtn = document.getElementById("syncInfoBtn");
+    const syncInfoTooltip = document.getElementById("syncInfoTooltip");
+
+    console.log('syncInfoBtn:', syncInfoBtn);
+    console.log('syncInfoTooltip:', syncInfoTooltip);
+
+    if (syncInfoBtn && syncInfoTooltip) {
+        console.log('Tooltip elements found, attaching event listeners');
+
+        syncInfoBtn.addEventListener("click", function(e) {
+            e.stopPropagation();
+            console.log('Tooltip button clicked');
+
+            const isHidden = syncInfoTooltip.style.display === 'none' || !syncInfoTooltip.style.display;
+            console.log('isHidden:', isHidden);
+
+            if (isHidden) {
+                // Tooltip'i aç
+                console.log('Opening tooltip');
+                syncInfoTooltip.style.display = 'block';
+                setTimeout(() => {
+                    syncInfoTooltip.classList.remove('opacity-0');
+                    syncInfoTooltip.classList.remove('invisible');
+                    syncInfoTooltip.classList.remove('pointer-events-none');
+                }, 10);
+            } else {
+                // Tooltip'i kapat
+                syncInfoTooltip.classList.add('opacity-0');
+                syncInfoTooltip.classList.add('invisible');
+                syncInfoTooltip.classList.add('pointer-events-none');
+                setTimeout(() => {
+                    syncInfoTooltip.style.display = 'none';
+                }, 200);
+            }
+        });
+
+        // Close tooltip when clicking outside
+        document.addEventListener("click", function(e) {
+            if (!syncInfoBtn.contains(e.target) && !syncInfoTooltip.contains(e.target)) {
+                const isVisible = syncInfoTooltip.style.display !== 'none' && syncInfoTooltip.style.display !== '';
+                if (isVisible) {
+                    syncInfoTooltip.classList.add('opacity-0');
+                    syncInfoTooltip.classList.add('invisible');
+                    syncInfoTooltip.classList.add('pointer-events-none');
+                    setTimeout(() => {
+                        syncInfoTooltip.style.display = 'none';
+                    }, 200);
+                }
+            }
+        });
+
+        // Custom styled hover tooltip for full timestamps (replaces native title)
+        (function(){
+            let customTooltip = document.getElementById('customTimeTooltip');
+            if (!customTooltip) {
+                customTooltip = document.createElement('div');
+                customTooltip.id = 'customTimeTooltip';
+                customTooltip.style.position = 'fixed';
+                customTooltip.style.zIndex = '11000';
+                customTooltip.style.display = 'none';
+                customTooltip.style.pointerEvents = 'none';
+                customTooltip.style.padding = '6px 8px';
+                customTooltip.style.borderRadius = '6px';
+                customTooltip.style.background = 'rgba(55,65,81,0.95)'; // gray-700
+                customTooltip.style.color = '#fff';
+                customTooltip.style.fontSize = '12px';
+                customTooltip.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                customTooltip.style.transition = 'opacity 0.12s ease, transform 0.12s ease';
+                customTooltip.style.opacity = '0';
+                document.body.appendChild(customTooltip);
+            }
+
+            function showCustomTooltip(target) {
+                if (!target) return;
+                const full = target.getAttribute('data-full') || '';
+                if (!full) return;
+                customTooltip.textContent = full;
+                customTooltip.style.display = 'block';
+
+                // position centered above the element, or below if not enough space
+                const rect = target.getBoundingClientRect();
+                const tooltipWidth = customTooltip.offsetWidth || 160;
+                let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+                left = Math.max(8, Math.min(left, window.innerWidth - tooltipWidth - 8));
+
+                let top = rect.top - customTooltip.offsetHeight - 8;
+                if (top < 8) {
+                    top = rect.bottom + 8;
+                }
+
+                customTooltip.style.left = left + 'px';
+                customTooltip.style.top = top + 'px';
+                requestAnimationFrame(() => {
+                    customTooltip.style.opacity = '1';
+                    customTooltip.style.transform = 'translateY(0)';
+                });
+            }
+
+            function hideCustomTooltip() {
+                if (!customTooltip) return;
+                customTooltip.style.opacity = '0';
+                customTooltip.style.transform = 'translateY(-4px)';
+                setTimeout(() => {
+                    customTooltip.style.display = 'none';
+                }, 120);
+            }
+
+            // Delegated handlers on tooltip container
+            syncInfoTooltip.addEventListener('mouseover', function(e){
+                const t = e.target.closest && e.target.closest('time[data-full]');
+                if (t) {
+                    // prevent native title
+                    t.removeAttribute('title');
+                    showCustomTooltip(t);
+                }
+            });
+
+            syncInfoTooltip.addEventListener('mousemove', function(e){
+                const t = e.target.closest && e.target.closest('time[data-full]');
+                if (t && customTooltip.style.display !== 'none') {
+                    const rect = t.getBoundingClientRect();
+                    // keep tooltip centered horizontally over element
+                    const tooltipWidth = customTooltip.offsetWidth;
+                    let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+                    left = Math.max(8, Math.min(left, window.innerWidth - tooltipWidth - 8));
+                    let top = rect.top - customTooltip.offsetHeight - 8;
+                    if (top < 8) top = rect.bottom + 8;
+                    customTooltip.style.left = left + 'px';
+                    customTooltip.style.top = top + 'px';
+                }
+            });
+
+            syncInfoTooltip.addEventListener('mouseout', function(e){
+                const t = e.target.closest && e.target.closest('time[data-full]');
+                if (t) {
+                    hideCustomTooltip();
+                }
+            });
+
+            // Hide tooltip when the info popover is closed
+            const observer = new MutationObserver(function(){
+                if (syncInfoTooltip.style.display === 'none') hideCustomTooltip();
+            });
+            observer.observe(syncInfoTooltip, { attributes: true, attributeFilter: ['style'] });
+        })();
+
+    } else {
+        console.error('Tooltip elements not found!');
+    }
+}
+
+// Export functions for global access
+window.refreshDashboardData = refreshDashboardData;
+window.syncAllData = syncAllData;
+window.updateSyncInfoTooltip = updateSyncInfoTooltip;
+window.setupTooltip = setupTooltip;
+window.toggleChartType = function(chartType) { console.log('Toggle chart type:', chartType); };
+window.refreshMetrics = function() { console.log('Refresh metrics'); };
+window.addEntranceAnimations = addEntranceAnimations;
+window.setupMicroInteractions = setupMicroInteractions;
+window.showSuccessAnimation = showSuccessAnimation;
+window.showErrorAnimation = showErrorAnimation;
+window.showNotification = showNotification;
+
+function initializeEnhancedCharts() {
+    if (!window.dashboardChartData || typeof Chart === 'undefined') {
+        console.warn('Chart data or Chart.js not available');
+        return;
+    }
+
+    // Helper to safely destroy existing chart
+    const destroyChartIfExists = (canvasId) => {
+        const canvas = document.getElementById(canvasId);
+        if (canvas) {
+            const existingChart = Chart.getChart(canvas);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+        }
+        return canvas;
+    };
+
+    try {
+        const usageCanvas = destroyChartIfExists('usageLineChart');
+        if (usageCanvas) {
+            const usageCtx = usageCanvas.getContext('2d');
+            const usageData = window.dashboardChartData.usage;
+            const grad = usageCtx.createLinearGradient(0, 0, 0, 260);
+            grad.addColorStop(0, 'rgba(99, 102, 241, 0.22)');
+            grad.addColorStop(1, 'rgba(99, 102, 241, 0)');
+
+            new Chart(usageCtx, {
+                type: 'line',
+                data: {
+                    labels: usageData.map(d => d.label),
+                    datasets: [{
+                        label: 'Kullanım',
+                        data: usageData.map(d => d.value),
+                        borderColor: 'rgb(99, 102, 241)',
+                        backgroundColor: grad,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: 'rgb(99, 102, 241)',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(30, 41, 59, 0.95)',
+                            titleColor: '#f1f5f9',
+                            bodyColor: '#e2e8f0',
+                            borderColor: 'rgba(148, 163, 184, 0.3)',
+                            borderWidth: 1,
+                            cornerRadius: 10,
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(ctx) { return 'Kullanım: ' + ctx.raw; }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0, 0, 0, 0.04)' },
+                            ticks: { color: '#64748b', font: { size: 11 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: 11 } }
+                        }
+                    },
+                    interaction: { intersect: false, mode: 'index' },
+                    animation: { duration: 1200, easing: 'easeOutQuart' }
+                }
+            });
+        }
+    } catch (e) {
+        console.error('Error initializing usage chart:', e);
+    }
+
+    try {
+        const costCanvas = destroyChartIfExists('costAreaChart');
+        if (costCanvas) {
+            const costCtx = costCanvas.getContext('2d');
+            const costData = window.dashboardChartData.cost;
+            const costGrad = costCtx.createLinearGradient(0, 0, 0, 220);
+            costGrad.addColorStop(0, 'rgba(20, 184, 166, 0.22)');
+            costGrad.addColorStop(1, 'rgba(20, 184, 166, 0)');
+
+            new Chart(costCtx, {
+                type: 'line',
+                data: {
+                    labels: costData.map(d => d.label),
+                    datasets: [{
+                        label: 'Maliyet',
+                        data: costData.map(d => d.value),
+                        borderColor: 'rgb(20, 184, 166)',
+                        backgroundColor: costGrad,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: 'rgb(20, 184, 166)',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(30, 41, 59, 0.95)',
+                            titleColor: '#f1f5f9',
+                            bodyColor: '#e2e8f0',
+                            borderColor: 'rgba(148, 163, 184, 0.3)',
+                            borderWidth: 1,
+                            cornerRadius: 10,
+                            padding: 12,
+                            callbacks: {
+                                label: function(ctx) { return 'Maliyet: ₺' + Number(ctx.raw).toLocaleString('tr-TR', { minimumFractionDigits: 2 }); }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0, 0, 0, 0.04)' },
+                            ticks: { color: '#64748b', font: { size: 11 }, callback: function(v) { return '₺' + Number(v).toLocaleString('tr-TR', { minimumFractionDigits: 0 }); } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: 11 } }
+                        }
+                    },
+                    animation: { duration: 1200, easing: 'easeOutQuart' }
+                }
+            });
+        }
+    } catch (e) {
+        console.error('Error initializing cost chart:', e);
+    }
+
+    try {
+        const channelCanvas = destroyChartIfExists('channelDistributionChart');
+        if (channelCanvas) {
+            const channelCtx = channelCanvas.getContext('2d');
+            let channelData = window.dashboardChartData.channel;
+            let isDataEmpty = false;
+
+            if (!channelData || channelData.length === 0) {
+                isDataEmpty = true;
+                channelData = [{ label: 'Veri yok', percentage: 100, color: '#e5e7eb' }];
+            }
+
+            new Chart(channelCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: channelData.map(d => d.label),
+                    datasets: [{
+                        data: channelData.map(d => d.percentage),
+                        backgroundColor: channelData.map(d => d.color),
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '68%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: !isDataEmpty,
+                            backgroundColor: 'rgba(30, 41, 59, 0.95)',
+                            titleColor: '#f1f5f9',
+                            bodyColor: '#e2e8f0',
+                            borderColor: 'rgba(148, 163, 184, 0.3)',
+                            borderWidth: 1,
+                            cornerRadius: 10,
+                            padding: 12,
+                            displayColors: true,
+                            callbacks: {
+                                label: function(ctx) {
+                                    var total = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                                    var pct = total > 0 ? ((ctx.raw / total) * 100).toFixed(1) : 0;
+                                    return ' ' + ctx.label + ': %' + pct;
+                                }
+                            }
+                        }
+                    },
+                    animation: { duration: 1200, easing: 'easeOutQuart' }
+                }
+            });
+        }
+    } catch (e) {
+        console.error('Error initializing channel chart:', e);
+    }
+}
+
+window.initializeEnhancedCharts = initializeEnhancedCharts;
+
+window.currentChartPeriod = '7d';
+
+window.toggleChartPeriod = async function(chartType, period) {
+    console.log('Toggling chart period:', chartType, period);
+
+    if (window.currentChartPeriod === period) {
+        return;
+    }
+
+    const days = period === '30d' ? 30 : 7;
+
+    try {
+        updatePeriodButtons(period);
+
+        showChartLoading(true);
+
+        const response = await fetch(`/Home/GetUsageTrendData?days=${days}`);
+        const result = await response.json();
+
+        if (result.success) {
+            window.dashboardChartData.usage = result.data.usage;
+            window.dashboardChartData.cost = result.data.cost;
+
+            updateUsageChart(result.data);
+            updateCostChart(result.data);
+
+            updateChartStats(result.data, days);
+
+            window.currentChartPeriod = period;
+
+            console.log('Charts updated successfully for', days, 'days');
+        } else {
+            console.error('Failed to fetch chart data:', result.message);
+            showNotification('⚠️ Grafik verileri alınamadı', 'warning');
+        }
+    } catch (error) {
+        console.error('Error fetching chart data:', error);
+        showNotification('❌ Grafik verileri alınırken hata oluştu', 'error');
+    } finally {
+        showChartLoading(false);
+    }
+};
+
+function updatePeriodButtons(activePeriod) {
+    const buttons = document.querySelectorAll('[onclick*="toggleChartPeriod"]');
+    buttons.forEach(btn => {
+        const btnPeriod = btn.getAttribute('onclick').includes("'7d'") ? '7d' : '30d';
+
+        if (btnPeriod === activePeriod) {
+            btn.classList.remove('bg-gray-100', 'text-gray-600', 'text-gray-700', 'hover:bg-gray-200');
+            btn.classList.add('bg-gray-900', 'text-white');
+        } else {
+            btn.classList.remove('bg-gray-900', 'text-white');
+            btn.classList.add('bg-gray-100', 'text-gray-600', 'hover:bg-gray-200');
+        }
+    });
+}
+
+function showChartLoading(isLoading) {
+    const chartContainers = ['usageLineChart', 'costAreaChart'];
+    chartContainers.forEach(id => {
+        const canvas = document.getElementById(id);
+        if (canvas) {
+            const parent = canvas.parentElement;
+            if (isLoading) {
+                parent.style.opacity = '0.5';
+                parent.style.pointerEvents = 'none';
+            } else {
+                parent.style.opacity = '1';
+                parent.style.pointerEvents = 'auto';
+            }
+        }
+    });
+}
+
+function updateUsageChart(data) {
+    const canvas = document.getElementById('usageLineChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const existingChart = Chart.getChart(canvas);
+    if (existingChart) {
+        existingChart.data.labels = data.usage.map(d => d.label);
+        existingChart.data.datasets[0].data = data.usage.map(d => d.value);
+        existingChart.update('active');
+    }
+}
+
+function updateCostChart(data) {
+    const canvas = document.getElementById('costAreaChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const existingChart = Chart.getChart(canvas);
+    if (existingChart) {
+        existingChart.data.labels = data.cost.map(d => d.label);
+        existingChart.data.datasets[0].data = data.cost.map(d => d.value);
+        existingChart.update('active');
+    }
+}
+
+function updateChartStats(data, days) {
+    const usageTotalEl = document.querySelector('.text-xs.text-gray-500 .font-medium.text-gray-700');
+    if (usageTotalEl) {
+        usageTotalEl.textContent = data.totalUsage;
+    }
+
+    const periodDescEl = document.querySelector('.lg\\:col-span-3 .text-sm.text-gray-600.ml-6');
+    if (periodDescEl) {
+        periodDescEl.textContent = `Son ${days} günlük modül kullanım analizi`;
+    }
+
+    const costTotalEl = document.querySelector('.text-lg.font-bold.text-emerald-600');
+    if (costTotalEl) {
+        costTotalEl.textContent = '₺' + data.totalCost.toFixed(2);
+    }
+
+    const statContainers = document.querySelectorAll('.bg-white .grid.grid-cols-1.sm\\:grid-cols-3 .p-3');
+    if (statContainers.length >= 3) {
+        const avgEl = statContainers[0].querySelector('.text-lg.font-semibold');
+        if (avgEl) avgEl.textContent = '₺' + data.averageCost.toFixed(2);
+
+        const maxEl = statContainers[1].querySelector('.text-lg.font-semibold');
+        if (maxEl) maxEl.textContent = '₺' + data.maxCost.toFixed(2);
+
+        const minEl = statContainers[2].querySelector('.text-lg.font-semibold');
+        if (minEl) minEl.textContent = '₺' + data.minCost.toFixed(2);
+    }
+}
+
+window.refreshChart = async function(chartType) {
+    console.log('Refreshing chart:', chartType);
+    const days = window.currentChartPeriod === '30d' ? 30 : 7;
+
+    try {
+        const refreshBtn = event?.target?.closest('button');
+        if (refreshBtn) {
+            const svg = refreshBtn.querySelector('svg');
+            if (svg) {
+                svg.style.transition = 'transform 0.5s ease';
+                svg.style.transform = 'rotate(360deg)';
+                setTimeout(() => {
+                    svg.style.transform = 'rotate(0deg)';
+                }, 500);
+            }
+        }
+
+        const response = await fetch(`/Home/GetUsageTrendData?days=${days}`);
+        const result = await response.json();
+
+        if (result.success) {
+            window.dashboardChartData.usage = result.data.usage;
+            window.dashboardChartData.cost = result.data.cost;
+
+            updateUsageChart(result.data);
+            updateCostChart(result.data);
+            updateChartStats(result.data, days);
+
+            showNotification('📊 Grafikler güncellendi', 'success');
+        } else {
+            showNotification('⚠️ Grafikler güncellenemedi', 'warning');
+        }
+    } catch (error) {
+        console.error('Error refreshing charts:', error);
+        showNotification('❌ Grafik yenilenirken hata oluştu', 'error');
+    }
+};
+</script>

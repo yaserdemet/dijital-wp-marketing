@@ -1,0 +1,199 @@
+<!-- Popup Overlay -->
+<div id="popup-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50 transition-opacity duration-300">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div id="popup-container" class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-95 opacity-0">
+            <!-- Popup Header -->
+            <div id="popup-header" class="p-6 border-b border-gray-200">
+                <div class="flex items-center">
+                    <div id="popup-icon" class="w-12 h-12 rounded-full flex items-center justify-center mr-4">
+                        <!-- Icon will be inserted here -->
+                    </div>
+                    <div>
+                        <h3 id="popup-title" class="text-lg font-semibold text-gray-900"></h3>
+                        <p id="popup-subtitle" class="text-sm text-gray-500"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Popup Body -->
+            <div id="popup-body" class="p-6">
+                <p id="popup-message" class="text-gray-700 mb-6"></p>
+                
+                <!-- Module Details (for purchase confirmation) -->
+                <div id="popup-details" class="hidden bg-gray-50 rounded-lg p-4 mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-gray-600">Modül:</span>
+                        <span id="popup-module-name" class="font-medium"></span>
+                    </div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-gray-600">Fiyat:</span>
+                        <span id="popup-module-price" class="font-bold text-primary"></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Ödeme Yöntemi:</span>
+                        <span class="text-sm">Kredi Bakiyesi</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Popup Footer -->
+            <div id="popup-footer" class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+                <button id="popup-cancel" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                    İptal
+                </button>
+                <button id="popup-confirm" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span id="popup-confirm-text">Onayla</span>
+                    <svg id="popup-loading" class="hidden animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+class PopupManager {
+    constructor() {
+        this.overlay = document.getElementById('popup-overlay');
+        this.container = document.getElementById('popup-container');
+        this.icon = document.getElementById('popup-icon');
+        this.title = document.getElementById('popup-title');
+        this.subtitle = document.getElementById('popup-subtitle');
+        this.message = document.getElementById('popup-message');
+        this.details = document.getElementById('popup-details');
+        this.moduleName = document.getElementById('popup-module-name');
+        this.modulePrice = document.getElementById('popup-module-price');
+        this.cancelBtn = document.getElementById('popup-cancel');
+        this.confirmBtn = document.getElementById('popup-confirm');
+        this.confirmText = document.getElementById('popup-confirm-text');
+        this.loading = document.getElementById('popup-loading');
+        
+        this.setupEventListeners();
+    }
+    
+    setupEventListeners() {
+        this.cancelBtn.addEventListener('click', () => this.hide());
+        this.overlay.addEventListener('click', (e) => {
+            if (e.target === this.overlay) this.hide();
+        });
+        
+        // ESC key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !this.overlay.classList.contains('hidden')) {
+                this.hide();
+            }
+        });
+    }
+    
+    show(options) {
+        const {
+            type = 'info',
+            title = '',
+            subtitle = '',
+            message = '',
+            showDetails = false,
+            moduleName = '',
+            modulePrice = '',
+            confirmText = 'Onayla',
+            cancelText = 'İptal',
+            onConfirm = null,
+            onCancel = null
+        } = options;
+        
+        // Set content
+        this.title.textContent = title;
+        this.subtitle.textContent = subtitle;
+        this.message.textContent = message;
+        this.confirmText.textContent = confirmText;
+        this.cancelBtn.textContent = cancelText;
+        
+        // Set icon based on type
+        this.setIcon(type);
+        
+        // Show/hide details
+        if (showDetails) {
+            this.details.classList.remove('hidden');
+            this.moduleName.textContent = moduleName;
+            this.modulePrice.textContent = modulePrice;
+        } else {
+            this.details.classList.add('hidden');
+        }
+        
+        // Set up confirm handler
+        this.confirmBtn.onclick = async () => {
+            if (onConfirm) {
+                this.setLoading(true);
+                try {
+                    await onConfirm();
+                } finally {
+                    this.setLoading(false);
+                }
+            } else {
+                this.hide();
+            }
+        };
+        
+        // Set up cancel handler
+        this.cancelBtn.onclick = () => {
+            if (onCancel) onCancel();
+            this.hide();
+        };
+        
+        // Show popup with animation
+        this.overlay.classList.remove('hidden');
+        setTimeout(() => {
+            this.container.classList.remove('scale-95', 'opacity-0');
+            this.container.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+    
+    hide() {
+        this.container.classList.remove('scale-100', 'opacity-100');
+        this.container.classList.add('scale-95', 'opacity-0');
+        
+        setTimeout(() => {
+            this.overlay.classList.add('hidden');
+            this.setLoading(false);
+        }, 300);
+    }
+    
+    setIcon(type) {
+        const iconClasses = {
+            info: 'bg-blue-100 text-blue-600',
+            warning: 'bg-yellow-100 text-yellow-600',
+            success: 'bg-green-100 text-green-600',
+            error: 'bg-red-100 text-red-600',
+            purchase: 'bg-primary-light text-primary'
+        };
+        
+        const icons = {
+            info: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+            warning: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>',
+            success: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+            error: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>',
+            purchase: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17M17 13v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path></svg>'
+        };
+        
+        this.icon.className = `w-12 h-12 rounded-full flex items-center justify-center mr-4 ${iconClasses[type] || iconClasses.info}`;
+        this.icon.innerHTML = icons[type] || icons.info;
+    }
+    
+    setLoading(loading) {
+        if (loading) {
+            this.confirmBtn.disabled = true;
+            this.loading.classList.remove('hidden');
+            this.confirmText.textContent = 'İşleniyor...';
+        } else {
+            this.confirmBtn.disabled = false;
+            this.loading.classList.add('hidden');
+        }
+    }
+    
+
+}
+
+// Initialize popup manager
+window.PopupManager = new PopupManager();
+</script>

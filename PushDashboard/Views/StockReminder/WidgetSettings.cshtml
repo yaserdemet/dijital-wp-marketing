@@ -1,0 +1,920 @@
+@{
+    ViewData["Title"] = "Stok Hatırlatma Widget Ayarları";
+    ViewData["PageHeader"] = "Stok Hatırlatma Widget Ayarları";
+}
+
+@section Styles {
+<style>
+    /* Color Input */
+    .sr-color-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    .sr-color-input-wrapper input[type="color"] {
+        -webkit-appearance: none;
+        border: none;
+        width: 40px;
+        height: 40px;
+        cursor: pointer;
+        padding: 0;
+        background: none;
+        flex-shrink: 0;
+    }
+    .sr-color-input-wrapper input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    .sr-color-input-wrapper input[type="color"]::-webkit-color-swatch {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+    }
+    /* Toggle Switch */
+    .sr-toggle {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+    }
+    .sr-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .sr-toggle .sr-slider {
+        width: 36px; height: 20px;
+        background: #d1d5db;
+        border-radius: 999px;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+    .sr-toggle .sr-slider::after {
+        content: '';
+        position: absolute;
+        top: 2px; left: 2px;
+        width: 16px; height: 16px;
+        background: white;
+        border-radius: 50%;
+        border: 1px solid #e5e7eb;
+        transition: all 0.2s ease;
+    }
+    .sr-toggle input:checked + .sr-slider {
+        background: #3b82f6;
+    }
+    .sr-toggle input:checked + .sr-slider::after {
+        transform: translateX(16px);
+        border-color: transparent;
+    }
+    /* Collapsible Section */
+    .sr-section-header {
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.15s ease;
+    }
+    .sr-section-header:hover {
+        background: rgba(59, 130, 246, 0.03);
+    }
+    .sr-section-body {
+        max-height: 2000px;
+        overflow: hidden;
+        transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+        opacity: 1;
+    }
+    .sr-section-body.collapsed {
+        max-height: 0;
+        opacity: 0;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    .sr-section-chevron {
+        transition: transform 0.25s ease;
+    }
+    .sr-section-chevron.collapsed {
+        transform: rotate(-90deg);
+    }
+    /* Phone Mockup */
+    .sr-phone-mockup {
+        position: relative;
+        width: 280px;
+        min-height: 520px;
+        background: #f3f4f6;
+        border-radius: 36px;
+        border: 8px solid #1f2937;
+        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.1);
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    .sr-phone-notch {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 20px;
+        background: #1f2937;
+        border-radius: 0 0 16px 16px;
+        z-index: 10;
+    }
+    /* Preview popup */
+    .sr-preview-popup {
+        font-family: system-ui, -apple-system, sans-serif;
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        padding: 20px 16px 16px;
+        z-index: 5;
+        box-shadow: 0 -8px 25px rgba(0,0,0,0.15);
+    }
+    .sr-variant-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 10px;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: default;
+        background: white;
+        transition: all 0.15s;
+    }
+    .sr-variant-btn.selected {
+        border-color: #111;
+        background: #111;
+        color: white;
+    }
+</style>
+}
+
+@Html.AntiForgeryToken()
+
+<main class="min-h-screen bg-gray-50/50 pb-20">
+    <!-- Sticky Header -->
+    <div class="sticky top-2 lg:top-4 z-20 px-2 lg:px-6 mb-4 lg:mb-6">
+        <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm px-4 py-3 lg:px-6 lg:py-4">
+            <div class="flex items-center gap-3 lg:gap-4 w-full md:w-auto">
+                <a href="@Url.Action("Index", "StockReminder")" class="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-50 shadow-sm transition-all" title="Stok Hatırlatma'ya Dön">
+                    <i class="fas fa-arrow-left text-lg"></i>
+                </a>
+                <div class="p-2.5 bg-gradient-to-br from-red-400 to-rose-600 rounded-xl text-white shadow-sm">
+                    <i class="fas fa-bell text-lg"></i>
+                </div>
+                <div class="min-w-0">
+                    <h2 class="text-lg lg:text-xl font-bold text-gray-900 truncate">Stok Hatırlatma Widget</h2>
+                    <div class="flex items-center gap-2 text-xs lg:text-sm text-gray-500 truncate">
+                        <span class="truncate">Ürün sayfasında görüntülenen stok bildirim formu</span>
+                        <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
+                        <span class="text-rose-600 font-medium flex-shrink-0">Yapılandırma</span>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:flex md:items-center gap-2 lg:gap-3 w-full md:w-auto mt-2 md:mt-0 justify-end">
+                <!-- Status Toggle -->
+                <button type="button" onclick="srToggleStatus()" id="srStatusBtn"
+                        class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium rounded-lg flex items-center justify-center md:justify-start gap-2 border shadow-sm whitespace-nowrap transition-all w-full md:w-auto">
+                    <span id="srStatusIndicator" class="w-2.5 h-2.5 rounded-full"></span>
+                    <span id="srStatusText">Yükleniyor...</span>
+                </button>
+                <!-- Live Preview Button -->
+                <button type="button" onclick="srOpenLivePreview()" id="srLivePreviewBtn"
+                        class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto"
+                        title="Modülü gerçek popup olarak test et">
+                    <i class="fas fa-external-link-alt text-gray-400"></i>
+                    <span class="hidden sm:inline">Canlı Önizleme</span><span class="inline sm:hidden">Önizle</span>
+                </button>
+                <!-- Export Button -->
+                <button type="button" onclick="srExportToR2()" id="srExportBtn"
+                        class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg hover:from-green-700 hover:to-emerald-700 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <i class="fas fa-upload"></i> <span class="hidden sm:inline">Siteye Aktar</span><span class="inline sm:hidden">Aktar</span>
+                </button>
+                <!-- Save Button -->
+                <button type="button" onclick="srSaveSettings()" id="srSaveBtn"
+                        class="px-4 lg:px-6 py-2 text-xs lg:text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm hover:shadow transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <i class="fas fa-save"></i> Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Stats Cards -->
+    <div class="max-w-[1600px] mx-auto px-2 lg:px-6">
+        <div id="srStatsRow" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-5 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-xs font-medium">Toplam Gösterim</p>
+                        <p class="text-2xl font-bold" id="srImpressionCount">-</p>
+                        <p class="text-blue-100 text-xs mt-1">Widget görüntülenme</p>
+                    </div>
+                    <div class="text-blue-200">
+                        <i class="fas fa-eye text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-5 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-xs font-medium">Toplam Kayıt</p>
+                        <p class="text-2xl font-bold" id="srSubmitCount">-</p>
+                        <p class="text-green-100 text-xs mt-1">Stok bildirimi aboneliği</p>
+                    </div>
+                    <div class="text-green-200">
+                        <i class="fas fa-user-check text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-red-500 to-rose-600 rounded-lg p-5 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-red-100 text-xs font-medium">Kapatma</p>
+                        <p class="text-2xl font-bold" id="srDismissCount">-</p>
+                        <p class="text-red-100 text-xs mt-1">Widget kapatılma</p>
+                    </div>
+                    <div class="text-red-200">
+                        <i class="fas fa-times-circle text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-[1600px] mx-auto px-2 lg:px-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 items-start">
+
+        <!-- ─── Left: Settings Form ─── -->
+        <div class="lg:col-span-6 xl:col-span-7 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-4 lg:px-6 py-3 border-b border-gray-100 bg-gray-50/50">
+                <h3 class="font-semibold text-gray-900 text-lg">Genel Ayarlar</h3>
+            </div>
+
+                <div class="p-4 lg:p-6 space-y-6" id="srSettingsForm">
+
+                    <!-- SECTION: İçerik -->
+                    <div class="sr-settings-section">
+                        <div class="sr-section-header flex items-center justify-between gap-3 mb-4 p-2 -mx-2 rounded-xl" onclick="srToggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-blue-50 text-blue-600 rounded-lg"><i class="fas fa-file-alt text-sm"></i></div>
+                                <h4 class="text-sm font-bold text-gray-900">İçerik</h4>
+                            </div>
+                            <i class="fas fa-chevron-down sr-section-chevron text-gray-400 text-xs"></i>
+                        </div>
+                        <div class="sr-section-body space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Başlık</label>
+                                <input type="text" id="srTitle" value="Bedenini Seç, Stokta Olunca Sana Bildirelim!"
+                                       class="block w-full px-3 py-2 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm outline-none transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Açıklama</label>
+                                <textarea id="srDescription" rows="3"
+                                          class="block w-full px-3 py-2 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm resize-none outline-none transition-all">Ürün stoğa girdiğinde size WhatsApp veya SMS ile hemen bilgi vereceğiz. Telefon numaranızın doğru olduğundan emin olun!</textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Kaydet Butonu Yazısı</label>
+                                <input type="text" id="srSubmitButtonText" value="Kaydet"
+                                       class="block w-full px-3 py-2 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm outline-none transition-all">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- SECTION: Varyasyon / Beden -->
+                    <div class="sr-settings-section">
+                        <div class="sr-section-header flex items-center justify-between gap-3 mb-4 p-2 -mx-2 rounded-xl" onclick="srToggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-amber-50 text-amber-600 rounded-lg"><i class="fas fa-tshirt text-sm"></i></div>
+                                <h4 class="text-sm font-bold text-gray-900">Varyasyon / Beden Seçimi</h4>
+                            </div>
+                            <i class="fas fa-chevron-down sr-section-chevron text-gray-400 text-xs"></i>
+                        </div>
+                        <div class="sr-section-body space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Varyasyon Etiketi</label>
+                                <input type="text" id="srVariantLabel" value="Beden Seçin"
+                                       class="block w-full px-3 py-2 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm outline-none transition-all">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- SECTION: Form Alanları -->
+                    <div class="sr-settings-section">
+                        <div class="sr-section-header flex items-center justify-between gap-3 mb-4 p-2 -mx-2 rounded-xl" onclick="srToggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><i class="fas fa-list-alt text-sm"></i></div>
+                                <h4 class="text-sm font-bold text-gray-900">Form Alanları</h4>
+                            </div>
+                            <i class="fas fa-chevron-down sr-section-chevron text-gray-400 text-xs"></i>
+                        </div>
+                        <div class="sr-section-body space-y-4">
+                            <div class="space-y-3">
+                                <div class="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-lg bg-green-100 text-green-600 flex items-center justify-center"><i class="fas fa-phone text-xs"></i></div>
+                                            <div>
+                                                <span class="text-sm font-medium text-gray-700">Telefon Alanı</span>
+                                                <p class="text-xs text-gray-400">Açıksa zorunlu olur</p>
+                                            </div>
+                                        </div>
+                                        <label class="sr-toggle">
+                                            <input type="checkbox" id="srShowPhoneField" checked onchange="srUpdatePreview()">
+                                            <span class="sr-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fas fa-at text-xs"></i></div>
+                                            <div>
+                                                <span class="text-sm font-medium text-gray-700">E-posta Alanı</span>
+                                                <p class="text-xs text-gray-400">Açıksa zorunlu olur</p>
+                                            </div>
+                                        </div>
+                                        <label class="sr-toggle">
+                                            <input type="checkbox" id="srShowEmailField" onchange="srUpdatePreview()">
+                                            <span class="sr-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center"><i class="fas fa-user text-xs"></i></div>
+                                            <div>
+                                                <span class="text-sm font-medium text-gray-700">Ad / Soyad Alanı</span>
+                                                <p class="text-xs text-gray-400">Açıksa zorunlu olur</p>
+                                            </div>
+                                        </div>
+                                        <label class="sr-toggle">
+                                            <input type="checkbox" id="srShowNameFields" onchange="srUpdatePreview()">
+                                            <span class="sr-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Telefon Placeholder</label>
+                                    <input type="text" id="srPhonePlaceholder" value="5XXXXXXXXX"
+                                           class="block w-full px-3 py-2 rounded-xl border border-gray-300 text-sm outline-none transition-all focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">E-posta Placeholder</label>
+                                    <input type="text" id="srEmailPlaceholder" value="E-posta adresiniz"
+                                           class="block w-full px-3 py-2 rounded-xl border border-gray-300 text-sm outline-none transition-all focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- SECTION: Yasal Metinler -->
+                    <div class="sr-settings-section">
+                        <div class="sr-section-header flex items-center justify-between gap-3 mb-4 p-2 -mx-2 rounded-xl" onclick="srToggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><i class="fas fa-file-contract text-sm"></i></div>
+                                <h4 class="text-sm font-bold text-gray-900">Yasal Metinler</h4>
+                            </div>
+                            <i class="fas fa-chevron-down sr-section-chevron text-gray-400 text-xs"></i>
+                        </div>
+                        <div class="sr-section-body space-y-4">
+                            <!-- KVKK URL -->
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Kişisel Verilerin Korunması İzni Metni Linki</label>
+                                <input type="url" id="srKvkkUrl"
+                                       placeholder="Entegrasyon ayarlarından yönetilmektedir"
+                                       class="block w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-100 text-gray-500 text-sm cursor-not-allowed"
+                                       disabled>
+                                <p class="mt-1 text-xs text-blue-600"><i class="fas fa-info-circle mr-1"></i> Bu alan Entegrasyon &gt; Ayarlar sayfasından otomatik olarak çekilmektedir.</p>
+                            </div>
+                            <!-- ETK URL -->
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Ticari Elektronik İleti İzni Metni Linki</label>
+                                <input type="url" id="srEtkUrl"
+                                       placeholder="Entegrasyon ayarlarından yönetilmektedir"
+                                       class="block w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-100 text-gray-500 text-sm cursor-not-allowed"
+                                       disabled>
+                                <p class="mt-1 text-xs text-blue-600"><i class="fas fa-info-circle mr-1"></i> Bu alan Entegrasyon &gt; Ayarlar sayfasından otomatik olarak çekilmektedir.</p>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- SECTION: Tasarım -->
+                    <div class="sr-settings-section">
+                        <div class="sr-section-header flex items-center justify-between gap-3 mb-4 p-2 -mx-2 rounded-xl" onclick="srToggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-rose-50 text-rose-600 rounded-lg"><i class="fas fa-palette text-sm"></i></div>
+                                <h4 class="text-sm font-bold text-gray-900">Tasarım & Renkler</h4>
+                            </div>
+                            <i class="fas fa-chevron-down sr-section-chevron text-gray-400 text-xs"></i>
+                        </div>
+                        <div class="sr-section-body space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <!-- Arka plan -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Arka Plan Rengi</label>
+                                    <div class="sr-color-input-wrapper gap-2 border border-gray-300 rounded-xl px-3 py-1.5">
+                                        <input type="color" id="srBgColor" value="#ffffff" onchange="srUpdatePreview()" oninput="document.getElementById('srBgColorHex').value = this.value; srUpdatePreview();">
+                                        <input type="text" id="srBgColorHex" value="#ffffff" maxlength="7"
+                                               class="flex-1 text-xs border-0 outline-none bg-transparent font-mono"
+                                               oninput="if(this.value.match(/^#[0-9a-fA-F]{6}$/)) { document.getElementById('srBgColor').value = this.value; srUpdatePreview(); }">
+                                    </div>
+                                </div>
+                                <!-- Metin -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Metin Rengi</label>
+                                    <div class="sr-color-input-wrapper gap-2 border border-gray-300 rounded-xl px-3 py-1.5">
+                                        <input type="color" id="srTextColor" value="#333333" onchange="srUpdatePreview()" oninput="document.getElementById('srTextColorHex').value = this.value; srUpdatePreview();">
+                                        <input type="text" id="srTextColorHex" value="#333333" maxlength="7"
+                                               class="flex-1 text-xs border-0 outline-none bg-transparent font-mono"
+                                               oninput="if(this.value.match(/^#[0-9a-fA-F]{6}$/)) { document.getElementById('srTextColor').value = this.value; srUpdatePreview(); }">
+                                    </div>
+                                </div>
+                                <!-- Başlık rengi -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Başlık Rengi</label>
+                                    <div class="sr-color-input-wrapper gap-2 border border-gray-300 rounded-xl px-3 py-1.5">
+                                        <input type="color" id="srTitleColor" value="#e53935" onchange="srUpdatePreview()" oninput="document.getElementById('srTitleColorHex').value = this.value; srUpdatePreview();">
+                                        <input type="text" id="srTitleColorHex" value="#e53935" maxlength="7"
+                                               class="flex-1 text-xs border-0 outline-none bg-transparent font-mono"
+                                               oninput="if(this.value.match(/^#[0-9a-fA-F]{6}$/)) { document.getElementById('srTitleColor').value = this.value; srUpdatePreview(); }">
+                                    </div>
+                                </div>
+                                <!-- Buton rengi -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Buton Rengi</label>
+                                    <div class="sr-color-input-wrapper gap-2 border border-gray-300 rounded-xl px-3 py-1.5">
+                                        <input type="color" id="srButtonColor" value="#e53935" onchange="srUpdatePreview()" oninput="document.getElementById('srButtonColorHex').value = this.value; srUpdatePreview();">
+                                        <input type="text" id="srButtonColorHex" value="#e53935" maxlength="7"
+                                               class="flex-1 text-xs border-0 outline-none bg-transparent font-mono"
+                                               oninput="if(this.value.match(/^#[0-9a-fA-F]{6}$/)) { document.getElementById('srButtonColor').value = this.value; srUpdatePreview(); }">
+                                    </div>
+                                </div>
+                                <!-- Buton yazı rengi -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Buton Yazı Rengi</label>
+                                    <div class="sr-color-input-wrapper gap-2 border border-gray-300 rounded-xl px-3 py-1.5">
+                                        <input type="color" id="srButtonTextColor" value="#ffffff" onchange="srUpdatePreview()" oninput="document.getElementById('srButtonTextColorHex').value = this.value; srUpdatePreview();">
+                                        <input type="text" id="srButtonTextColorHex" value="#ffffff" maxlength="7"
+                                               class="flex-1 text-xs border-0 outline-none bg-transparent font-mono"
+                                               oninput="if(this.value.match(/^#[0-9a-fA-F]{6}$/)) { document.getElementById('srButtonTextColor').value = this.value; srUpdatePreview(); }">
+                                    </div>
+                                </div>
+                                <!-- Seçili varyasyon rengi -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Seçili Varyasyon Rengi</label>
+                                    <div class="sr-color-input-wrapper gap-2 border border-gray-300 rounded-xl px-3 py-1.5">
+                                        <input type="color" id="srVariantSelectedColor" value="#111111" onchange="srUpdatePreview()" oninput="document.getElementById('srVariantSelectedColorHex').value = this.value; srUpdatePreview();">
+                                        <input type="text" id="srVariantSelectedColorHex" value="#111111" maxlength="7"
+                                               class="flex-1 text-xs border-0 outline-none bg-transparent font-mono"
+                                               oninput="if(this.value.match(/^#[0-9a-fA-F]{6}$/)) { document.getElementById('srVariantSelectedColor').value = this.value; srUpdatePreview(); }">
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Köşe Yarıçapı</label>
+                                <input type="text" id="srBorderRadius" value="16px"
+                                       class="block w-full px-3 py-2 rounded-xl border border-gray-300 text-sm outline-none transition-all focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- SECTION: Genel Ayarlar -->
+                    <div class="sr-settings-section">
+                        <div class="sr-section-header flex items-center justify-between gap-3 mb-4 p-2 -mx-2 rounded-xl" onclick="srToggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-gray-100 text-gray-600 rounded-lg"><i class="fas fa-cog text-sm"></i></div>
+                                <h4 class="text-sm font-bold text-gray-900">Genel Ayarlar</h4>
+                            </div>
+                            <i class="fas fa-chevron-down sr-section-chevron text-gray-400 text-xs"></i>
+                        </div>
+                        <div class="sr-section-body space-y-3">
+                            <div class="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fas fa-mobile-alt text-xs"></i></div>
+                                        <span class="text-sm font-medium text-gray-700">Mobilde Göster</span>
+                                    </div>
+                                    <label class="sr-toggle">
+                                        <input type="checkbox" id="srShowOnMobile" checked>
+                                        <span class="sr-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center"><i class="fas fa-desktop text-xs"></i></div>
+                                        <span class="text-sm font-medium text-gray-700">Masaüstünde Göster</span>
+                                    </div>
+                                    <label class="sr-toggle">
+                                        <input type="checkbox" id="srShowOnDesktop" checked>
+                                        <span class="sr-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center"><i class="fas fa-magic text-xs"></i></div>
+                                        <span class="text-sm font-medium text-gray-700">Animasyon</span>
+                                    </div>
+                                    <label class="sr-toggle">
+                                        <input type="checkbox" id="srEnableAnimation" checked>
+                                        <span class="sr-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        <!-- ─── Right: Live Preview ─── -->
+        <div class="lg:col-span-6 xl:col-span-5 space-y-4 lg:space-y-6 lg:sticky lg:top-24">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-4 lg:px-6 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                        <i class="fas fa-eye text-blue-500"></i> Önizleme
+                    </h3>
+                    <span class="text-xs text-gray-400">Anlık güncellenir</span>
+                </div>
+                <div class="p-4 lg:p-6">
+
+                    <!-- Phone Mockup -->
+                    <div class="flex justify-center py-4">
+                        <div class="sr-phone-mockup">
+                            <div class="sr-phone-notch"></div>
+
+                            <!-- Phone Screen -->
+                            <div style="width:100%; height:100%; background:#f3f4f6; padding-top:28px; position:relative; min-height:504px; overflow:hidden;">
+                                <!-- Dummy product page content -->
+                                <div style="padding:12px;">
+                                    <div style="background:#e5e7eb; height:130px; border-radius:8px; margin-bottom:8px;"></div>
+                                    <div style="background:#e5e7eb; height:12px; border-radius:4px; width:70%; margin-bottom:6px;"></div>
+                                    <div style="background:#e5e7eb; height:10px; border-radius:4px; width:40%; margin-bottom:6px;"></div>
+                                    <div style="background:#e5e7eb; height:10px; border-radius:4px; width:55%;"></div>
+                                </div>
+
+                                <!-- Popup Preview Area -->
+                                <div id="srPreviewContainer" style="position:absolute; bottom:0; left:0; right:0;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preview Notes -->
+                    <p class="text-center text-xs text-gray-400 mt-3">Ayarları değiştirdikçe önizleme otomatik güncellenir</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    </div>
+</main>
+
+@section Scripts {
+<script>
+    // Prevent auto-init of stock reminder module on admin page
+    window.__PUSHONICA_ADMIN__ = true;
+</script>
+<script src="~/js/modules/stock-reminder-module.js"></script>
+<script>
+(function() {
+    // ─── Section Toggle ───────────────────────────────────────
+    window.srToggleSection = function(header) {
+        const body = header.nextElementSibling;
+        const chevron = header.querySelector('.sr-section-chevron');
+        body.classList.toggle('collapsed');
+        chevron.classList.toggle('collapsed');
+    };
+
+    // ─── Status Toggle ────────────────────────────────────────
+    let srIsActive = true;
+    window.srToggleStatus = function() {
+        srIsActive = !srIsActive;
+        srUpdateStatusBtn();
+    };
+
+    function srUpdateStatusBtn() {
+        const btn = document.getElementById('srStatusBtn');
+        const indicator = document.getElementById('srStatusIndicator');
+        const text = document.getElementById('srStatusText');
+        if (!btn) return;
+        if (srIsActive) {
+            btn.className = 'px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium rounded-lg flex items-center justify-center gap-2 border shadow-sm whitespace-nowrap transition-all w-full md:w-auto bg-green-50 text-green-700 border-green-200';
+            indicator.className = 'w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse flex-shrink-0';
+            text.textContent = 'Aktif';
+        } else {
+            btn.className = 'px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium rounded-lg flex items-center justify-center gap-2 border shadow-sm whitespace-nowrap transition-all w-full md:w-auto bg-gray-50 text-gray-600 border-gray-200';
+            indicator.className = 'w-2.5 h-2.5 rounded-full bg-gray-400 flex-shrink-0';
+            text.textContent = 'Pasif';
+        }
+    }
+
+    // ─── Load Settings ────────────────────────────────────────
+    async function loadWidgetSettings() {
+        try {
+            const resp = await fetch('/StockReminder/GetWidgetSettings');
+            if (!resp.ok) return;
+            const json = await resp.json();
+            if (!json.success) return;
+            const d = json.data;
+
+            // Populate form fields
+            document.getElementById('srTitle').value = d.title || '';
+            document.getElementById('srDescription').value = d.description || '';
+            document.getElementById('srSubmitButtonText').value = d.submitButtonText || '';
+            document.getElementById('srVariantLabel').value = d.variantLabel || '';
+
+            document.getElementById('srPhonePlaceholder').value = d.phonePlaceholder || '5XXXXXXXXX';
+            document.getElementById('srEmailPlaceholder').value = d.emailPlaceholder || 'E-posta adresiniz';
+            document.getElementById('srBorderRadius').value = d.borderRadius || '16px';
+
+            // Yasal metinler — entegrasyondan okuma (read-only)
+            document.getElementById('srKvkkUrl').value = d.kvkkLink || '';
+            document.getElementById('srEtkUrl').value = d.etkLink || '';
+
+            // Checkboxes
+            document.getElementById('srShowPhoneField').checked = d.showPhoneField ?? true;
+            document.getElementById('srShowEmailField').checked = d.showEmailField ?? false;
+            document.getElementById('srShowNameFields').checked = d.showNameFields ?? false;
+            document.getElementById('srShowOnMobile').checked = d.showOnMobile ?? true;
+            document.getElementById('srShowOnDesktop').checked = d.showOnDesktop ?? true;
+            document.getElementById('srEnableAnimation').checked = d.enableAnimation ?? true;
+
+            // Colors
+            srSetColor('srBgColor', 'srBgColorHex', d.backgroundColor || '#ffffff');
+            srSetColor('srTextColor', 'srTextColorHex', d.textColor || '#333333');
+            srSetColor('srTitleColor', 'srTitleColorHex', d.titleColor || '#e53935');
+            srSetColor('srButtonColor', 'srButtonColorHex', d.buttonColor || '#e53935');
+            srSetColor('srButtonTextColor', 'srButtonTextColorHex', d.buttonTextColor || '#ffffff');
+            srSetColor('srVariantSelectedColor', 'srVariantSelectedColorHex', d.variantSelectedColor || '#111111');
+
+            // Status
+            srIsActive = d.isActive ?? true;
+            srUpdateStatusBtn();
+
+            // Stats
+            if (d.impressionCount !== undefined) {
+                document.getElementById('srImpressionCount').textContent = d.impressionCount ?? 0;
+                document.getElementById('srSubmitCount').textContent = d.submitCount ?? 0;
+                document.getElementById('srDismissCount').textContent = d.dismissCount ?? 0;
+                document.getElementById('srStatsRow').classList.remove('hidden');
+            }
+
+            // Update preview
+            srUpdatePreview();
+        } catch (e) {
+            console.error('Widget settings load error:', e);
+        }
+    }
+
+    function srSetColor(colorInputId, hexInputId, value) {
+        const c = document.getElementById(colorInputId);
+        const h = document.getElementById(hexInputId);
+        if (c) c.value = value;
+        if (h) h.value = value;
+    }
+
+    // ─── Collect Form Data ────────────────────────────────────
+    function srCollectData() {
+        return {
+            title: document.getElementById('srTitle')?.value || '',
+            description: document.getElementById('srDescription')?.value || '',
+            submitButtonText: document.getElementById('srSubmitButtonText')?.value || 'Kaydet',
+            variantLabel: document.getElementById('srVariantLabel')?.value || 'Beden Seçin',
+
+            phonePlaceholder: document.getElementById('srPhonePlaceholder')?.value || '5XXXXXXXXX',
+            emailPlaceholder: document.getElementById('srEmailPlaceholder')?.value || 'E-posta adresiniz',
+            borderRadius: document.getElementById('srBorderRadius')?.value || '16px',
+            showVariantSelector: true,
+            showPhoneField: document.getElementById('srShowPhoneField')?.checked ?? true,
+            showEmailField: document.getElementById('srShowEmailField')?.checked ?? false,
+            showNameFields: document.getElementById('srShowNameFields')?.checked ?? false,
+            requirePhone: document.getElementById('srShowPhoneField')?.checked ?? true,
+            showConsentCheckbox: true,
+            showOnMobile: document.getElementById('srShowOnMobile')?.checked ?? true,
+            showOnDesktop: document.getElementById('srShowOnDesktop')?.checked ?? true,
+            enableAnimation: document.getElementById('srEnableAnimation')?.checked ?? true,
+            backgroundColor: document.getElementById('srBgColor')?.value || '#ffffff',
+            textColor: document.getElementById('srTextColor')?.value || '#333333',
+            titleColor: document.getElementById('srTitleColor')?.value || '#e53935',
+            buttonColor: document.getElementById('srButtonColor')?.value || '#e53935',
+            buttonTextColor: document.getElementById('srButtonTextColor')?.value || '#ffffff',
+            variantSelectedColor: document.getElementById('srVariantSelectedColor')?.value || '#111111',
+            kvkkLink: document.getElementById('srKvkkUrl')?.value || '',
+            etkLink: document.getElementById('srEtkUrl')?.value || '',
+            isActive: srIsActive
+        };
+    }
+
+    // ─── Live Preview ─────────────────────────────────────────
+    window.srUpdatePreview = function() {
+        const data = srCollectData();
+        const target = document.getElementById('srPreviewContainer');
+        if (!target) return;
+
+        const br = data.borderRadius || '16px';
+        const variants = ['S', 'M', 'L', 'XL'];
+
+        let variantHtml = '';
+        if (variants.length > 0) {
+            variantHtml = `
+                <div style="margin-bottom:10px;">
+                    <div style="font-size:11px; font-weight:600; color:${data.textColor}; margin-bottom:6px;">${data.variantLabel}</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:5px;">
+                        ${variants.map((v, i) => `
+                            <div style="
+                                padding:5px 8px; border-radius:6px; font-size:10px; font-weight:600;
+                                border:1.5px solid ${i === 0 ? data.variantSelectedColor : '#e5e7eb'};
+                                background:${i === 0 ? data.variantSelectedColor : 'white'};
+                                color:${i === 0 ? 'white' : data.textColor};
+                            ">${v}</div>
+                        `).join('')}
+                    </div>
+                </div>`;
+        }
+
+        let phoneHtml = '';
+        if (data.showPhoneField) {
+            phoneHtml = `
+                <div style="margin-bottom:8px;">
+                    <input disabled placeholder="${data.phonePlaceholder}" style="
+                        width:100%; padding:8px 12px; border:1px solid #e5e7eb; border-radius:8px;
+                        font-size:11px; background:#f9fafb; box-sizing:border-box; outline:none;
+                    ">
+                </div>`;
+        }
+
+        let emailHtml = '';
+        if (data.showEmailField) {
+            emailHtml = `
+                <div style="margin-bottom:8px;">
+                    <input disabled placeholder="${data.emailPlaceholder}" style="
+                        width:100%; padding:8px 12px; border:1px solid #e5e7eb; border-radius:8px;
+                        font-size:11px; background:#f9fafb; box-sizing:border-box; outline:none;
+                    ">
+                </div>`;
+        }
+
+        let nameHtml = '';
+        if (data.showNameFields) {
+            nameHtml = `
+                <div style="display:flex; gap:6px; margin-bottom:10px; overflow:hidden;">
+                    <input disabled placeholder="Adınız" style="flex:1; min-width:0; padding:8px 12px; border:1px solid #e5e7eb; border-radius:8px; font-size:11px; background:#f9fafb; box-sizing:border-box; outline:none;">
+                    <input disabled placeholder="Soyadınız" style="flex:1; min-width:0; padding:8px 12px; border:1px solid #e5e7eb; border-radius:8px; font-size:11px; background:#f9fafb; box-sizing:border-box; outline:none;">
+                </div>`;
+        }
+
+        const kvkkUrl = document.getElementById('srKvkkUrl')?.value || '';
+        const etkUrl = document.getElementById('srEtkUrl')?.value || '';
+        let consentHtml = `
+                <div style="display:flex; align-items:flex-start; gap:6px; margin-bottom:8px;">
+                    <input type="checkbox" disabled style="margin-top:2px; flex-shrink:0;">
+                    <span style="font-size:9px; color:${data.textColor}; opacity:0.7; line-height:1.4;">
+                    <a href="${kvkkUrl || '#'}" target="_blank" style="color:${data.textColor};text-decoration:underline;">KVKK Aydınlatma Metni</a> ve <a href="${etkUrl || '#'}" target="_blank" style="color:${data.textColor};text-decoration:underline;">Ticari Elektronik İleti İzni</a>'ni okudum, kabul ediyorum.
+                    </span>
+                </div>`;
+
+        target.innerHTML = `
+            <div style="
+                background:${data.backgroundColor};
+                border-radius:${br} ${br} 0 0;
+                padding:16px 14px 14px;
+                box-shadow:0 -8px 25px rgba(0,0,0,0.15);
+            ">
+                <!-- Close -->
+                <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+                    <div style="width:20px; height:20px; background:rgba(0,0,0,0.05); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:default;">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="${data.textColor}" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </div>
+                </div>
+                <!-- Title -->
+                <div style="font-size:12px; font-weight:700; color:${data.titleColor}; margin-bottom:5px; line-height:1.3;">${data.title || 'Başlık'}</div>
+                <div style="font-size:10px; color:${data.textColor}; opacity:0.7; margin-bottom:10px; line-height:1.4;">${data.description || 'Açıklama...'}</div>
+                <!-- Variants -->
+                ${variantHtml}
+                <!-- Name -->
+                ${nameHtml}
+                <!-- Phone -->
+                ${phoneHtml}
+                <!-- Email -->
+                ${emailHtml}
+                <!-- Consent -->
+                ${consentHtml}
+                <!-- Button -->
+                <button disabled style="
+                    width:100%; padding:9px; border:none; border-radius:8px;
+                    font-size:12px; font-weight:600;
+                    background:${data.buttonColor}; color:${data.buttonTextColor};
+                    cursor:default;
+                ">${data.submitButtonText || 'Kaydet'}</button>
+                <!-- Branding -->
+                <div style="text-align:center; margin-top:8px; font-size:8px; color:${data.textColor}; opacity:0.4;">
+                    Powered by Dijitaldesin
+                </div>
+            </div>
+        `;
+    };
+
+    // ─── Save Settings ────────────────────────────────────────
+    window.srSaveSettings = async function() {
+        const btn = document.getElementById('srSaveBtn');
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+        btn.disabled = true;
+
+        try {
+            const resp = await fetch('/StockReminder/SaveWidgetSettings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                },
+                body: JSON.stringify(srCollectData())
+            });
+            const result = await resp.json();
+            if (result.success) {
+                Toast.success(result.message || 'Ayarlar kaydedildi!');
+            } else {
+                Toast.error(result.message || 'Kayıt başarısız.');
+            }
+        } catch(e) {
+            Toast.error('Bağlantı hatası: ' + e.message);
+        } finally {
+            btn.innerHTML = orig;
+            btn.disabled = false;
+        }
+    };
+
+    // ─── Export to R2 ─────────────────────────────────────────
+    window.srExportToR2 = async function() {
+        const btn = document.getElementById('srExportBtn');
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aktarılıyor...';
+        btn.disabled = true;
+
+        try {
+            const resp = await fetch('/StockReminder/ExportWidgetToR2', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                }
+            });
+            const result = await resp.json();
+            if (result.success) {
+                Toast.success(result.message || 'Widget siteye aktarıldı!');
+            } else {
+                Toast.error(result.message || 'Aktarım başarısız.');
+            }
+        } catch(e) {
+            Toast.error('Bağlantı hatası: ' + e.message);
+        } finally {
+            btn.innerHTML = orig;
+            btn.disabled = false;
+        }
+    };
+
+    // ─── Live Preview (real module popup) ──────────────────
+    window.srOpenLivePreview = function() {
+        // Remove any previous test instance overlay
+        const existing = document.querySelectorAll('.psr-overlay');
+        existing.forEach(el => el.remove());
+
+        const config = srCollectData();
+        config.isActive = true; // force active for preview
+
+        const testInstance = new PushonicaStockReminder({
+            config: config,
+            manualInit: true
+        });
+        testInstance.isInitialized = true;
+        testInstance._injectStyles();
+
+        // Show popup with sample variants and product
+        testInstance.show({
+            productId: 'preview-test',
+            productName: 'Örnek Ürün (Önizleme)',
+            productUrl: '#',
+            variants: ['S', 'M', 'L', 'XL', 'XXL']
+        });
+    };
+
+    // ─── Auto-update preview on input change ─────────────────
+    document.querySelectorAll('#srSettingsForm input, #srSettingsForm textarea').forEach(el => {
+        el.addEventListener('input', () => setTimeout(srUpdatePreview, 80));
+        el.addEventListener('change', () => setTimeout(srUpdatePreview, 80));
+    });
+
+    // ─── Init: load settings & preview ───────────────────────
+    loadWidgetSettings();
+    srUpdatePreview();
+    srUpdateStatusBtn();
+
+})();
+</script>
+}

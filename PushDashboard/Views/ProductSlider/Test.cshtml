@@ -1,0 +1,620 @@
+@{
+    ViewData["Title"] = "Standalone Product Slider Test";
+    Layout = null; // Boş layout kullan
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            line-height: 1.6;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e5e5e5;
+        }
+        
+        .test-header h1 {
+            color: #333;
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+        }
+        
+        .test-header p {
+            color: #666;
+            font-size: 1.1em;
+            margin: 0;
+        }
+        
+        .test-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .test-info h3 {
+            margin: 0 0 15px 0;
+            color: #007bff;
+        }
+        
+        .test-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .test-info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e5e5e5;
+        }
+        
+        .test-info-item strong {
+            color: #333;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .test-info-item span {
+            color: #666;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+        
+        .console-output {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #333;
+        }
+        
+        .console-output h4 {
+            color: #00ff00;
+            margin: 0 0 15px 0;
+            font-size: 16px;
+        }
+        
+        .console-log {
+            margin: 5px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #333;
+        }
+        
+        .log-timestamp {
+            color: #888;
+            margin-right: 10px;
+        }
+        
+        .log-level-info { color: #00ff00; }
+        .log-level-warn { color: #ffff00; }
+        .log-level-error { color: #ff0000; }
+        
+        .slider-test-area {
+            margin: 40px 0;
+            padding: 30px;
+            background: #fff;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            text-align: center;
+            min-height: 200px;
+        }
+        
+        .slider-test-area h3 {
+            color: #666;
+            margin: 0 0 20px 0;
+        }
+        
+        .slider-placeholder {
+            color: #999;
+            font-style: italic;
+            padding: 40px;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #f5c6cb;
+            margin: 20px 0;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #c3e6cb;
+            margin: 20px 0;
+        }
+        
+        .loading-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @@keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .debug-panel {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .debug-panel h4 {
+            margin: 0 0 15px 0;
+            color: #495057;
+        }
+        
+        .debug-panel pre {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin: 0;
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🧪 Standalone Product Slider Test</h1>
+            <p>Bağımsız Product Slider script'inin çalışmasını test etmek için özel sayfa</p>
+        </div>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="error-message">
+                <strong>Hata:</strong> @ViewBag.Error
+            </div>
+        }
+
+        @if (ViewBag.TestData != null)
+        {
+            <div class="test-info">
+                <h3>📊 Test Bilgileri</h3>
+                <div class="test-info-grid">
+                    <div class="test-info-item">
+                        <strong>Company ID:</strong>
+                        <span>@ViewBag.TestData.CompanyId</span>
+                    </div>
+                    <div class="test-info-item">
+                        <strong>Script URL:</strong>
+                        <span>@ViewBag.TestData.ScriptUrl</span>
+                    </div>
+                    <div class="test-info-item">
+                        <strong>R2 Public URL:</strong>
+                        <span>@ViewBag.TestData.R2Settings.PublicUrl</span>
+                    </div>
+                    <div class="test-info-item">
+                        <strong>R2 Bucket:</strong>
+                        <span>@ViewBag.TestData.R2Settings.BucketName</span>
+                    </div>
+                    <div class="test-info-item">
+                        <strong>Test Zamanı:</strong>
+                        <span>@ViewBag.TestData.TestInfo.Timestamp</span>
+                    </div>
+                    <div class="test-info-item">
+                        <strong>Sayfa Tipi:</strong>
+                        <span>@ViewBag.TestData.TestInfo.PageType</span>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="console-output" id="consoleOutput">
+            <h4>🖥️ Console Çıktısı (Gerçek Zamanlı)</h4>
+            <div id="consoleLogs">
+                <div class="console-log">
+                    <span class="log-timestamp">[Başlatılıyor...]</span>
+                    <span class="log-level-info">Test sayfası yüklendi, script bekleniyor...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="slider-test-area" id="sliderTestArea">
+            <h3>🛒 E-Ticaret Sayfası Simülasyonu</h3>
+
+            <!-- Fake e-commerce header -->
+            <div style="background: #2c3e50; color: white; padding: 15px; margin: -20px -20px 20px -20px; border-radius: 8px 8px 0 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0; font-size: 24px;">🏪 Örnek E-Ticaret Sitesi</h2>
+                    <div style="font-size: 14px;">🛒 Sepet (0) | 👤 Giriş</div>
+                </div>
+            </div>
+
+            <!-- Fake navigation -->
+            <div style="background: #34495e; color: white; padding: 10px; margin: -20px -20px 20px -20px;">
+                <div style="display: flex; gap: 20px; font-size: 14px;">
+                    <span>🏠 Ana Sayfa</span>
+                    <span>👕 Giyim</span>
+                    <span>💻 Elektronik</span>
+                    <span>🏡 Ev & Yaşam</span>
+                    <span>🎁 Hediye</span>
+                </div>
+            </div>
+
+            <!-- Main content area - no placeholder needed -->
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; min-height: 400px;">
+                <h3 style="color: #2c3e50; margin: 0 0 20px 0;">🛒 E-Ticaret Ana Sayfası</h3>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">👕</div>
+                        <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Giyim</h4>
+                        <p style="margin: 0; color: #7f8c8d; font-size: 14px;">En yeni koleksiyonlar</p>
+                    </div>
+                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">💻</div>
+                        <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Elektronik</h4>
+                        <p style="margin: 0; color: #7f8c8d; font-size: 14px;">Teknoloji ürünleri</p>
+                    </div>
+                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">🏡</div>
+                        <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Ev & Yaşam</h4>
+                        <p style="margin: 0; color: #7f8c8d; font-size: 14px;">Dekorasyon ürünleri</p>
+                    </div>
+                </div>
+
+                <div style="text-align: center; color: #7f8c8d; padding: 40px;">
+                    <p style="margin: 0; font-size: 16px;">🎯 R2'den gerçek script yükleniyor...</p>
+                    <p style="margin: 5px 0 0 0; font-size: 14px;">Floating button sayfanın sağında görünecek</p>
+                    <p style="margin: 5px 0 0 0; font-size: 14px;">Bu gerçek müşteri deneyimidir!</p>
+                </div>
+            </div>
+
+            <!-- Fake footer content -->
+            <div style="margin-top: 20px; padding: 15px; background: #ecf0f1; border-radius: 8px; font-size: 14px; color: #7f8c8d;">
+                <p style="margin: 0;">📦 Ücretsiz Kargo | 🔄 Kolay İade | 📞 7/24 Müşteri Hizmetleri</p>
+            </div>
+        </div>
+
+        <div class="debug-panel">
+            <h4>🔧 Debug Kontrolleri</h4>
+            <button class="btn" onclick="reloadScript()">Script'i Yeniden Yükle</button>
+            <button class="btn btn-secondary" onclick="clearConsole()">Console'u Temizle</button>
+            <button class="btn btn-secondary" onclick="showNetworkInfo()">Network Bilgisi</button>
+            <button class="btn btn-secondary" onclick="testR2Connection()">R2 Bağlantısını Test Et</button>
+            <button class="btn btn-secondary" onclick="testSliderFunctionality()">Slider Fonksiyonlarını Test Et</button>
+        </div>
+
+        @if (ViewBag.TestData != null)
+        {
+            <div class="debug-panel">
+                <h4>📋 Raw Test Data</h4>
+                <pre>@Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.TestData, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }))</pre>
+            </div>
+        }
+    </div>
+
+    <!-- Standalone Product Slider Script'i Yükle -->
+    @if (ViewBag.TestData?.CompanyId != null)
+    {
+        <!-- Pushonica Product Slider - R2'den gerçek script -->
+        <script
+            src="https://pub-99389ce4adeb4856bc9e14750f2fa16f.r2.dev/fbca2f27-b5ce-4e43-9da8-256d3b75c701/productSlider.js"
+            async
+            id="standaloneProductSliderScript">
+        </script>
+        <!-- End Pushonica Product Slider -->
+    }
+
+    <!-- Test Script'i -->
+    <script>
+        // Console override for capturing logs
+        const originalConsole = {
+            log: console.log,
+            warn: console.warn,
+            error: console.error,
+            info: console.info
+        };
+
+        let logCounter = 0;
+
+        function addConsoleLog(level, message, data = null) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.createElement('div');
+            logElement.className = 'console-log';
+            
+            let logContent = `<span class="log-timestamp">[${timestamp}]</span>`;
+            logContent += `<span class="log-level-${level}">[${level.toUpperCase()}]</span> `;
+            logContent += `<span>${message}</span>`;
+            
+            if (data) {
+                logContent += `<br><span style="margin-left: 20px; color: #888;">${JSON.stringify(data, null, 2)}</span>`;
+            }
+            
+            logElement.innerHTML = logContent;
+            
+            const consoleLogs = document.getElementById('consoleLogs');
+            consoleLogs.appendChild(logElement);
+            
+            // Auto scroll to bottom
+            const consoleOutput = document.getElementById('consoleOutput');
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            
+            logCounter++;
+            if (logCounter > 50) {
+                // Remove old logs to prevent memory issues
+                const firstLog = consoleLogs.firstChild;
+                if (firstLog) {
+                    consoleLogs.removeChild(firstLog);
+                }
+            }
+        }
+
+        // Override console methods
+        console.log = function(...args) {
+            originalConsole.log.apply(console, args);
+            addConsoleLog('info', args.join(' '));
+        };
+
+        console.warn = function(...args) {
+            originalConsole.warn.apply(console, args);
+            addConsoleLog('warn', args.join(' '));
+        };
+
+        console.error = function(...args) {
+            originalConsole.error.apply(console, args);
+            addConsoleLog('error', args.join(' '));
+        };
+
+        console.info = function(...args) {
+            originalConsole.info.apply(console, args);
+            addConsoleLog('info', args.join(' '));
+        };
+
+        // Test functions
+        function reloadScript() {
+            addConsoleLog('info', 'Standalone script yeniden yükleniyor...');
+
+            // Remove existing script
+            const existingScript = document.getElementById('standaloneProductSliderScript');
+            if (existingScript) {
+                existingScript.remove();
+            }
+
+            // Clear existing sliders
+            const sliders = document.querySelectorAll('.pushonica-product-slider');
+            sliders.forEach(slider => slider.remove());
+
+            // Clear global variable
+            if (window.productSlider) {
+                delete window.productSlider;
+            }
+
+            // Reset placeholder
+            document.getElementById('sliderPlaceholder').innerHTML = `
+                <div class="loading-indicator"></div>
+                R2'den gerçek slider verileriniz yeniden yükleniyor...
+            `;
+
+            // Reload script
+            setTimeout(() => {
+                const script = document.createElement('script');
+                script.src = '/ProductSlider/StandaloneScript';
+                script.async = true;
+                script.id = 'standaloneProductSliderScript';
+                document.head.appendChild(script);
+            }, 1000);
+        }
+
+        function clearConsole() {
+            document.getElementById('consoleLogs').innerHTML = `
+                <div class="console-log">
+                    <span class="log-timestamp">[${new Date().toLocaleTimeString()}]</span>
+                    <span class="log-level-info">Console temizlendi</span>
+                </div>
+            `;
+            logCounter = 0;
+        }
+
+        function showNetworkInfo() {
+            addConsoleLog('info', 'Network bilgileri kontrol ediliyor...');
+            addConsoleLog('info', `User Agent: ${navigator.userAgent}`);
+            addConsoleLog('info', `Online: ${navigator.onLine}`);
+            addConsoleLog('info', `Connection: ${navigator.connection ? navigator.connection.effectiveType : 'Unknown'}`);
+        }
+
+        async function testR2Connection() {
+            addConsoleLog('info', 'R2 bağlantısı test ediliyor...');
+
+            const testUrl = '@ViewBag.TestData?.R2Settings?.PublicUrl/@ViewBag.TestData?.CompanyId/productSliders.json';
+
+            try {
+                const response = await fetch(testUrl);
+                addConsoleLog('info', `R2 Response Status: ${response.status}`);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addConsoleLog('info', 'R2 bağlantısı başarılı! Slider verileriniz bulundu:', data);
+                } else {
+                    addConsoleLog('warn', `R2 bağlantısı başarısız: ${response.statusText}`);
+                }
+            } catch (error) {
+                addConsoleLog('error', `R2 bağlantı hatası: ${error.message}`);
+            }
+        }
+
+        function testSliderFunctionality() {
+            addConsoleLog('info', 'Slider fonksiyonalitesi test ediliyor...');
+
+            if (window.productSlider) {
+                addConsoleLog('info', 'ProductSlider global object bulundu:', window.productSlider);
+                addConsoleLog('info', `Yüklenen slider sayısı: ${window.productSlider.sliders.length}`);
+
+                // Test slider controls
+                const sliders = document.querySelectorAll('.pushonica-product-slider');
+                if (sliders.length > 0) {
+                    addConsoleLog('info', `DOM'da ${sliders.length} slider bulundu`);
+
+                    // Test first slider's controls
+                    const firstSlider = sliders[0];
+                    const nextBtn = firstSlider.querySelector('.slider-next');
+                    const prevBtn = firstSlider.querySelector('.slider-prev');
+                    const dots = firstSlider.querySelectorAll('.slider-dot');
+
+                    addConsoleLog('info', 'Slider kontrolleri:', {
+                        nextButton: !!nextBtn,
+                        prevButton: !!prevBtn,
+                        dotsCount: dots.length
+                    });
+                } else {
+                    addConsoleLog('warn', 'DOM\'da slider bulunamadı');
+                }
+            } else {
+                addConsoleLog('warn', 'ProductSlider global object bulunamadı');
+            }
+        }
+
+        // Monitor for slider creation
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1 && node.classList && node.classList.contains('pushonica-product-slider')) {
+                        addConsoleLog('info', 'Slider DOM\'a eklendi!', {
+                            sliderId: node.getAttribute('data-slider-id'),
+                            sliderName: node.getAttribute('data-slider-name')
+                        });
+
+                    }
+                });
+            });
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        // Initial log
+        addConsoleLog('info', 'Test sayfası hazır, script yüklenmesi bekleniyor...');
+        
+        // Check if script loaded
+        setTimeout(() => {
+            if (window.productSlider) {
+                addConsoleLog('info', 'Standalone Product Slider başarıyla yüklendi!');
+                testSliderFunctionality();
+            } else {
+                addConsoleLog('warn', 'Standalone Product Slider henüz yüklenmedi, script URL\'ini kontrol edin');
+            }
+        }, 3000);
+
+        // R2 script otomatik yükleniyor - manuel yükleme gerekmez
+        document.addEventListener('DOMContentLoaded', function() {
+            addConsoleLog('info', 'Test sayfası yüklendi, R2 script otomatik yükleniyor...');
+            addConsoleLog('success', 'R2 Script URL: https://pub-99389ce4adeb4856bc9e14750f2fa16f.r2.dev/fbca2f27-b5ce-4e43-9da8-256d3b75c701/productSlider.js');
+        });
+
+        // Debug fonksiyonları
+        function reloadScript() {
+            addConsoleLog('info', 'Sayfa yenileniyor...');
+            location.reload();
+        }
+
+        function clearConsole() {
+            document.getElementById('consoleOutput').innerHTML = '';
+            addConsoleLog('info', 'Console temizlendi');
+        }
+
+        function showNetworkInfo() {
+            addConsoleLog('info', 'Network bilgisi kontrol ediliyor...');
+            addConsoleLog('info', 'User Agent: ' + navigator.userAgent);
+            addConsoleLog('info', 'Online: ' + navigator.onLine);
+        }
+
+        function testR2Connection() {
+            addConsoleLog('info', 'R2 bağlantısı test ediliyor...');
+            const testUrl = 'https://pub-99389ce4adeb4856bc9e14750f2fa16f.r2.dev/fbca2f27-b5ce-4e43-9da8-256d3b75c701/productSliders.json';
+
+            fetch(testUrl)
+                .then(response => {
+                    if (response.ok) {
+                        addConsoleLog('success', 'R2 bağlantısı başarılı! Status: ' + response.status);
+                        return response.json();
+                    } else {
+                        addConsoleLog('error', 'R2 bağlantısı başarısız! Status: ' + response.status);
+                    }
+                })
+                .then(data => {
+                    if (data) {
+                        addConsoleLog('success', 'R2 veri alındı: ' + JSON.stringify(data, null, 2));
+                    }
+                })
+                .catch(error => {
+                    addConsoleLog('error', 'R2 bağlantı hatası: ' + error.message);
+                });
+        }
+
+        function getAntiForgeryToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+@{
+    ViewData["Title"] = "Sepet Hatırlatma - Modül Aktif Değil";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<main class="p-4 bg-gray-50 min-h-screen">
+    <div class="w-full">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="mx-auto w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-shopping-cart text-orange-600 text-4xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">Sepet Hatırlatma Modülü</h1>
+            <p class="text-lg text-gray-600">Bu modül henüz aktif değil</p>
+        </div>
+
+        <!-- Module Not Active Card -->
+        <div class="bg-white rounded-lg shadow-sm p-8 text-center">
+            <div class="mb-6">
+                <i class="fas fa-exclamation-triangle text-yellow-500 text-6xl mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Modül Aktif Değil</h2>
+                <p class="text-gray-600 mb-6">
+                    Sepet hatırlatma modülünü kullanabilmek için önce satın almanız gerekiyor.
+                    Bu modül ile terk edilmiş sepetlerdeki müşterilerinize otomatik hatırlatma mesajları gönderebilir ve satışlarınızı artırabilirsiniz.
+                </p>
+            </div>
+
+            <!-- Module Features -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-clock text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Otomatik Hatırlatma</h3>
+                    <p class="text-sm text-gray-600">Terk edilmiş sepetler için otomatik hatırlatma sistemi</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-whatsapp text-green-600 text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-2">WhatsApp Mesajları</h3>
+                    <p class="text-sm text-gray-600">Müşterilere WhatsApp ile kişiselleştirilmiş mesajlar</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-percentage text-purple-600 text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-2">İndirim Kodları</h3>
+                    <p class="text-sm text-gray-600">Hatırlatma mesajlarında özel indirim kodları</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-cog text-yellow-600 text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Özelleştirilebilir</h3>
+                    <p class="text-sm text-gray-600">Mesaj zamanlaması ve içeriğini tamamen özelleştirin</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-chart-line text-red-600 text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Performans Takibi</h3>
+                    <p class="text-sm text-gray-600">Hatırlatma başarı oranlarını ve dönüşümleri izleyin</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-sync text-indigo-600 text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Otomatik Entegrasyon</h3>
+                    <p class="text-sm text-gray-600">E-ticaret platformunuzla otomatik entegrasyon</p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="@Url.Action("Index", "Store")" 
+                   class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-medium transition-colors inline-flex items-center justify-center">
+                    <i class="fas fa-shopping-cart mr-2"></i>
+                    Modülü Satın Al
+                </a>
+                
+                <a href="@Url.Action("Index", "Home")" 
+                   class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-8 py-3 rounded-lg font-medium transition-colors inline-flex items-center justify-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Ana Sayfaya Dön
+                </a>
+            </div>
+        </div>
+
+        <!-- Error Message Display -->
+        @if (ViewBag.ErrorMessage != null)
+        {
+            <div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex items-start">
+                    <i class="fas fa-exclamation-circle text-red-500 mt-1 mr-3"></i>
+                    <div>
+                        <h3 class="text-red-800 font-medium mb-1">Hata</h3>
+                        <p class="text-red-700 text-sm">@ViewBag.ErrorMessage</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</main>

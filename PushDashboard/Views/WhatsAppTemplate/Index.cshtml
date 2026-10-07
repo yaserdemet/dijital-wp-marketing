@@ -1,0 +1,986 @@
+@model PushDashboard.ViewModels.WhatsAppTemplateIndexViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "WhatsApp Şablonları";
+}
+
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-semibold text-gray-900 tracking-tight">WhatsApp Şablonları</h1>
+            <p class="text-sm text-gray-500 mt-1">WhatsApp mesaj şablonlarınızı yönetin, filtreleyin ve performanslarını izleyin.</p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3">
+             <button type="button" id="refreshTemplatesBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center transition-colors duration-200 border border-gray-200" title="Şablonları yenile">
+                <svg class="w-5 h-5 mr-2 refresh-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Yenile
+            </button>
+             <button id="createTemplateBtn" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center transition-colors duration-200">
+                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4" />
+                </svg>
+                Yeni Şablon
+            </button>
+        </div>
+    </div>
+
+    <!-- Conversion Tracking Info Banner -->
+    <div class="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-xl px-5 py-4">
+        <div class="flex-shrink-0 mt-0.5">
+            <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+            </svg>
+        </div>
+        <div>
+            <p class="text-sm font-semibold text-amber-800 mb-1">
+                Dönüşüm ve Ciro Takibi İçin Önemli Not
+            </p>
+            <p class="text-sm text-amber-700 leading-relaxed">
+                Gönderdiğiniz WhatsApp mesajlarından elde edilen <span class="font-semibold">satış cirolarını</span> ve <span class="font-semibold">dönüşüm oranlarını</span> doğru şekilde izleyebilmek için şablonlarınızda mutlaka <span class="font-semibold">buton (CTA) kullanmanızı</span> tavsiye ederiz.
+                Buton içermeyen mesajlarda kullanıcı tıklamaları takip edilemediğinden kampanya performansınızı ve gelir verilerini analiz etmek mümkün olmayacaktır.
+            </p>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 mb-6 overflow-x-auto scrollbar-hide">
+        <nav class="-mb-px flex space-x-6 sm:space-x-8 min-w-max px-1" aria-label="Tabs" id="templateTabs">
+            <button class="tab-btn active border-primary text-primary whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200" data-tab="my-templates">
+                Şablonlarım
+                <span class="ml-2 bg-primary-50 text-primary py-0.5 px-2.5 rounded-full text-xs">@Model.AllTemplates.Count</span>
+            </button>
+            <button class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200" data-tab="template-library">
+                Şablon Kütüphanesi
+                 <span class="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2.5 rounded-full text-xs">@Model.SampleTemplates.Count</span>
+            </button>
+        </nav>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-6">
+        <!-- Sidebar Filters -->
+        <div class="w-full lg:w-64 flex-shrink-0 space-y-6 hidden lg:block" id="filtersSidebar">
+             <!-- Status Filters -->
+            <div id="statusFilterWrapper" class="bg-white rounded-xl border border-gray-200 p-4">
+                <h3 class="font-medium text-gray-900 mb-3 text-xs uppercase tracking-wider text-opacity-70">Durum</h3>
+                <div class="space-y-1" id="statusFilterContainer">
+                    <!-- Filters will be injected via JS -->
+                    <div class="animate-pulse space-y-2">
+                        <div class="h-8 bg-gray-100 rounded"></div>
+                        <div class="h-8 bg-gray-100 rounded"></div>
+                        <div class="h-8 bg-gray-100 rounded"></div>
+                    </div>
+                </div>
+            </div>
+            
+             <!-- Category Filter -->
+            <div class="bg-white rounded-xl border border-gray-200 p-4">
+                <h3 class="font-medium text-gray-900 mb-3 text-xs uppercase tracking-wider text-opacity-70">Kategori</h3>
+                <div class="space-y-2" id="categoryFilterContainer">
+                    <!-- Dynamic Content -->
+                </div>
+            </div>
+
+            <!-- Language Filter - Kept distinct but visible -->
+             <div class="bg-white rounded-xl border border-gray-200 p-4">
+                 <h3 class="font-medium text-gray-900 mb-2 text-xs uppercase tracking-wider text-opacity-70">Dil</h3>
+                 <select id="languageFilter" class="block w-full pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-primary focus:border-primary rounded-md bg-gray-50">
+                     <option value="ALL">Tümü</option>
+                     <option value="tr">Türkçe</option>
+                     <option value="en">İngilizce</option>
+                 </select>
+             </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 min-w-0">
+            <!-- Toolbar -->
+            <div class="bg-white rounded-xl border border-gray-200 p-4 mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <!-- Search -->
+                <div class="relative w-full sm:w-96">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                           <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <input type="text" id="templateSearch" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-shadow duration-200" placeholder="Şablon adı, ID veya içerik ile ara">
+                </div>
+                
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <!-- Sort -->
+                    <select id="sortSelect" class="block w-full sm:w-auto pl-3 pr-8 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md transition-shadow">
+                        <option value="updated_desc">Son Güncellenen</option>
+                        <option value="updated_asc">En Eski Güncellenen</option>
+                        <option value="name_asc">İsim (A-Z)</option>
+                        <option value="name_desc">İsim (Z-A)</option>
+                    </select>
+
+                    <!-- View Toggle -->
+                    <div class="hidden sm:flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+                        <button id="viewGrid" class="p-1.5 rounded-md bg-white text-primary transition-all duration-200" title="Kart Görünümü">
+                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                        </button>
+                        <button id="viewList" class="p-1.5 rounded-md text-gray-500 hover:text-primary hover:bg-gray-200 transition-all duration-200" title="Liste Görünümü">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div id="templatesContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 transition-all duration-300">
+                 <!-- Template Cards go here -->
+            </div>
+            
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden bg-white rounded-xl border border-gray-200 p-12 text-center">
+                <div class="text-gray-400 mb-4">
+                    <svg class="w-16 h-16 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Şablon Bulunamadı</h3>
+                <p class="text-gray-600">Arama kriterlerinize uygun şablon bulunamadı.</p>
+                <button id="resetFilters" class="mt-4 text-primary hover:text-primary-dark font-medium">Filtreleri Temizle</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initial Data Injection
+    window.initialTemplates = @Html.Raw(Json.Serialize(Model.AllTemplates));
+    window.sampleTemplates = @Html.Raw(Json.Serialize(Model.SampleTemplates));
+</script>
+
+@* Load the main script that handles the UI interaction *@
+
+
+
+<!-- Create Template Modal -->
+<div id="templateModal" class="fixed inset-0 z-50 hidden overflow-hidden" aria-labelledby="templateModalLabel" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen p-4 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-900/40 transition-opacity" aria-hidden="true"></div>
+
+        <div class="relative text-left transition-all transform bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)] border border-gray-200 rounded-xl flex flex-col h-[90svh] w-[95svw] max-w-7xl">
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+                <h3 class="text-lg font-semibold text-gray-900" id="templateModalLabel">
+                    <svg class="w-5 h-5 inline mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <span id="templateName">WhatsApp Şablon</span>
+                </h3>
+                <button type="button" class="text-gray-400 hover:text-gray-600" id="closeModalBtn">
+                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex-grow overflow-hidden flex flex-col">
+                <!-- Create Template Form -->
+                <div id="createTemplateForm" class="hidden h-full">
+                    <form id="createForm" class="flex flex-col h-full">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 overflow-y-auto flex-grow custom-scrollbar">
+                            <!-- Left Column - Form Builder -->
+                            <div class="lg:col-span-7 xl:col-span-8 space-y-6">
+
+                                <!-- 1. Template Details -->
+                                <div class="bg-white p-5 rounded-xl border border-gray-200">
+                                    <h3 class="text-base font-medium text-gray-900 mb-4 flex items-center">
+                                        <span class="flex items-center justify-center w-6 h-6 rounded-md bg-primary-50 text-primary text-xs font-medium mr-2">1</span>
+                                        Şablon Bilgileri
+                                    </h3>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <label for="createTemplateName" class="block text-sm font-medium text-gray-700 mb-1">
+                                                Şablon Adı <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="text" id="createTemplateName" name="name"
+                                                   class="w-full px-3 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block"
+                                                   placeholder="ornek_sablon_adi" required>
+                                            <p class="text-xs text-gray-500 mt-1">Küçük harf, rakam ve alt çizgi</p>
+                                        </div>
+                                        <div>
+                                            <label for="createTemplateLanguage" class="block text-sm font-medium text-gray-700 mb-1">
+                                                Dil <span class="text-red-500">*</span>
+                                            </label>
+                                            <select id="createTemplateLanguage" name="language"
+                                                    class="w-full px-3 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block">
+                                                <option value="tr">Türkçe (tr)</option>
+                                                <option value="en">English (en)</option>
+                                                <option value="en_US">English US (en_US)</option>
+                                                <option value="ar">العربية (ar)</option>
+                                                <option value="de">Deutsch (de)</option>
+                                                <option value="es">Español (es)</option>
+                                                <option value="fr">Français (fr)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Kategori <span class="text-red-500">*</span>
+                                        </label>
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            <label class="cursor-pointer relative group">
+                                                <input type="radio" name="category" value="MARKETING" class="peer sr-only" checked>
+                                                <div class="rounded-lg border border-gray-200 p-3 hover:bg-gray-50 peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-checked:bg-primary-50 transition-all flex items-center">
+                                                    <div class="mr-3 p-1.5 rounded-lg bg-violet-50 text-violet-600">
+                                                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <span class="block text-sm font-medium text-gray-900">Marketing</span>
+                                                        <span class="text-xs text-gray-500">Pazarlama</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                            <label class="cursor-pointer relative group">
+                                                <input type="radio" name="category" value="UTILITY" class="peer sr-only">
+                                                <div class="rounded-lg border border-gray-200 p-3 hover:bg-gray-50 peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-checked:bg-primary-50 transition-all flex items-center">
+                                                    <div class="mr-3 p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+                                                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <span class="block text-sm font-medium text-gray-900">Utility</span>
+                                                        <span class="text-xs text-gray-500">İşlemsel</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                            <label class="cursor-pointer relative group">
+                                                <input type="radio" name="category" value="AUTHENTICATION" class="peer sr-only">
+                                                <div class="rounded-lg border border-gray-200 p-3 hover:bg-gray-50 peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-checked:bg-primary-50 transition-all flex items-center">
+                                                    <div class="mr-3 p-1.5 rounded-lg bg-amber-50 text-amber-600">
+                                                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <span class="block text-sm font-medium text-gray-900">Auth</span>
+                                                        <span class="text-xs text-gray-500">Doğrulama</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 2. Header (Optional) -->
+                                <div class="bg-white p-5 rounded-xl border border-gray-200">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h3 class="text-base font-medium text-gray-900 flex items-center">
+                                            <span class="flex items-center justify-center w-6 h-6 rounded-md bg-primary-50 text-primary text-xs font-medium mr-2">2</span>
+                                            Header (Opsiyonel)
+                                        </h3>
+                                        <select id="headerType" class="text-sm border-gray-300 rounded-md focus:border-primary focus:ring-primary px-2 py-1">
+                                            <option value="NONE">Yok</option>
+                                            <option value="TEXT">Metin</option>
+                                            <option value="IMAGE">Görsel</option>
+                                            <option value="VIDEO">Video</option>
+                                            <option value="DOCUMENT">Döküman</option>
+                                        </select>
+                                    </div>
+
+                                    <div id="headerConfig" class="hidden space-y-4">
+                                        <div id="headerTextConfig" class="hidden">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Header Metni</label>
+                                            <input type="text" id="headerText" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                                   placeholder="Başlık metni giriniz" maxlength="60">
+                                            <p class="text-xs text-gray-500 mt-1 text-right"><span id="headerTextCount">0</span>/60</p>
+                                        </div>
+                                        <div id="headerMediaConfig" class="hidden">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Medya Örneği</label>
+                                            
+                                            <!-- URL Input -->
+                                            <div class="mb-2">
+                                                <input type="url" id="headerMediaUrl" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm" 
+                                                       placeholder="https://example.com/media.jpg">
+                                            </div>
+
+                                            <div class="relative flex py-1 items-center">
+                                                <div class="flex-grow border-t border-gray-200"></div>
+                                                <span class="flex-shrink-0 mx-2 text-gray-400 text-xs">VEYA</span>
+                                                <div class="flex-grow border-t border-gray-200"></div>
+                                            </div>
+
+                                            <div class="flex gap-2 mt-1">
+                                                <button type="button" id="uploadHeaderMediaBtn" class="flex-1 bg-gray-50 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-100 flex items-center justify-center">
+                                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                                    Medya Yükle
+                                                </button>
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-1">Şablon onayı için bir örnek medya URL'i girin veya dosya yükleyin.</p>
+                                            <div id="headerMediaPreview" class="mt-2 hidden p-2 border border-gray-200 rounded bg-gray-50 text-sm text-gray-600"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. Body (Required) -->
+                                <div class="bg-white p-5 rounded-xl border border-gray-200">
+                                    <h3 class="text-base font-medium text-gray-900 mb-4 flex items-center">
+                                        <span class="flex items-center justify-center w-6 h-6 rounded-md bg-primary-50 text-primary text-xs font-medium mr-2">3</span>
+                                        Mesaj İçeriği (Body) <span class="text-red-500 ml-1">*</span>
+                                    </h3>
+                                    
+                                    <div class="relative">
+                                        <div class="flex items-center space-x-1 border border-gray-300 border-b-0 rounded-t-lg bg-gray-50 p-2">
+                                            <button type="button" class="format-btn p-1.5 hover:bg-gray-200 rounded text-gray-600" data-format="bold" title="Kalın">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6V4zm0 8h9a4 4 0 014 4 4 4 0 01-4 4H6v-8z"></path></svg>
+                                            </button>
+                                            <button type="button" class="format-btn p-1.5 hover:bg-gray-200 rounded text-gray-600" data-format="italic" title="İtalik">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                                            </button>
+                                            <button type="button" class="format-btn p-1.5 hover:bg-gray-200 rounded text-gray-600" data-format="strike" title="Üstü Çizili">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"></path></svg>
+                                            </button>
+                                            <button type="button" class="format-btn p-1.5 hover:bg-gray-200 rounded text-gray-600" data-format="code" title="Kod Bloğu">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                                            </button>
+                                            <div class="w-px h-4 bg-gray-300 mx-1"></div>
+                                            <button type="button" id="addVariableBtn" class="px-2 py-1 bg-primary-50 text-primary text-xs font-medium rounded hover:bg-primary-100 flex items-center">
+                                                <span class="mr-1">{{}}</span> Değişken Ekle
+                                            </button>
+                                        </div>
+                                        <textarea id="bodyText" class="w-full px-3 py-2 border border-gray-300 rounded-b-lg focus:ring-primary focus:border-primary min-h-[150px]"
+                                                  placeholder="Mesaj içeriğinizi buraya yazın..." maxlength="1024"></textarea>
+                                        <div class="absolute bottom-2 right-2 text-xs text-gray-400">
+                                            <span id="bodyTextCount">0</span>/1024
+                                        </div>
+                                    </div>
+
+                                    <!-- Variable Definitions -->
+                                    <div id="variableDefinitionsContainer" class="mt-4">
+                                        <h4 class="text-sm font-medium text-gray-700 mb-2">Değişken Tanımları</h4>
+                                        <div id="variableDefinitions" class="space-y-2 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                            <div class="text-sm text-gray-400 italic text-center py-2 bg-gray-50/50 rounded border border-gray-100/50">Şablon metninde henüz değişken ({{1}}, {{2}} vb.) bulunmuyor.</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 4. Footer (Automatic) -->
+                                <div class="bg-white p-5 rounded-xl border border-gray-200">
+                                    <h3 class="text-base font-medium text-gray-900 mb-4 flex items-center">
+                                        <span class="flex items-center justify-center w-6 h-6 rounded-md bg-primary-50 text-primary text-xs font-medium mr-2">4</span>
+                                        Footer (Otomatik)
+                                    </h3>
+                                    <div class="bg-sky-50 border border-sky-100 rounded-lg p-3">
+                                        <div class="flex items-start">
+                                            <svg class="w-5 h-5 text-sky-700 mr-2 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <div>
+                                                <p class="text-sm font-medium text-sky-700 mb-1">Sabit Footer Ekleniyor:</p>
+                                                <p class="text-sm text-sky-700 italic">"Dijitaldesin tarafından desteklenmektedir."</p>
+                                                <p class="text-xs text-sky-700 mt-2">Bu footer otomatik olarak tüm şablonlara eklenecektir.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 5. Buttons (Optional) -->
+                                <div class="bg-white p-5 rounded-xl border border-gray-200">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h3 class="text-base font-medium text-gray-900 flex items-center">
+                                            <span class="flex items-center justify-center w-6 h-6 rounded-md bg-primary-50 text-primary text-xs font-medium mr-2">5</span>
+                                            Butonlar (Opsiyonel)
+                                        </h3>
+                                        <button type="button" id="addNewButtonBtn" class="text-sm text-primary hover:text-primary-dark font-medium flex items-center">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"></path></svg>
+                                            Buton Ekle
+                                        </button>
+                                    </div>
+                                    
+                                    <div id="buttonsContainer" class="space-y-3">
+                                        <!-- Buttons will be added here -->
+                                        <div id="noButtonsMessage" class="text-sm text-gray-500 italic text-center py-2">
+                                            Henüz buton eklenmedi.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Column - WhatsApp Preview -->
+                            <div class="lg:col-span-5 xl:col-span-4">
+                                <div class="sticky top-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <h4 class="text-sm font-medium text-gray-700">WhatsApp Önizleme</h4>
+                                        <button type="button" id="previewWithSampleData" class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100" title="Örnek Verilerle Önizle">
+                                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="flex justify-center">
+                                        <div class="relative border-gray-800 dark:border-gray-800 bg-gray-800 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] transform scale-[0.85] sm:scale-90 md:scale-100 origin-top">
+                                            <div class="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute"></div>
+                                            <div class="h-[32px] w-[3px] bg-gray-800 absolute -left-[17px] top-[72px] rounded-l-lg"></div>
+                                            <div class="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
+                                            <div class="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[178px] rounded-l-lg"></div>
+                                            <div class="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
+                                            <div class="rounded-[2rem] overflow-hidden w-full h-full bg-white dark:bg-gray-800 flex flex-col relative">
+                                                <!-- Status Bar (Fake) -->
+                                                <div class="bg-[#008069] h-6 w-full flex-none z-20"></div>
+                                                <!-- App Bar -->
+                                                <div class="bg-[#008069] text-white px-4 py-2 flex items-center z-20 flex-none">
+                                                    <div class="flex items-center space-x-2">
+                                                        <div class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center overflow-hidden">
+                                                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                                                        </div>
+                                                        <div class="flex flex-col">
+                                                            <span class="text-sm font-bold leading-tight">Dijitaldesin</span>
+                                                            <span class="text-[10px] leading-tight opacity-80">İşletme Hesabı</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Screen Content -->
+                                                <div class="bg-[#e5ddd5] w-full flex-1 overflow-y-auto relative scrollbar-hide">
+                                                    
+                                                    <!-- Chat Area -->
+                                                    <div class="p-3 pb-20">
+                                                        <!-- Date Bubble -->
+                                                        <div class="flex justify-center mb-4">
+                                                            <span class="bg-[#e1f3fb] text-gray-600 text-[10px] px-2 py-1 rounded-lg">Bugün</span>
+                                                        </div>
+                                                        
+                                                        <!-- Message Bubble (The Template) -->
+                                                        <div class="bg-white rounded-lg max-w-[90%] p-1 relative rounded-tl-none">
+                                                            <!-- Triangle for bubble tail -->
+                                                            <div class="absolute top-0 -left-2 w-0 h-0 border-t-[10px] border-t-white border-l-[10px] border-l-transparent"></div>
+                                                            
+                                                            <!-- Template Content Container -->
+                                                            <div id="whatsappPreview" class="p-2">
+                                                                <div class="text-center text-gray-500 text-sm">
+                                                                    Şablon içeriğini soldaki formdan düzenleyin
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <!-- Time -->
+                                                            <div class="text-[10px] text-gray-500 text-right px-1 pb-1">
+                                                                12:00
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Validation Messages -->
+                                    <div id="templateValidation" class="mt-6 hidden">
+                                        <div class="rounded-lg bg-orange-50 border border-orange-200 p-4">
+                                            <div class="flex items-start">
+                                                <div class="flex-shrink-0">
+                                                    <svg class="h-5 w-5 text-orange-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <div class="ml-3 w-full">
+                                                    <h3 class="text-sm font-medium text-orange-800">
+                                                        Dikkat Edilmesi Gerekenler
+                                                    </h3>
+                                                    <div class="mt-2 text-sm text-orange-700">
+                                                        <ul id="validationMessages" class="list-disc pl-5 space-y-1">
+                                                            <!-- Validation messages will appear here -->
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end space-x-3 p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0 rounded-b-lg">
+                            <button type="button" id="closeModalBtn2" class="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                                İptal
+                            </button>
+                            <button type="button" id="createTemplateBtn2" class="px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary-dark">
+                                Şablon Oluştur
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- View Template Form -->
+                <div id="viewTemplateForm" class="hidden h-full flex flex-col">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 p-4 overflow-y-auto flex-grow custom-scrollbar">
+                        <!-- Left Column - Template Info -->
+                        <div>
+                            <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                                <h4 class="text-sm font-medium text-gray-700 mb-3">Şablon Bilgileri</h4>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Ad:</span>
+                                        <span class="text-sm font-medium" id="viewTemplateName">-</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Kategori:</span>
+                                        <span class="text-sm font-medium" id="viewTemplateCategory">-</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Durum:</span>
+                                        <span class="text-xs font-medium px-2 py-1 rounded-full" id="viewTemplateStatus">-</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Dil:</span>
+                                        <span class="text-sm font-medium" id="viewTemplateLanguage">-</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Oluşturulma:</span>
+                                        <span class="text-sm font-medium" id="viewTemplateCreated">-</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Kalite Puanı:</span>
+                                        <span class="text-sm font-medium" id="viewTemplateQuality">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="viewRejectionReasonContainer" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 hidden">
+                                <h4 class="text-sm font-medium text-red-800 mb-2">Red Nedeni</h4>
+                                <p class="text-sm text-red-700" id="viewRejectionReason">-</p>
+                            </div>
+
+                            <!-- Variable Definitions -->
+                            <div class="mb-4">
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">Değişken Tanımları</h4>
+                                <div id="viewVariableDefinitions" class="space-y-2 max-h-32 overflow-y-auto">
+                                    <!-- Variables will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Middle Column - Components -->
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 mb-3">Şablon Bileşenleri</h4>
+                            <div id="viewComponentsBuilder" class="space-y-3 max-h-96 overflow-y-auto">
+                                <!-- Components will be shown here in builder format -->
+                            </div>
+                        </div>
+
+                        <!-- Right Column - WhatsApp Preview -->
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-sm font-medium text-gray-700">WhatsApp Önizleme</h4>
+                                <button type="button" id="viewPreviewWithSampleData" class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100" title="Örnek Verilerle Önizle">
+                                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="flex justify-center">
+                                <div class="relative border-gray-800 dark:border-gray-800 bg-gray-800 border-[14px] rounded-[2.5rem] h-[600px] w-[300px]">
+                                    <div class="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute"></div>
+                                    <div class="h-[32px] w-[3px] bg-gray-800 absolute -left-[17px] top-[72px] rounded-l-lg"></div>
+                                    <div class="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
+                                    <div class="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[178px] rounded-l-lg"></div>
+                                    <div class="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
+                                    <div class="rounded-[2rem] overflow-hidden w-full h-full bg-white dark:bg-gray-800 flex flex-col relative">
+                                        <!-- Status Bar (Fake) -->
+                                        <div class="bg-[#008069] h-6 w-full flex-none z-20"></div>
+                                        <!-- App Bar -->
+                                        <div class="bg-[#008069] text-white px-4 py-2 flex items-center z-20 flex-none">
+                                            <div class="flex items-center space-x-2">
+                                                <div class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center overflow-hidden">
+                                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                                                </div>
+                                                <div class="flex flex-col">
+                                                    <span class="text-sm font-bold leading-tight">Şirket Adı</span>
+                                                    <span class="text-[10px] leading-tight opacity-80">İşletme Hesabı</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Screen Content -->
+                                        <div class="bg-[#e5ddd5] w-full flex-1 overflow-y-auto relative scrollbar-hide">
+                                            
+                                            <!-- Chat Area -->
+                                            <div class="p-3 pb-20">
+                                                <!-- Date Bubble -->
+                                                <div class="flex justify-center mb-4">
+                                                    <span class="bg-[#e1f3fb] text-gray-600 text-[10px] px-2 py-1 rounded-lg">Bugün</span>
+                                                </div>
+                                                
+                                                <!-- Message Bubble (The Template) -->
+                                                <div class="bg-white rounded-lg max-w-[90%] p-1 relative rounded-tl-none">
+                                                    <!-- Triangle for bubble tail -->
+                                                    <div class="absolute top-0 -left-2 w-0 h-0 border-t-[10px] border-t-white border-l-[10px] border-l-transparent"></div>
+                                                    
+                                                    <!-- Template Content Container -->
+                                                    <div id="viewWhatsappPreview" class="p-2">
+                                                        <div class="text-center text-gray-500 text-sm">
+                                                            Şablon yükleniyor...
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Time -->
+                                                    <div class="text-[10px] text-gray-500 text-right px-1 pb-1">
+                                                        12:00
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Preview Controls -->
+                            <div class="mt-4 space-y-2">
+                                <div class="text-xs text-gray-500">
+                                    <p>• Bu şablon Facebook tarafından onaylanmıştır</p>
+                                    <p>• Şablon düzenlenemez, sadece görüntülenebilir</p>
+                                    <p>• Yeni şablon oluşturmak için "Yeni Şablon" butonunu kullanın</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0 rounded-b-lg">
+                        <button type="button" id="closeViewModalBtn" class="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                            Kapat
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Media Upload Modal -->
+<div id="mediaUploadModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="mediaUploadModalLabel" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-900/40 transition-opacity" aria-hidden="true"></div>
+
+        <div class="relative w-full max-w-md p-4 my-8 text-left transition-all transform bg-white rounded-lg">
+            <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900" id="mediaUploadModalLabel">
+                    Medya Yükle
+                </h3>
+                <button type="button" class="text-gray-400 hover:text-gray-600" id="closeMediaModalBtn">
+                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mt-6">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Dosya Seç
+                    </label>
+                    <input type="file" id="mediaFileInput" accept="image/*,video/mp4,application/pdf"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <p class="text-xs text-gray-500 mt-1">
+                        Desteklenen formatlar: JPG, PNG, GIF (max 5MB), MP4 (max 16MB), PDF (max 100MB)
+                    </p>
+                </div>
+
+                <div id="mediaPreview" class="mb-4 hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Önizleme</label>
+                    <div id="mediaPreviewContent" class="border border-gray-200 rounded-lg p-4 text-center">
+                        <!-- Preview content will be inserted here -->
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <button type="button" id="closeMediaModalBtn2" class="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                        İptal
+                    </button>
+                    <button type="button" id="uploadMediaBtn" class="px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary-dark" disabled>
+                        Yükle
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sample Templates Modal -->
+<div id="sampleTemplatesModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="sampleTemplatesModalLabel" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-900/40 transition-opacity" aria-hidden="true"></div>
+
+        <div class="relative w-full max-w-4xl p-4 my-8 text-left transition-all transform bg-white rounded-lg">
+            <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900" id="sampleTemplatesModalLabel">
+                    Hazır WhatsApp Şablonları
+                </h3>
+                <button type="button" class="text-gray-400 hover:text-gray-600" id="closeSampleModalBtn">
+                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mt-6">
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600">
+                        Aşağıdaki hazır şablonlardan birini seçerek şablon editörünü açabilirsiniz.
+                        Şablon ismi sabit olarak belirlenmiştir, sadece içeriği düzenleyebilirsiniz.
+                    </p>
+                </div>
+
+                <div id="sampleTemplatesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                    <!-- Sample templates will be loaded here -->
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+                    <button type="button" id="closeSampleModalBtn2" class="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                        Kapat
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Preview Template Modal -->
+<div id="previewModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="previewModalLabel" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-900/40 transition-opacity" aria-hidden="true"></div>
+
+        <div class="relative w-full max-w-sm p-4 my-8 text-left transition-all transform bg-transparent shadow-none rounded-lg flex justify-center">
+             <!-- Phone Emulator -->
+            <div class="relative border-gray-800 dark:border-gray-800 bg-gray-800 border-[14px] rounded-[2.5rem] h-[600px] w-[300px]">
+                <div class="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute"></div>
+                <div class="h-[32px] w-[3px] bg-gray-800 absolute -left-[17px] top-[72px] rounded-l-lg"></div>
+                <div class="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
+                <div class="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[178px] rounded-l-lg"></div>
+                <div class="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
+                <div class="rounded-[2rem] overflow-hidden w-full h-full bg-white dark:bg-gray-800 relative flex flex-col">
+                     <!-- Status Bar (Fixed inside frame) -->
+                    <div class="bg-[#008069] h-6 w-full flex-shrink-0"></div>
+                     <!-- App Bar (Fixed inside frame) -->
+                    <div class="bg-[#008069] text-white px-4 py-2 flex items-center z-10 flex-shrink-0">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center overflow-hidden">
+                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-sm font-semibold truncate w-32" id="previewModalName">WhatsApp Şablon</span>
+                                <span class="text-[10px] text-white text-opacity-80">Online</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Screen Content -->
+                    <div class="bg-[#e5ddd5] w-full flex-1 overflow-y-auto relative scrollbar-hide">
+                        <!-- Chat Area -->
+                        <div class="min-h-full flex flex-col chat-content relative">
+                            <!-- Content will be injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Close Button Overlay -->
+                    <button id="closePreviewModalBtn" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white rounded-full p-2 hover:bg-black focus:outline-none opacity-50 hover:opacity-100 transition-opacity z-20">
+                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="templateModuleSelectorWrapper" class="hidden">
+    <div id="templateModuleSelectorContent">
+        <p class="text-sm text-gray-500 mb-4">
+            Lütfen oluşturmak istediğiniz şablon için bir modül (veri kaynağı) seçin.
+        </p>
+        <partial name="_TemplateModuleSelector" />
+    </div>
+</div>
+
+<!-- Template Analytics Modal -->
+<div id="analyticsModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="analyticsModalLabel" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-900/40 transition-opacity" aria-hidden="true"></div>
+
+        <div class="relative w-full max-w-2xl p-6 my-8 text-left transition-all transform bg-white rounded-xl">
+            <!-- Header -->
+            <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center" id="analyticsModalLabel">
+                        <svg class="w-5 h-5 mr-2 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Şablon Analitiği
+                    </h3>
+                    <p class="text-sm text-gray-500 mt-1" id="analyticsTemplateName">-</p>
+                </div>
+                <button type="button" class="text-gray-400 hover:text-gray-600" id="closeAnalyticsModalBtn">
+                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Date Range Selector -->
+            <div class="mt-4 flex items-center gap-4">
+                <div class="flex-1">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Başlangıç Tarihi</label>
+                    <input type="date" id="analyticsStartDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                </div>
+                <div class="flex-1">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Bitiş Tarihi</label>
+                    <input type="date" id="analyticsEndDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                </div>
+                <div class="flex-shrink-0 pt-5">
+                    <button type="button" id="refreshAnalyticsBtn" class="p-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="analyticsLoading" class="hidden py-12 text-center">
+                <svg class="animate-spin h-8 w-8 text-primary mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-gray-500">Analitik verileri yükleniyor...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="analyticsError" class="hidden py-8 text-center">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <p class="text-red-600 font-medium" id="analyticsErrorMessage">Hata oluştu</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="analyticsEmpty" class="hidden py-8 text-center">
+                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                </div>
+                <p class="text-gray-500">Bu tarih aralığında analitik verisi bulunamadı.</p>
+            </div>
+
+            <!-- Analytics Content -->
+            <div id="analyticsContent" class="hidden mt-6">
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-sky-50 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-semibold text-sky-700" id="statSent">0</div>
+                        <div class="text-xs text-sky-700 mt-1">Gönderilen</div>
+                    </div>
+                    <div class="bg-emerald-50 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-semibold text-emerald-700" id="statDelivered">0</div>
+                        <div class="text-xs text-emerald-700 mt-1">İletilen</div>
+                    </div>
+                    <div class="bg-violet-50 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-semibold text-violet-700" id="statRead">0</div>
+                        <div class="text-xs text-violet-700 mt-1">Okunan</div>
+                    </div>
+                    <div class="bg-rose-50 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-semibold text-rose-700" id="statFailed">0</div>
+                        <div class="text-xs text-rose-700 mt-1">Başarısız</div>
+                    </div>
+                </div>
+
+                <!-- Rates -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Teslimat Oranı</span>
+                            <span class="text-lg font-semibold text-emerald-700" id="rateDelivery">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-emerald-400 h-2 rounded-full transition-all duration-500" id="rateDeliveryBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Okunma Oranı</span>
+                            <span class="text-lg font-semibold text-violet-700" id="rateRead">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-violet-400 h-2 rounded-full transition-all duration-500" id="rateReadBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Button Clicks -->
+                <div id="buttonClicksSection" class="hidden">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Buton Tıklamaları</h4>
+                    <div id="buttonClicksList" class="space-y-2">
+                        <!-- Button stats will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Conversion Tracking Section -->
+                <div id="conversionSection" class="hidden mt-6">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Dönüşüm Takibi
+                    </h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-orange-50 rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-orange-700" id="conversionOrderCount">0</div>
+                            <div class="text-xs text-orange-600 mt-1">Sipariş Sayısı</div>
+                        </div>
+                        <div class="bg-yellow-50 rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-yellow-700" id="conversionRevenue">₺0</div>
+                            <div class="text-xs text-yellow-600 mt-1">Toplam Ciro</div>
+                        </div>
+                    </div>
+                    <div id="conversionOrdersList" class="mt-4 hidden">
+                        <h5 class="text-xs font-medium text-gray-600 mb-2">Son Siparişler</h5>
+                        <div class="max-h-32 overflow-y-auto space-y-1" id="conversionOrdersListContent">
+                            <!-- Orders will be listed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
+                <button type="button" id="closeAnalyticsModalBtn2" class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Kapat
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @Html.AntiForgeryToken()
+    <script src="~/js/template-module-selector.js" asp-append-version="true"></script>
+    <script src="~/js/facebook-whatsapp-templates.js" asp-append-version="true"></script>
+    <script src="~/js/whatsapp-templates-ui.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var refreshBtn = document.getElementById('refreshTemplatesBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', function() {
+                    var icon = refreshBtn.querySelector('.refresh-icon');
+                    if (icon) icon.classList.add('animate-spin');
+                    refreshBtn.disabled = true;
+                    window.location.reload();
+                });
+            }
+        });
+    </script>
+}

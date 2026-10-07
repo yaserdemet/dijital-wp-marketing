@@ -1,0 +1,713 @@
+﻿@using PushDashboard.ViewModels
+@model GiftWheelViewModel
+@{
+    ViewData["Title"] = "Hediye Çarkı";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <style>
+        .gift-wheel-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .wheel-preview {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: conic-gradient(
+                #ff6b6b 0deg 60deg,
+                #4ecdc4 60deg 120deg,
+                #45b7d1 120deg 180deg,
+                #96ceb4 180deg 240deg,
+                #feca57 240deg 300deg,
+                #ff9ff3 300deg 360deg
+            );
+            position: relative;
+            margin: 0 auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .wheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        
+        .stats-card {
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .prize-color-preview {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+    </style>
+}
+
+<!-- Anti-forgery token for AJAX requests -->
+@Html.AntiForgeryToken()
+
+<main class="min-h-screen bg-gray-50/50 pb-20">
+    <!-- Sticky Header -->
+    <div class="sticky top-2 lg:top-4 z-20 mb-4 lg:mb-6">
+        <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm px-4 py-3 lg:px-6 lg:py-4">
+            <div class="flex items-center gap-3 lg:gap-4 w-full md:w-auto">
+                <div class="p-2.5 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-xl text-white shadow-sm">
+                    <i class="fas fa-dharmachakra text-lg"></i>
+                </div>
+                <div class="min-w-0">
+                    <h2 class="text-lg lg:text-xl font-bold text-gray-900 truncate">Hediye Çarkı</h2>
+                    <div class="flex items-center gap-2 text-xs lg:text-sm text-gray-500 truncate">
+                        <span class="truncate">Müşterileriniz için etkileşimli hediye çarkı</span>
+                    </div>
+                </div>
+            </div>
+            @if (Model.Wheel != null)
+            {
+                <div class="grid grid-cols-2 md:flex md:items-center gap-2 lg:gap-3 w-full md:w-auto mt-2 md:mt-0">
+                    <!-- Status Toggle -->
+                    <button type="button" id="toggleWheelStatus"
+                            class="@(Model.Wheel.IsActive ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-600 border-gray-200") px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium rounded-lg flex items-center justify-center md:justify-start gap-2 border shadow-sm whitespace-nowrap transition-all w-full md:w-auto"
+                            data-active="@Model.Wheel.IsActive.ToString().ToLower()">
+                        <span class="w-2.5 h-2.5 rounded-full @(Model.Wheel.IsActive ? "bg-green-500 animate-pulse" : "bg-gray-400")"></span>
+                        <span>@(Model.Wheel.IsActive ? "Aktif" : "Pasif")</span>
+                    </button>
+                    <!-- Preview Button -->
+                    <button type="button" id="testModalBtn" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto" title="Modülü yeni bir pencerede test et">
+                        <i class="fas fa-external-link-alt text-gray-400"></i>
+                        <span class="hidden sm:inline">Canlı Test</span>
+                        <span class="inline sm:hidden">Test</span>
+                    </button>
+                    <!-- Export Button -->
+                    <button type="button" id="exportToR2Btn" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg hover:from-green-700 hover:to-emerald-700 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                        <i class="fas fa-upload"></i> 
+                        <span class="hidden sm:inline">Siteye Aktar</span>
+                        <span class="inline sm:hidden">Aktar</span>
+                    </button>
+                    <!-- Save Button -->
+                    <button type="button" id="saveSettingsHeaderBtn"
+                            onclick="document.getElementById('wheelSettingsForm')?.dispatchEvent(new Event('submit', { cancelable: true }))"
+                            class="px-4 lg:px-6 py-2 text-xs lg:text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm hover:shadow transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                        <i class="fas fa-save"></i> Kaydet
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+
+
+    
+    <!-- KPI Cards - Row 1 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6 mt-12" id="kpiCardsContainer">
+        <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-5 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-xs font-medium">Toplam Çevirme</p>
+                    <p class="text-2xl font-bold" id="kpiTotalSpins">@Model.Kpis.TotalSpins</p>
+                    <p class="text-blue-100 text-xs mt-1">
+                        Bugün: <span id="kpiSpinsToday">@Model.Kpis.SpinsToday</span>
+                    </p>
+                </div>
+                <div class="text-blue-200">
+                    <i class="fas fa-sync-alt text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-5 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-xs font-medium">Oluşan Kupon</p>
+                    <p class="text-2xl font-bold" id="kpiVouchersCreated">@Model.Kpis.TotalVouchersCreated</p>
+                    <p class="text-green-100 text-xs mt-1">
+                        Oran: <span id="kpiCreationRate">@(Model.Kpis.TotalSpins > 0 ? Math.Round((decimal)Model.Kpis.TotalVouchersCreated / Model.Kpis.TotalSpins * 100, 1) : 0)%</span>
+                    </p>
+                </div>
+                <div class="text-green-200">
+                    <i class="fas fa-ticket-alt text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-teal-500 to-teal-600 rounded-lg p-5 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-teal-100 text-xs font-medium">Kullanılan Kupon</p>
+                    <p class="text-2xl font-bold" id="kpiVouchersUsed">@Model.Kpis.TotalVouchersUsed</p>
+                    <p class="text-teal-100 text-xs mt-1">
+                        Kullanım: <span id="kpiUsageRate">@Model.Kpis.VoucherUsageRate%</span>
+                    </p>
+                </div>
+                <div class="text-teal-200">
+                    <i class="fas fa-check-circle text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-5 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100 text-xs font-medium">Kupon Kaynaklı Ciro</p>
+                    <p class="text-2xl font-bold" id="kpiOrderAmountWithKDV">@Model.Kpis.OrderAmountWithKDV.ToString("N2") ₺</p>
+                    <p class="text-purple-100 text-xs mt-1">
+                        Brüt sepet tutarı
+                    </p>
+                </div>
+                <div class="text-purple-200">
+                    <i class="fas fa-coins text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-5 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-orange-100 text-xs font-medium">Kupon İndirim Toplamı</p>
+                    <p class="text-2xl font-bold" id="kpiTotalDiscountAmount">@Model.Kpis.TotalDiscountAmount.ToString("N2") ₺</p>
+                    <p class="text-orange-100 text-xs mt-1">
+                        Verilen toplam indirim
+                    </p>
+                </div>
+                <div class="text-orange-200">
+                    <i class="fas fa-tag text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-pink-500 to-pink-600 rounded-lg p-5 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-pink-100 text-xs font-medium">Maliyet</p>
+                    <p class="text-2xl font-bold" id="kpiTotalCost">@Model.Kpis.TotalCost.ToString("N2") ₺</p>
+                    <p class="text-pink-100 text-xs mt-1">
+                        Tahmini Toplam Maliyet
+                    </p>
+                </div>
+                <div class="text-pink-200">
+                    <i class="fas fa-lira-sign text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Integration Status Check -->
+        @if (Model.IntegrationStatus.MissingIntegrations.Any() || Model.IntegrationStatus.ConfigurationIssues.Any())
+        {
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <div class="flex items-start">
+                    <i class="fas fa-exclamation-triangle text-yellow-500 mt-1 mr-3"></i>
+                    <div>
+                        <h3 class="text-yellow-800 font-medium mb-2">Entegrasyon Uyarısı</h3>
+                        @if (Model.IntegrationStatus.MissingIntegrations.Any())
+                        {
+                            <p class="text-yellow-700 text-sm mb-2">Eksik entegrasyonlar:</p>
+                            <ul class="text-yellow-700 text-sm list-disc list-inside mb-2">
+                                @foreach (var missing in Model.IntegrationStatus.MissingIntegrations)
+                                {
+                                    <li>@missing</li>
+                                }
+                            </ul>
+                        }
+                        @if (Model.IntegrationStatus.ConfigurationIssues.Any())
+                        {
+                            <p class="text-yellow-700 text-sm mb-2">Yapılandırma sorunları:</p>
+                            <ul class="text-yellow-700 text-sm list-disc list-inside">
+                                @foreach (var issue in Model.IntegrationStatus.ConfigurationIssues)
+                                {
+                                    <li>@issue</li>
+                                }
+                            </ul>
+                        }
+                        <a href="/Integration" class="text-yellow-800 underline text-sm mt-2 inline-block">
+                            Entegrasyonları Düzenle
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+
+
+
+    <!-- Main Content Grid -->
+    
+    <!-- Tab Navigation -->
+    <div class="border-b border-gray-200 mb-4 md:mb-6 overflow-x-auto">
+        <nav class="-mb-px flex space-x-4 md:space-x-8" aria-label="Tabs">
+            <button id="tab-settings-btn" onclick="switchTab('settings')" class="border-indigo-500 text-indigo-600 whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-sm">
+                <i class="fas fa-cog mr-2"></i> Ayarlar
+            </button>
+            <button id="tab-stats-btn" onclick="switchTab('stats')" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-sm">
+                <i class="fas fa-chart-line mr-2"></i> İstatistikler
+            </button>
+        </nav>
+    </div>
+
+    <!-- Tab Contents -->
+    <div id="tab-content-settings" class="flex flex-col lg:flex-row gap-4 md:gap-6 items-stretch">
+        <!-- Left Column: Settings and Prizes (Grow to fill available space) -->
+        <div class="flex-1 w-full lg:w-auto min-w-0 space-y-4 md:space-y-6 transition-all duration-300">
+            
+            <!-- Prizes Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="p-2 md:p-4 border-b border-gray-100">
+                     <h3 class="text-lg font-bold text-gray-900">Dilimler</h3>
+                </div>
+                <div class="p-2 md:p-4">
+                     @await Html.PartialAsync("Partials/_PrizeManagement", Model)
+                </div>
+            </div>
+
+            <!-- Settings Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                 <div class="p-2 md:p-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+                    <h3 class="text-lg font-bold text-gray-900">Ayarlar</h3>
+                </div>
+                <div class="p-2 md:p-4">
+                     @await Html.PartialAsync("Partials/_WheelSettings", Model)
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Preview (Flex item, sized by content/JS to match wheel) -->
+        <div class="flex-none w-full lg:w-auto transition-all duration-300 ease-in-out" id="rightColumnContainer">
+             <div class="sticky top-20 md:top-24 mx-auto" id="previewWrapper">
+                  <div class="flex flex-col sm:flex-row justify-end items-center mb-4 md:mb-6 bg-white p-3 rounded-xl shadow-sm border border-gray-100 gap-3">
+                       
+                       <div class="flex justify-end flex-wrap gap-2 w-full sm:w-auto">
+                           <button type="button" id="triggerSpinBtn" class="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5 transform active:scale-95 flex items-center gap-2">
+                                <i class="fas fa-play text-indigo-100"></i>
+                                <span>Çarkı Çevir</span>
+                           </button>
+                       </div>
+                  </div>
+                  
+                  <!-- Preview Container -->
+                  <div id="livePreviewContainer" class="relative flex items-center justify-center overflow-visible mb-6">
+                        <!-- Module will inject here -->
+                        <div class="text-gray-400 text-sm">Önizleme yükleniyor...</div>
+                  </div>
+             </div>
+        </div>
+    </div>
+
+    <!-- Stats Tab Content (Hidden by default) -->
+    <div id="tab-content-stats" class="hidden">
+         <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">İstatistikler</h3>
+            @await Html.PartialAsync("Partials/_Statistics", Model)
+         </div>
+    </div>
+</main>
+
+<!-- Modals -->
+@await Html.PartialAsync("Partials/_PrizeModal")
+@await Html.PartialAsync("Partials/_PreviewModal")
+@await Html.PartialAsync("Partials/_LegalTextsModal")
+
+@section Scripts {
+    <script src="~/js/modules/gift-wheel-module.js"></script>
+    <script src="~/js/gift-wheel-admin.js"></script>
+    <partial name="~/Views/Store/Partials/_ModuleSettingsScriptsPartial.cshtml" />
+    <script>
+        (function () {
+            const originalSelectTemplate = window.selectTemplate;
+
+            window.clearTemplateSelection = function (channelType) {
+                const templateInput = document.getElementById(`setting-${channelType}-template`) ||
+                    document.getElementById(`setting-${channelType}-template-id`);
+                const templateNameInput = document.getElementById(`setting-${channelType}-template-name`);
+                const templateDisplayDiv = document.getElementById(`selected-template-${channelType}`);
+                const clearButton = document.getElementById(`clear-template-${channelType}`);
+
+                if (templateInput) {
+                    templateInput.value = '';
+                }
+
+                if (templateNameInput) {
+                    templateNameInput.value = '';
+                }
+
+                if (templateDisplayDiv) {
+                    templateDisplayDiv.innerHTML = '<span class="text-gray-400 italic">Şablon seçimi zorunlu</span>';
+                }
+
+                if (clearButton) {
+                    clearButton.classList.add('hidden');
+                }
+
+                if (typeof showNotification === 'function') {
+                    showNotification('Şablon kaldırıldı.', 'success');
+                }
+            };
+
+            window.selectTemplate = function (templateName, templateDisplayName) {
+                if (typeof originalSelectTemplate === 'function') {
+                    originalSelectTemplate(templateName, templateDisplayName);
+                }
+
+                const clearButton = document.getElementById('clear-template-whatsapp');
+                if (clearButton) {
+                    clearButton.classList.remove('hidden');
+                }
+            };
+        })();
+
+        // Tab Switching Logic
+        window.switchTab = function(tabName) {
+            const settingsBtn = document.getElementById('tab-settings-btn');
+            const statsBtn = document.getElementById('tab-stats-btn');
+            const settingsContent = document.getElementById('tab-content-settings');
+            const statsContent = document.getElementById('tab-content-stats');
+
+            if (tabName === 'settings') {
+                // Activate Settings
+                settingsBtn.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                settingsBtn.classList.add('border-indigo-500', 'text-indigo-600');
+                
+                statsBtn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                statsBtn.classList.remove('border-indigo-500', 'text-indigo-600');
+
+                settingsContent.classList.remove('hidden');
+                settingsContent.classList.add('flex'); // Because it was flex
+                statsContent.classList.add('hidden');
+            } else {
+                // Activate Stats
+                statsBtn.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                statsBtn.classList.add('border-indigo-500', 'text-indigo-600');
+                
+                settingsBtn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                settingsBtn.classList.remove('border-indigo-500', 'text-indigo-600');
+
+                statsContent.classList.remove('hidden');
+                settingsContent.classList.add('hidden');
+                settingsContent.classList.remove('flex');
+                
+                if (window.loadRecentActivities) {
+                    window.loadRecentActivities();
+                }
+
+                if (window.loadStatistics) {
+                     setTimeout(function() {
+                        window.loadStatistics();
+                     }, 100);
+                }
+            }
+        };
+
+        // Server-side prizes data
+        window.serverPrizes = @Html.Raw(Json.Serialize(Model.Prizes));
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Live Preview Logic
+            let livePreviewInstance = null;
+
+            function initLivePreview() {
+                const container = document.getElementById('livePreviewContainer');
+                if (!container) return;
+
+                const config = getFormConfig();
+                
+                // Ensure we have valid prizes for preview if none exist
+                if (!config.prizes || config.prizes.length === 0) {
+                    config.prizes = [
+                        { name: 'Ödül 1', color: '#ff6b6b', probability: 20, isActive: true },
+                        { name: 'Ödül 2', color: '#4ecdc4', probability: 20, isActive: true },
+                        { name: 'Ödül 3', color: '#45b7d1', probability: 20, isActive: true },
+                        { name: 'Ödül 4', color: '#96ceb4', probability: 20, isActive: true },
+                        { name: 'Ödül 5', color: '#feca57', probability: 20, isActive: true }
+                    ];
+                }
+
+                livePreviewInstance = new PushonicaGiftWheel({
+                    config: config,
+                    targetElement: container,
+                    manualInit: true,
+                    styleId: 'live-preview-styles',
+                    containerId: 'live-preview-widget',
+                    livePreview: true
+                });
+
+                // Monkey-patch for Preview Mode
+                // Override validateForm to bypass inputs
+                livePreviewInstance.validateForm = function() { 
+                    return true; 
+                };
+
+                // Override getUserData to provide mock data
+                livePreviewInstance.getUserData = function() {
+                    return {
+                        name: 'Test Kullanıcı',
+                        phone: '+905555555555',
+                        email: 'test@example.com'
+                    };
+                };
+
+                // Override callSpinAPI to simulate API response locally
+                livePreviewInstance.callSpinAPI = async function() {
+                    return new Promise((resolve) => {
+                        setTimeout(() => {
+                            const prizes = this.config.prizes;
+                            let totalProb = 0;
+                            prizes.forEach(p => totalProb += (p.probability || 0));
+                            
+                            let random = Math.random() * totalProb;
+                            let selectedPrize = null;
+                            let selectedIndex = 0;
+
+                            for (let i = 0; i < prizes.length; i++) {
+                                if (random < prizes[i].probability) {
+                                    selectedPrize = prizes[i];
+                                    selectedIndex = i;
+                                    break;
+                                }
+                                random -= prizes[i].probability;
+                            }
+                            
+                            if (!selectedPrize) {
+                                selectedPrize = prizes[0];
+                                selectedIndex = 0;
+                            }
+
+                            resolve({
+                                success: true,
+                                won: true,
+                                prize: selectedPrize,
+                                wonIndex: selectedIndex, 
+                                message: `Tebrikler! ${selectedPrize.name} kazandınız.`
+                            });
+                        }, 500); 
+                    });
+                };
+
+                // We keep original showSpinResult and animateWheel
+                // But we handle the trigger from outside
+                
+                livePreviewInstance.init();
+
+            }
+
+            function updateLivePreview() {
+                if (!livePreviewInstance) {
+                    initLivePreview();
+                    return;
+                }
+
+                const config = getFormConfig();
+                livePreviewInstance.updateConfig(config);
+
+
+            }
+            
+            // Expose for external calls
+            window.updateLivePreview = updateLivePreview;
+
+            function getFormConfig() {
+                const form = document.getElementById('wheelSettingsForm');
+                if (!form) return {};
+
+                // Helper to safely get value
+                const getVal = (id) => {
+                    const el = document.getElementById(id);
+                    return el ? el.value : '';
+                };
+
+                const getCheck = (id) => {
+                    const el = document.getElementById(id);
+                    return el ? el.checked : false;
+                };
+
+                // Always get prizes from DOM to reflect current order and state
+                // This ensures drag & drop updates the wheel immediately
+                let prizes = getPrizesFromDOM();
+
+                // If Prize Form is present (modal is open)
+                const prizeForm = document.getElementById('prizeForm');
+                if (prizeForm) {
+                     const modalId = document.getElementById('prizeId').value;
+                     const modalName = document.getElementById('prizeName').value;
+                     const modalColor = document.getElementById('prizeColor').value;
+                     const modalTextColor = document.getElementById('textColor').value;
+                     const modalProb = parseInt(document.getElementById('probability').value) || 0;
+                     const modalActive = document.getElementById('prizeIsActive') ? document.getElementById('prizeIsActive').checked : true;
+                     
+                     if (modalId) {
+                         // Editing existing
+                         const idx = prizes.findIndex(p => p.id == modalId);
+                         if (idx !== -1) {
+                             prizes[idx].name = modalName;
+                             prizes[idx].color = modalColor;
+                             prizes[idx].textColor = modalTextColor;
+                             prizes[idx].probability = modalProb;
+                             // prizes[idx].isActive = modalActive; 
+                         }
+                     } else {
+                         // Adding new - simulate it being at the end or wherever
+                         // For preview, we can just push it
+                         prizes.push({
+                             id: 'temp-new',
+                             name: modalName || 'Yeni Hediye',
+                             color: modalColor || '#cccccc',
+                             textColor: modalTextColor || '#ffffff',
+                             probability: modalProb,
+                             isActive: true
+                         });
+                     }
+                }
+
+                if (!prizes || prizes.length === 0) {
+                     prizes = [
+                        { name: 'Ödül 1', color: '#ff6b6b', probability: 20, isActive: true },
+                        { name: 'Ödül 2', color: '#4ecdc4', probability: 20, isActive: true },
+                        { name: 'Ödül 3', color: '#45b7d1', probability: 20, isActive: true },
+                        { name: 'Ödül 4', color: '#96ceb4', probability: 20, isActive: true },
+                        { name: 'Ödül 5', color: '#feca57', probability: 20, isActive: true }
+                    ];
+                }
+
+                return {
+                    title: getVal('wheelTitle'),
+                    subtitle: getVal('wheelSubtitle'),
+                    buttonText: getVal('buttonText'),
+                    wheelSize: getCheck('useDefaultSize') ? 0 : (parseInt(getVal('wheelSize')) || 300),
+                    primaryColor: getVal('primaryColor'),
+                    secondaryColor: getVal('secondaryColor'),
+                    layout: getVal('layout'),
+                    logoUrl: getVal('logoUrl'),
+                    logoAnimation: getCheck('logoAnimation'),
+                    logoSizePercentage: parseInt(getVal('logoSizePercentage')) || 15 , // fallback to 15 if 0 or NaN
+                    backgroundImageUrl: getVal('backgroundImageUrl'),
+                    modalTextColor: getVal('modalTextColor') || '#1f2937',
+                    privacyPolicyUrl: getVal('privacyPolicyUrl'),
+                    termsUrl: getVal('termsUrl'),
+                    requirePhone: getCheck('requirePhone'),
+                    requireEmail: getCheck('requireEmail'),
+                    winMessage: getVal('winMessage') || "Tebrikler! {prize} kazandınız!",
+                    loseMessage: getVal('loseMessage') || "Bu sefer olmadı, tekrar deneyin!",
+                    notificationTemplate: getVal('notificationTemplate'),
+                    prizes: prizes
+                };
+            }
+
+            function getPrizesFromDOM() {
+                const prizes = [];
+                const prizeItems = document.querySelectorAll('.prize-item');
+                
+                prizeItems.forEach(prizeItem => {
+                    // Check if active
+                    const toggleButton = prizeItem.querySelector('.toggle-prize-status');
+                    const isActive = toggleButton ? toggleButton.dataset.active === 'true' : true;
+                    
+                    if (isActive) {
+                        // Id
+                        const id = prizeItem.dataset.prizeId;
+
+                        // Name
+                        let name = "Hediye";
+                        const nameEl = prizeItem.querySelector('.font-semibold.text-gray-800');
+                        if(nameEl) {
+                             // Get text content, filtering out icon elements if any
+                             // Using just textContent might include tooltips or icons hidden text
+                             // Last child node is usually the text in the revised structure
+                             name = nameEl.childNodes[nameEl.childNodes.length - 1].textContent.trim();
+                        }
+
+                        // Color
+                        let color = "#cccccc";
+                        const colorEl = prizeItem.querySelector('div[title="Görünüm Önizleme"]');
+                        if(colorEl) color = colorEl.style.backgroundColor; 
+
+                        // Text Color
+                        let textColor = "#ffffff";
+                        const textColorEl = prizeItem.querySelector('div[title="Görünüm Önizleme"] span');
+                        if(textColorEl) textColor = textColorEl.style.color;
+                        
+                        // Probability
+                        let probability = 0;
+                        const probabilityElement = prizeItem.querySelector('[data-probability]');
+                        if (probabilityElement) {
+                             probability = parseInt(probabilityElement.dataset.probability) || 0;
+                        } else {
+                             const probMatch = prizeItem.textContent.match(/%(\d+)/);
+                             if (probMatch) probability = parseInt(probMatch[1]);
+                        }
+                        
+                        prizes.push({ id, name, color, textColor, probability, isActive });
+                    }
+                });
+                
+                return prizes;
+            }
+
+            setTimeout(initLivePreview, 500);
+
+            // Bind Spin Button
+            const spinBtn = document.getElementById('triggerSpinBtn');
+            if (spinBtn) {
+                spinBtn.addEventListener('click', async () => {
+                   if (livePreviewInstance) {
+                       // Trigger the internal logic
+                       // We can't easily click the internal button because it creates a new flow
+                       // But since we fixed validateForm and getUserData, we can call handleSpin directly
+                       
+                       // Visual feedback on trigger
+                       spinBtn.disabled = true;
+                       spinBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>';
+                       
+                       await livePreviewInstance.handleSpin();
+                       
+                       spinBtn.disabled = false;
+                       spinBtn.innerHTML = '<i class="fas fa-play mr-1"></i> Çevir';
+                   }
+                });
+            }
+
+            // Bind Test Modal Button
+            const testModalBtn = document.getElementById('testModalBtn');
+            if (testModalBtn) {
+                testModalBtn.addEventListener('click', () => {
+                    const config = getFormConfig();
+                    
+                    // Create a new instance for the modal test
+                    const testInstance = new PushonicaGiftWheel({
+                        config: config,
+                        manualInit: true,
+                        testMode: true
+                    });
+                    
+                    testInstance.showWheelModal();
+                });
+            }
+
+            // Add event listeners to inputs
+            const form = document.getElementById('wheelSettingsForm');
+            if (form) {
+                const inputs = form.querySelectorAll('input, select, textarea');
+                inputs.forEach(input => {
+                    input.addEventListener('input', updateLivePreview);
+                    input.addEventListener('change', updateLivePreview);
+                });
+            }
+            
+            // Listen for prize updates (if custom event or we can observe list)
+            // Ideally dispatch event when prize list changes
+            
+        });
+    </script>
+}

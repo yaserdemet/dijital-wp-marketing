@@ -1,0 +1,1131 @@
+@model PushDashboard.Controllers.FavoriteProductIndexViewModel
+@{
+    ViewData["Title"] = "Favori Ürünler";
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+    /* Favorite Product Page - minimal pastel, follows the app theme */
+    :root {
+        --fp-theme-50: var(--theme-50);
+        --fp-theme-100: var(--theme-100);
+        --fp-theme-200: var(--theme-200);
+        --fp-theme-300: var(--theme-300);
+        --fp-theme-400: var(--theme-400);
+        --fp-theme-500: var(--theme-500);
+        --fp-theme-600: var(--theme-600);
+        --fp-theme-700: var(--theme-700);
+        --fp-theme-800: var(--theme-800);
+        --fp-theme-900: var(--theme-900);
+        --fp-theme-rgb: var(--theme-color-rgb);
+        --fp-soft-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .fp-page { min-height: 100vh; }
+
+    .fp-header {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 1.5rem 1.75rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .fp-stat-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        border: 1px solid #e5e7eb;
+        transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .fp-stat-card:hover { box-shadow: var(--fp-soft-shadow); border-color: var(--fp-theme-100); }
+
+    .fp-table-container { background: white; border-radius: 0.75rem; border: 1px solid #e5e7eb; overflow: hidden; }
+    .fp-table thead th { background: #f9fafb; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280; font-weight: 500; padding: 0.75rem 1.25rem; border-bottom: 1px solid #e5e7eb; white-space: nowrap; text-align: left; }
+    .fp-table tbody tr { transition: background-color 0.15s ease; }
+    .fp-table tbody tr:hover { background: #f9fafb; }
+    .fp-table tbody td { padding: 1rem 1.25rem; vertical-align: middle; border-bottom: 1px solid #f3f4f6; }
+
+    .fp-badge { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.2rem 0.625rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 500; }
+    .fp-badge-success { background: #ecfdf5; color: #047857; border: 1px solid #d1fae5; }
+    .fp-badge-rose { background: var(--fp-theme-50); color: var(--fp-theme-700); border: 1px solid var(--fp-theme-100); }
+    .fp-badge-warning { background: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
+    .fp-badge-neutral { background: #f9fafb; color: #4b5563; border: 1px solid #e5e7eb; }
+
+    .fp-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 500; transition: background-color 0.2s ease, border-color 0.2s ease; cursor: pointer; border: none; white-space: nowrap; }
+    .fp-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .fp-btn-primary { background: var(--fp-theme-600); color: white; }
+    .fp-btn-primary:hover:not(:disabled) { background: var(--fp-theme-800); }
+    .fp-btn-ghost { background: white; color: #4b5563; border: 1px solid #e5e7eb; }
+    .fp-btn-ghost:hover:not(:disabled) { background: #f9fafb; border-color: #d1d5db; color: #111827; }
+    .fp-btn-white { background: white; color: #374151; border: 1px solid #e5e7eb; }
+    .fp-btn-white:hover:not(:disabled) { background: #f9fafb; border-color: #d1d5db; }
+
+    .fp-action-btn { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 0.5rem; transition: background-color 0.2s; cursor: pointer; border: none; background: transparent; }
+
+    .fp-search-input { width: 100%; padding: 0.5rem 1rem 0.5rem 2.5rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; font-size: 0.875rem; background: white; transition: border-color 0.2s, box-shadow 0.2s; color: #111827; }
+    .fp-search-input:focus { outline: none; border-color: var(--fp-theme-600); box-shadow: 0 0 0 1px var(--fp-theme-600); }
+    .fp-search-input::placeholder { color: #9ca3af; }
+
+    .fp-date-input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; font-size: 0.875rem; background: white; color: #111827; transition: border-color 0.2s, box-shadow 0.2s; }
+    .fp-date-input:focus { outline: none; border-color: var(--fp-theme-600); box-shadow: 0 0 0 1px var(--fp-theme-600); }
+
+    .fp-checkbox { width: 1.125rem; height: 1.125rem; border-radius: 0.375rem; border: 1px solid #d1d5db; cursor: pointer; accent-color: var(--fp-theme-600); transition: all 0.15s; }
+    .fp-checkbox:checked { border-color: var(--fp-theme-600); }
+
+    .fp-product-img { width: 3rem; height: 3rem; object-fit: cover; border-radius: 0.5rem; border: 1px solid #f3f4f6; flex-shrink: 0; }
+    .fp-product-placeholder { width: 3rem; height: 3rem; border-radius: 0.5rem; background: #f3f4f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    /* Mobile Cards */
+    .fp-mobile-card { display: none; }
+
+    @@media (max-width: 1023px) {
+        .fp-desktop-table { display: none !important; }
+        .fp-mobile-card { display: block; }
+        .fp-mobile-card-item { background: white; border-radius: 0.75rem; border: 1px solid #e5e7eb; margin-bottom: 0.75rem; overflow: hidden; transition: box-shadow 0.2s; }
+        .fp-mobile-card-item:hover { box-shadow: var(--fp-soft-shadow); }
+    }
+
+    @@media (min-width: 1024px) {
+        .fp-mobile-card { display: none !important; }
+        .fp-desktop-table { display: block !important; }
+    }
+
+    /* Pagination */
+    .fp-page-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 2.25rem; height: 2.25rem; padding: 0 0.5rem; border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 500; border: 1px solid #e5e7eb; background: white; color: #4b5563; transition: all 0.15s; cursor: pointer; }
+    .fp-page-btn:hover:not(:disabled) { background: var(--fp-theme-50); border-color: var(--fp-theme-100); color: var(--fp-theme-700); }
+    .fp-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .fp-page-btn.active { background: var(--fp-theme-600); color: white; border-color: var(--fp-theme-600); }
+
+    /* Animations */
+    .fp-fade-in { animation: fpFadeIn 0.3s ease-out; }
+    @@keyframes fpFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+
+<div class="fp-page py-6 sm:py-8">
+    <div class="w-full px-4 sm:px-6 lg:px-8">
+
+        <!-- Premium Header -->
+        <div class="fp-header mb-8 fp-fade-in">
+            <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-lg bg-primary-50 border border-primary-100 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                            </svg>
+                        </div>
+                        <h1 class="text-2xl sm:text-3xl font-semibold text-gray-900 tracking-tight">Favori Ürünler</h1>
+                    </div>
+                    <p class="text-sm sm:text-base max-w-xl text-gray-500">Müşterilerinizin favorilerine eklediği ürünleri analiz edin ve kampanyalar oluşturun.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button id="syncButton" onclick="syncFavorites()" class="fp-btn fp-btn-white">
+                        <svg id="syncIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        <span id="syncText">Senkronize Et</span>
+                    </button>
+                    <button onclick="openSettingsModal()" class="fp-btn fp-btn-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10 5H3"></path><path d="M12 19H3"></path><path d="M14 3v4"></path><path d="M16 17v4"></path><path d="M21 12h-9"></path><path d="M21 19h-5"></path><path d="M21 5h-7"></path><path d="M8 10v4"></path><path d="M8 12H3"></path></svg>
+                        Ayarlar
+                    </button>
+                </div>
+            </div>
+            
+            @if (Model.LastSyncAt.HasValue)
+            {
+                <div class="absolute bottom-3 left-7 text-xs text-gray-400">
+                    Son güncelleme: @Model.LastSyncAt?.ToString("dd.MM.yyyy HH:mm")
+                </div>
+            }
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4 mb-6 fp-fade-in" style="animation-delay: 0.1s;">
+            <div class="fp-stat-card">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="w-10 h-10 rounded-lg bg-primary-50 border border-primary-100 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-semibold text-gray-900" id="statTotalProducts">@Model.Stats.TotalFavoriteProducts</p>
+                <p class="text-xs text-gray-500 mt-1">Benzersiz Ürün</p>
+            </div>
+            
+            <div class="fp-stat-card">
+                 <div class="flex items-start justify-between mb-3">
+                    <div class="w-10 h-10 rounded-lg bg-violet-50 border border-violet-100 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-semibold text-gray-900" id="statTotalFavorites">@Model.Stats.TotalFavoriteCount</p>
+                <p class="text-xs text-gray-500 mt-1">Toplam Favori</p>
+            </div>
+
+            <div class="fp-stat-card">
+                 <div class="flex items-start justify-between mb-3">
+                    <div class="w-10 h-10 rounded-lg bg-sky-50 border border-sky-100 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 21a8 8 0 0 0-16 0"></path><circle cx="10" cy="8" r="5"></circle><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"></path></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-semibold text-gray-900" id="statUniqueMembers">@Model.Stats.TotalUniqueMembers</p>
+                <p class="text-xs text-gray-500 mt-1">Benzersiz Üye</p>
+            </div>
+
+            <div class="fp-stat-card">
+                 <div class="flex items-start justify-between mb-3">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                       <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-semibold text-gray-900" id="statThisMonth">@Model.Stats.FavoritesThisMonth</p>
+                <p class="text-xs text-gray-500 mt-1">Bu Ay Eklenen</p>
+            </div>
+
+            <div class="fp-stat-card">
+                 <div class="flex items-start justify-between mb-3">
+                    <div class="w-10 h-10 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center">
+                       <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M16 7h6v6"></path><path d="m22 7-8.5 8.5-5-5L2 17"></path></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-semibold text-gray-900" id="statThisWeek">@Model.Stats.FavoritesThisWeek</p>
+                <p class="text-xs text-gray-500 mt-1">Bu Hafta Eklenen</p>
+            </div>
+        </div>
+
+        <!-- Filter & Actions -->
+        <div class="mb-6 fp-fade-in" style="animation-delay: 0.25s;">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div class="relative flex-1">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" id="searchTerm" placeholder="Ürün adı veya stok kodu ile arayın..." class="fp-search-input">
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <input type="date" id="startDate" class="fp-date-input w-1/2 sm:w-40">
+                    <input type="date" id="endDate" class="fp-date-input w-1/2 sm:w-40">
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="applyFilters()" class="fp-btn fp-btn-primary">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 6h18"></path><path d="M7 12h10"></path><path d="M10 18h4"></path></svg>
+                        Filtrele
+                    </button>
+                    <button onclick="resetFilters()" class="fp-btn fp-btn-ghost">Sıfırla</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Warning Strip -->
+        @if (!Model.HasIntegration)
+        {
+            <div class="mb-6 fp-fade-in">
+                <div class="rounded-xl border border-amber-100 bg-amber-50 p-5">
+                     <div class="flex items-start gap-3">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+                        </div>
+                        <div>
+                             <h3 class="text-sm font-semibold text-amber-800">E-Ticaret Entegrasyonu Gerekli</h3>
+                             <p class="text-sm text-amber-700/80 mt-1">Favori ürünleri görüntüleyebilmek için e-ticaret entegrasyonunuzu yapılandırmanız gerekmektedir.</p>
+                             <div class="mt-3">
+                                <a href="@Url.Action("Index", "Integration")" class="text-xs font-semibold text-amber-700 hover:text-amber-900 underline">Entegrasyonu Yapılandır &#x2192;</a>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Table Container -->
+        <div class="fp-table-container fp-fade-in" style="animation-delay: 0.3s;">
+            <div class="px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-gray-200">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-base font-semibold text-gray-900">Favori Listesi</h2>
+                    <span id="productCount" class="fp-badge fp-badge-neutral">0 ürün</span>
+                </div>
+                <div>
+                     <button id="bulkNotificationBtn" onclick="sendBulkNotification()" style="display: none;" class="fp-btn fp-btn-primary text-xs sm:text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+                        Seçilenlere Bildirim (<span id="selectedCount">0</span>)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="fp-desktop-table">
+                <div class="overflow-x-auto">
+                    <table class="w-full fp-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 3rem; text-align: center;">
+                                    <input type="checkbox" id="selectAllCheckbox" onclick="toggleAllSelection()" class="fp-checkbox" title="Tümünü Seç">
+                                </th>
+                                <th>Ürün</th>
+                                <th>Stok Kodu</th>
+                                <th>Stok</th>
+                                <th>Fiyat</th>
+                                <th>Favori Sayısı</th>
+                                <th>Son Ekleme</th>
+                                <th style="text-align: right;">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mobile Cards -->
+             <div class="fp-mobile-card p-4">
+                 <div class="flex items-center justify-between mb-3 px-1" id="mobileSelectAllContainer" style="display: none;">
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-600 cursor-pointer select-none">
+                        <input type="checkbox" id="selectAllMobile" onclick="toggleAllSelection()" class="fp-checkbox">
+                        <span>Tümünü Seç</span>
+                    </label>
+                </div>
+                <div id="mobileProductsContainer"></div>
+            </div>
+
+            <!-- Loading & Empty States -->
+            <div id="loadingState" class="hidden py-16 text-center">
+                 <div class="inline-flex flex-col items-center gap-4">
+                    <div class="relative">
+                        <div class="w-12 h-12 rounded-full border-[3px] border-gray-200"></div>
+                        <div class="w-12 h-12 rounded-full border-[3px] border-transparent border-t-primary animate-spin absolute inset-0"></div>
+                    </div>
+                    <p class="text-sm text-gray-500 font-medium">Favori ürünler yükleniyor...</p>
+                </div>
+            </div>
+
+            <div id="emptyState" class="hidden py-16 text-center">
+                <div class="inline-flex flex-col items-center gap-3">
+                    <div class="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-700">Favori ürün bulunamadı</h3>
+                        <p class="text-sm text-gray-400 mt-1">Veritabanında kayıt yok veya filtrelerle eşleşen sonuç bulunamadı.</p>
+                    </div>
+                    <button onclick="syncFavorites()" class="mt-2 fp-btn fp-btn-primary text-xs">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Favorileri Senkronize Et
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div id="paginationContainer" class="hidden px-5 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                 <p class="text-sm text-gray-400">
+                    Toplam <span id="totalItems" class="font-semibold text-gray-700">0</span> ürün (<span id="totalFavorites" class="font-semibold text-gray-700">0</span> favori)
+                </p>
+                <div class="flex items-center gap-1.5">
+                    <button id="prevPageBtn" onclick="goToPage(currentPage - 1)" disabled class="fp-page-btn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <span class="px-3 text-sm text-gray-500">
+                        <span id="currentPageNum" class="font-semibold text-gray-800">1</span>
+                        <span class="mx-1">/</span>
+                        <span id="totalPagesNum">1</span>
+                    </span>
+                    <button id="nextPageBtn" onclick="goToPage(currentPage + 1)" disabled class="fp-page-btn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal" class="fixed inset-0 z-50 hidden" style="background: rgba(17,24,39,0.4);">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] max-w-2xl w-full max-h-[90vh] overflow-y-auto fp-fade-in border border-gray-200">
+            <div class="p-6 border-b border-gray-200 bg-primary-50 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-900">Favori Ürün Bildirim Ayarları</h3>
+                <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- Kanal Ayarlari -->
+                <div class="space-y-4">
+                    <h4 class="text-sm font-medium text-gray-900">Bildirim Kanalları</h4>
+                    <p class="text-xs text-gray-500 mb-4">Her kanal için şablon seçebilirsiniz</p>
+                    <div id="channelSettingsContainer" class="space-y-4">
+                        <div class="text-sm text-gray-500 italic">Kanal ayarları yükleniyor...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+                <button onclick="closeSettingsModal()" class="fp-btn fp-btn-ghost">İptal</button>
+                <button onclick="saveSettings()" id="saveSettingsBtn" class="fp-btn fp-btn-primary">Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Subscribers Modal -->
+<div id="memberModal" class="fixed inset-0 z-50 hidden" style="background: rgba(17,24,39,0.4);">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] max-w-2xl w-full max-h-[85vh] overflow-hidden fp-fade-in border border-gray-200">
+             <div class="p-6 border-b border-gray-200 bg-primary-50 flex justify-between items-center">
+                 <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Favoriye Ekleyenler</h3>
+                    <p class="text-sm text-gray-500 mt-0.5" id="memberModalProductName">Ürün</p>
+                 </div>
+                 <button onclick="closeMemberModal()" class="w-9 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[65vh]" id="memberListContent"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // State
+    let currentPage = 1;
+    let totalPages = 1;
+    let selectedProductIds = new Set();
+    let currentBatchProducts = [];
+    let currentSettings = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Settings));
+    const siteUrl = '@(Model.SiteUrl ?? "")';
+    const hasIntegration = @Html.Raw(Model.HasIntegration.ToString().ToLower());
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        if (hasIntegration) {
+            loadStats();
+        }
+        loadProducts();
+
+        document.getElementById('searchTerm').addEventListener('keypress', function(e) {
+            if(e.key === 'Enter') applyFilters();
+        });
+    });
+
+    // ========================
+    // Data Loading
+    // ========================
+    async function loadStats() {
+        try {
+            const response = await fetch('/FavoriteProduct/GetStats');
+            const data = await response.json();
+            if (data.success && data.stats) {
+                document.getElementById('statTotalProducts').textContent = formatNumber(data.stats.totalFavoriteProducts);
+                document.getElementById('statTotalFavorites').textContent = formatNumber(data.stats.totalFavoriteCount);
+                document.getElementById('statUniqueMembers').textContent = formatNumber(data.stats.totalUniqueMembers);
+                document.getElementById('statThisMonth').textContent = formatNumber(data.stats.favoritesThisMonth);
+                document.getElementById('statThisWeek').textContent = formatNumber(data.stats.favoritesThisWeek);
+            }
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+    }
+
+    async function loadProducts() {
+        showLoading(true);
+        hideEmpty();
+        
+        const searchTerm = document.getElementById('searchTerm').value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        const params = new URLSearchParams({ page: currentPage, pageSize: 20 });
+        if(searchTerm) params.append('searchTerm', searchTerm);
+        if(startDate) params.append('startDate', startDate);
+        if(endDate) params.append('endDate', endDate);
+
+        try {
+            const response = await fetch(`/FavoriteProduct/GetFavoriteProducts?${params}`);
+            const data = await response.json();
+            showLoading(false);
+
+            if(data.success) {
+                if(data.data.length === 0) {
+                    showEmpty();
+                    document.getElementById('productCount').textContent = '0 \u00FCr\u00FCn';
+                    currentBatchProducts = [];
+                } else {
+                    currentBatchProducts = data.data;
+                    renderTable(data.data);
+                    renderMobileCards(data.data);
+                    updatePagination(data);
+                    document.getElementById('productCount').textContent = `${data.totalCount} \u00FCr\u00FCn`;
+
+                    const m = document.getElementById('mobileSelectAllContainer');
+                    if(m) m.style.display = 'flex';
+                    updateSelectAllState();
+                }
+            } else {
+                 showNotification(data.message || 'Hata olu\u015Ftu', 'error');
+                 showEmpty();
+            }
+        } catch(e) {
+            console.error(e);
+            showLoading(false);
+            showEmpty();
+        }
+    }
+
+    // ========================
+    // Rendering
+    // ========================
+    function renderTable(products) {
+        const tbody = document.getElementById('productsTableBody');
+        tbody.innerHTML = '';
+        
+        products.forEach((p, index) => {
+            const productId = p.productId ?? 0;
+            const productName = p.productName || '\u0130simsiz';
+            const stockCode = p.stockCode || '-';
+            const stockQuantity = p.stockQuantity ?? 0;
+            const price = getNumericPrice(p.price);
+            const priceWithVat = getNumericPrice(p.priceWithVat);
+            const totalPrice = price + priceWithVat;
+            const currency = p.currency || 'TL';
+            const imageUrl = p.imageUrl || null;
+            const productUrl = p.productUrl || null;
+            const favoriteCount = p.favoriteCount ?? 0;
+            const lastAddedAt = p.lastAddedAt || null;
+            const firstAddedAt = p.firstAddedAt || null;
+
+            const isSelected = selectedProductIds.has(productId);
+            const row = document.createElement('tr');
+            row.className = 'fp-fade-in';
+            row.style.animationDelay = `${index * 0.03}s`;
+            
+            row.innerHTML = `
+                <td style="text-align: center;">
+                    <input type="checkbox" class="product-checkbox fp-checkbox" data-id="${productId}" ${isSelected ? 'checked' : ''} onchange="toggleSelection(${productId}, this.checked)">
+                </td>
+                <td>
+                    <div class="flex items-center gap-3">
+                         ${imageUrl 
+                            ? `<img src="${imageUrl}" class="fp-product-img" loading="lazy" onerror="this.style.display='none'">` 
+                            : `<div class="fp-product-placeholder"><svg class="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>`
+                         }
+                         <div class="min-w-0">
+                            <p class="text-sm font-semibold text-gray-900 truncate max-w-[200px]" title="${escapeHtml(productName)}">${escapeHtml(productName)}</p>
+                            ${productUrl ? `<a href="${buildProductUrl(productUrl)}" target="_blank" class="text-xs text-primary hover:text-primary-dark hover:underline">\u00DCr\u00FCne Git \u2197</a>` : ''}
+                         </div>
+                    </div>
+                </td>
+                <td class="text-sm text-gray-600 font-mono">${escapeHtml(stockCode)}</td>
+                <td>
+                    <span class="fp-badge ${stockQuantity > 0 ? 'fp-badge-success' : 'fp-badge-neutral'}">
+                        ${stockQuantity} adet
+                    </span>
+                </td>
+                <td>
+                    <div class="text-sm font-medium text-gray-900">${formatPrice(totalPrice)} ${currency}</div>
+                    <div class="text-xs text-gray-500">KDV Hari\u00E7: ${formatPrice(price)} ${currency}</div>
+                </td>
+                <td>
+                     <div class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        <span class="font-bold text-gray-800">${favoriteCount}</span>
+                    </div>
+                </td>
+                <td>
+                    <div class="text-sm text-gray-500">${formatDate(lastAddedAt)}</div>
+                    <div class="text-xs text-gray-400">\u0130lk: ${formatDate(firstAddedAt)}</div>
+                </td>
+                <td style="text-align: right;">
+                    <div class="flex items-center justify-end gap-1">
+                        <button onclick="sendNotificationToProduct(${productId}, '${escapeQuotes(productName)}', ${stockQuantity}, '${formatPrice(totalPrice)} ${currency}')"
+                                class="fp-action-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-600" title="Bildirim G\u00F6nder">
+                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+                        </button>
+                        <button onclick="showMembers(${productId}, '${escapeQuotes(productName)}')" class="fp-action-btn bg-primary-50 hover:bg-primary-100 text-primary" title="Favoriye ekleyenleri g\u00F6r">
+                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 21a8 8 0 0 0-16 0"></path><circle cx="10" cy="8" r="5"></circle><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"></path></svg>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function renderMobileCards(products) {
+        const container = document.getElementById('mobileProductsContainer');
+        container.innerHTML = '';
+        products.forEach((p, index) => {
+             const productId = p.productId ?? 0;
+             const productName = p.productName || '\u0130simsiz';
+             const stockCode = p.stockCode || '-';
+             const stockQuantity = p.stockQuantity ?? 0;
+             const price = getNumericPrice(p.price);
+             const priceWithVat = getNumericPrice(p.priceWithVat);
+             const totalPrice = price + priceWithVat;
+             const currency = p.currency || 'TL';
+             const imageUrl = p.imageUrl || null;
+             const favoriteCount = p.favoriteCount ?? 0;
+
+             const isSelected = selectedProductIds.has(productId);
+             const card = document.createElement('div');
+             card.className = 'fp-mobile-card-item fp-fade-in';
+             card.style.animationDelay = `${index * 0.04}s`;
+             
+             card.innerHTML = `
+                <div class="p-4">
+                    <div class="flex items-start gap-3">
+                        <input type="checkbox" class="product-checkbox fp-checkbox mt-1" data-id="${productId}" ${isSelected ? 'checked' : ''} onchange="toggleSelection(${productId}, this.checked)">
+                        ${imageUrl 
+                            ? `<img src="${imageUrl}" class="fp-product-img" loading="lazy" onerror="this.style.display='none'">` 
+                            : `<div class="fp-product-placeholder"><svg class="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>`
+                         }
+                         <div class="min-w-0 flex-1">
+                            <p class="text-sm font-semibold text-gray-900 truncate">${escapeHtml(productName)}</p>
+                            <div class="flex flex-wrap items-center gap-2 mt-2">
+                                <span class="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-0.5 rounded">${escapeHtml(stockCode)}</span>
+                                <span class="fp-badge ${stockQuantity > 0 ? 'fp-badge-success' : 'fp-badge-neutral'}" style="font-size: 0.68rem; padding: 0.1rem 0.4rem;">${stockQuantity} stok</span>
+                                <span class="text-xs font-bold text-gray-700">${formatPrice(totalPrice)} ${currency}</span>
+                            </div>
+                         </div>
+                    </div>
+                    <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                        <div class="flex items-center gap-1.5 text-sm text-gray-600">
+                             <svg class="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                             <span class="font-bold">${favoriteCount} favori</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="sendNotificationToProduct(${productId}, '${escapeQuotes(productName)}', ${stockQuantity}, '${formatPrice(totalPrice)} ${currency}')" class="fp-btn fp-btn-ghost" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;">
+                                Bildirim
+                            </button>
+                            <button onclick="showMembers(${productId}, '${escapeQuotes(productName)}')" class="fp-btn fp-btn-ghost" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;">
+                                \u00DCyeler
+                            </button>
+                        </div>
+                    </div>
+                </div>
+             `;
+             container.appendChild(card);
+        });
+    }
+
+    // ========================
+    // Selection / Bulk Actions
+    // ========================
+    function toggleSelection(productId, checked) {
+        if(checked) selectedProductIds.add(productId);
+        else selectedProductIds.delete(productId);
+        
+        document.querySelectorAll(`.product-checkbox[data-id="${productId}"]`).forEach(cb => cb.checked = checked);
+        updateBulkButton();
+        updateSelectAllState();
+    }
+    
+    function toggleAllSelection() {
+         const trigger = event.target;
+         const checked = trigger.checked;
+
+         const checkboxes = document.querySelectorAll('.product-checkbox');
+         checkboxes.forEach(cb => {
+             cb.checked = checked;
+             const id = parseInt(cb.dataset.id);
+             if(checked) selectedProductIds.add(id);
+             else selectedProductIds.delete(id);
+         });
+         
+         document.getElementById('selectAllCheckbox').checked = checked;
+         const mb = document.getElementById('selectAllMobile'); if(mb) mb.checked = checked;
+         updateBulkButton();
+    }
+
+    function updateSelectAllState() {
+        const all = document.querySelectorAll('.product-checkbox');
+        if(all.length === 0) return;
+        
+        let allChecked = true;
+        let someChecked = false;
+        all.forEach(cb => {
+            if(!cb.checked) allChecked = false;
+            else someChecked = true;
+        });
+        
+        const d = document.getElementById('selectAllCheckbox');
+        const m = document.getElementById('selectAllMobile');
+        if(d) { d.checked = allChecked; d.indeterminate = someChecked && !allChecked; }
+        if(m) { m.checked = allChecked; m.indeterminate = someChecked && !allChecked; }
+    }
+
+    function updateBulkButton() {
+        const btn = document.getElementById('bulkNotificationBtn');
+        const count = selectedProductIds.size;
+        document.getElementById('selectedCount').textContent = count;
+        btn.style.display = count > 0 ? 'inline-flex' : 'none';
+    }
+
+    // ========================
+    // Filters & Pagination
+    // ========================
+    function applyFilters() { currentPage = 1; selectedProductIds.clear(); updateBulkButton(); loadProducts(); }
+    function resetFilters() {
+        document.getElementById('searchTerm').value = '';
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        currentPage = 1; selectedProductIds.clear(); updateBulkButton(); loadProducts();
+    }
+    
+    function updatePagination(data) {
+        currentPage = data.currentPage;
+        totalPages = data.totalPages;
+        document.getElementById('totalItems').textContent = data.totalCount;
+        document.getElementById('totalFavorites').textContent = data.totalFavoriteCount || data.totalCount;
+        document.getElementById('currentPageNum').textContent = currentPage;
+        document.getElementById('totalPagesNum').textContent = totalPages;
+        document.getElementById('prevPageBtn').disabled = currentPage <= 1;
+        document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
+        document.getElementById('paginationContainer').classList.remove('hidden');
+    }
+    
+    function goToPage(p) { if(p >= 1 && p <= totalPages) { currentPage = p; loadProducts(); } }
+
+    // ========================
+    // Sync
+    // ========================
+    async function syncFavorites() {
+        const btn = document.getElementById('syncButton');
+        const icon = document.getElementById('syncIcon');
+        const txt = document.getElementById('syncText');
+        btn.disabled = true;
+        icon.classList.add('animate-spin');
+        txt.textContent = 'Senkronize ediliyor...';
+        
+        try {
+            const resp = await fetch('/FavoriteProduct/SyncFavorites', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                }
+            });
+            const data = await resp.json();
+            if(data.success) {
+                showNotification(data.message || `Senkronizasyon tamamland\u0131! ${data.newRecords || 0} yeni, ${data.updatedRecords || 0} g\u00FCncellenen kay\u0131t.`, 'success');
+                loadStats();
+                loadProducts();
+            }
+            else showNotification(data.message || 'Senkronizasyon ba\u015Far\u0131s\u0131z.', 'error');
+        } catch(e) {
+            console.error(e);
+            showNotification('Senkronizasyon hatas\u0131', 'error');
+        } finally {
+            btn.disabled = false;
+            icon.classList.remove('animate-spin');
+            txt.textContent = 'Senkronize Et';
+        }
+    }
+
+    // ========================
+    // Member List Modal
+    // ========================
+    async function showMembers(productId, productName) {
+        const modal = document.getElementById('memberModal');
+        document.getElementById('memberModalProductName').textContent = productName;
+        document.getElementById('memberListContent').innerHTML = '<div class="text-center py-10"><div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div></div>';
+        modal.classList.remove('hidden');
+        
+        try {
+            const resp = await fetch(`/FavoriteProduct/GetProductFavoriteMembers?productId=${productId}`);
+            const data = await resp.json();
+            if(data.success && data.data && data.data.length > 0) {
+                 let html = `<div class="space-y-2">`;
+                 data.data.forEach(m => {
+                     const memberName = m.memberName || m.uyeAdi || '\u0130simsiz';
+                     const email = m.email || '';
+                     const phone = m.phone || '';
+                     const addedAt = m.addedAt || m.eklemeTarihi || null;
+                     html += `
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 bg-primary-50 text-primary rounded-lg flex items-center justify-center font-bold text-xs">${(memberName||'?')[0]}</div>
+                                <div>
+                                    <div class="font-semibold text-sm text-gray-900">${memberName}</div>
+                                    <div class="text-xs text-gray-500">${email} ${phone}</div>
+                                </div>
+                            </div>
+                             <div class="text-xs text-gray-400">${formatDate(addedAt)}</div>
+                        </div>
+                     `;
+                 });
+                 html += `</div>`;
+                 if(data.totalCount) {
+                     html += `<div class="mt-4 text-sm text-gray-500 text-center">Toplam ${data.totalCount} \u00FCye</div>`;
+                 }
+                 document.getElementById('memberListContent').innerHTML = html;
+            } else {
+                 document.getElementById('memberListContent').innerHTML = `<div class="text-center py-10 text-gray-500">\u00DCye bulunamad\u0131.</div>`;
+            }
+        } catch(e) {
+            console.error(e);
+            document.getElementById('memberListContent').innerHTML = `<div class="text-center py-10 text-red-500">Hata olu\u015Ftu.</div>`;
+        }
+    }
+
+    function closeMemberModal() { document.getElementById('memberModal').classList.add('hidden'); }
+
+    // ========================
+    // Notifications
+    // ========================
+    async function sendNotificationToProduct(productId, productName, stockCount, price) {
+        const message = (currentSettings.newFavoriteMessage || currentSettings.NewFavoriteMessage || '')
+            .replace('{ProductName}', productName)
+            .replace('{StockCount}', stockCount)
+            .replace('{ProductPrice}', price);
+
+        showConfirmationDialog(
+            'Bildirim G\u00F6nder',
+            `"${productName}" \u00FCr\u00FCn\u00FCn\u00FC favorilerine ekleyen m\u00FC\u015Fterilere bildirim g\u00F6ndermek istiyor musunuz?`,
+            'G\u00F6nder',
+            '\u0130ptal',
+            async () => {
+                try {
+                    showNotification('Bildirimler g\u00F6nderiliyor...', 'info');
+                    const response = await fetch('/FavoriteProduct/SendNotification', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                        },
+                        body: JSON.stringify({
+                            productId: productId,
+                            notificationType: 'custom',
+                            customMessage: message
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        showNotification(`${data.notificationsSent || 0} bildirim g\u00F6nderildi!`, 'success');
+                    } else {
+                        showNotification(data.message || 'Bildirim g\u00F6nderilemedi.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Send notification error:', error);
+                    showNotification('Bildirim g\u00F6nderilirken hata olu\u015Ftu.', 'error');
+                }
+            }
+        );
+    }
+
+    async function sendBulkNotification() {
+        const count = selectedProductIds.size;
+        if(count === 0) return;
+
+        const message = (currentSettings.newFavoriteMessage || currentSettings.NewFavoriteMessage || '');
+
+        showConfirmationDialog(
+            'Toplu Bildirim G\u00F6nder',
+            `Se\u00E7ili ${count} \u00FCr\u00FCn i\u00E7in favori sahibi m\u00FC\u015Fterilere bildirim g\u00F6ndermek istiyor musunuz?`,
+            `G\u00F6nder (${count})`,
+            '\u0130ptal',
+            async () => {
+                try {
+                    showNotification('Bildirimler g\u00F6nderiliyor...', 'info');
+                    const response = await fetch('/FavoriteProduct/SendBulkNotification', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                        },
+                        body: JSON.stringify({
+                            productIds: Array.from(selectedProductIds),
+                            notificationType: 'custom',
+                            customMessage: message
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        showNotification(data.message || 'Bildirimler g\u00F6nderildi.', 'success');
+                        selectedProductIds.clear();
+                        updateSelectAllState();
+                        updateBulkButton();
+                        document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = false);
+                    } else {
+                        showNotification(data.message || 'Bildirimler g\u00F6nderilemedi.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Send bulk notification error:', error);
+                    showNotification('Bildirimler g\u00F6nderilirken hata olu\u015Ftu.', 'error');
+                }
+            }
+        );
+    }
+
+    // ========================
+    // Helpers
+    // ========================
+    function showLoading(s) {
+        document.getElementById('loadingState').classList.toggle('hidden', !s);
+        if(s) {
+             document.getElementById('productsTableBody').innerHTML = '';
+             document.getElementById('mobileProductsContainer').innerHTML = '';
+        }
+    }
+    function showEmpty() { 
+        document.getElementById('emptyState').classList.remove('hidden'); 
+        document.getElementById('paginationContainer').classList.add('hidden');
+        document.getElementById('productsTableBody').innerHTML = '';
+        document.getElementById('mobileProductsContainer').innerHTML = '';
+        const m = document.getElementById('mobileSelectAllContainer');
+        if(m) m.style.display = 'none';
+    }
+    function hideEmpty() { document.getElementById('emptyState').classList.add('hidden'); }
+
+    function getNumericPrice(val) {
+        if (val == null) return 0;
+        if (typeof val === 'object' && val !== null) return val.parsedValue || 0;
+        if (typeof val === 'number') return val;
+        return parseFloat(val) || 0;
+    }
+
+    function formatPrice(price) {
+        if (price == null || isNaN(price)) return '0,00';
+        return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(price);
+    }
+    function formatNumber(value) {
+        if (value == null || isNaN(value)) return '0';
+        return value.toLocaleString('tr-TR');
+    }
+    function formatDate(d) {
+        if (!d) return '-';
+        return new Date(d).toLocaleDateString('tr-TR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' });
+    }
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    function escapeQuotes(str) { if (!str) return ''; return str.replace(/'/g, "\\'").replace(/"/g, '\\"'); }
+
+    function buildProductUrl(productUrl) {
+        if (!productUrl) return '';
+        if (productUrl.startsWith('http://') || productUrl.startsWith('https://')) return productUrl;
+        if (siteUrl) {
+            const baseUrl = siteUrl.endsWith('/') ? siteUrl.slice(0, -1) : siteUrl;
+            const path = productUrl.startsWith('/') ? productUrl : '/' + productUrl;
+            return baseUrl + path;
+        }
+        return productUrl;
+    }
+
+    // ========================
+    // Settings Modal
+    // ========================
+    function openSettingsModal() { 
+        document.getElementById('settingsModal').classList.remove('hidden');
+        generateChannelSettingsUI();
+    }
+    function closeSettingsModal() { document.getElementById('settingsModal').classList.add('hidden'); }
+
+    async function generateChannelSettingsUI() {
+        const container = document.getElementById('channelSettingsContainer');
+        container.innerHTML = '<div class="text-center py-4"><div class="animate-spin h-5 w-5 border-2 border-primary rounded-full border-t-transparent mx-auto"></div></div>';
+
+        try {
+            const response = await fetch('/Settings/GetActiveChannels');
+            const data = await response.json();
+            
+            if (!data.success || !data.channels) {
+                container.innerHTML = '<div class="text-sm text-gray-500 italic">Kanal bilgileri y\u00FCklenemedi.</div>';
+                return;
+            }
+            
+            const activeChannels = data.channels;
+            let html = '';
+            html += generateChannelSetting('email', 'E-Posta', activeChannels.email);
+            html += generateChannelSetting('sms', 'SMS', activeChannels.sms);
+            html += generateChannelSetting('whatsapp', 'WhatsApp', activeChannels.whatsapp);
+            container.innerHTML = html;
+        } catch (error) {
+            console.error('Error fetching active channels:', error);
+            container.innerHTML = '<div class="text-sm text-red-500 italic">Kanal bilgileri y\u00FCklenirken hata olu\u015Ftu.</div>';
+        }
+    }
+
+    function generateChannelSetting(channelType, channelName, isActive) {
+        const capitalizedType = channelType.charAt(0).toUpperCase() + channelType.slice(1);
+        const settingsKey = channelType === 'whatsapp' ? 'Whatsapp' : capitalizedType;
+        
+        const isEnabled = currentSettings[`${settingsKey}Enabled`] || currentSettings[`${channelType}Enabled`] || false;
+        const selectedTemplate = currentSettings[`${settingsKey}Template`] || currentSettings[`${channelType}Template`] || '';
+        const selectedTemplateName = currentSettings[`${settingsKey}TemplateName`] || currentSettings[`${channelType}TemplateName`] || '';
+        
+        return `
+            <div class="border border-gray-200 rounded-lg p-3 ${!isActive ? 'bg-gray-50 opacity-60' : 'bg-white'}">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="setting-enable-${channelType}"
+                               ${isEnabled && isActive ? 'checked' : ''}
+                               ${!isActive ? 'disabled' : ''}
+                               class="fp-checkbox">
+                        <span class="ml-2 text-sm font-medium text-gray-700">${channelName}</span>
+                    </label>
+                    <span class="text-xs px-2 py-0.5 rounded-full ${isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">
+                        ${isActive ? 'Aktif' : 'Pasif'}
+                    </span>
+                </div>
+                ${isActive ? `
+                    <div class="mt-2 pl-6 border-l-2 border-gray-100">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-medium text-gray-500">\u015Eablon:</label>
+                            <button type="button"
+                                    onclick="openTemplateSelector('${channelType}', '${channelName}')"
+                                    class="text-xs px-2 py-1 bg-primary-50 text-primary rounded hover:bg-primary-100 transition-colors font-medium">
+                                \u015Eablon Se\u00E7
+                            </button>
+                        </div>
+                        <div id="selected-template-${channelType}" class="text-xs text-gray-700 bg-gray-50 p-2 rounded border border-gray-100 flex items-center min-h-[32px]">
+                            ${selectedTemplateName ? `<span class="font-medium">${selectedTemplateName}</span>` : '<span class="text-gray-400 italic">\u015Eablon se\u00E7ilmedi</span>'}
+                        </div>
+                        <input type="hidden" id="setting-${channelType}-template" value="${selectedTemplate}">
+                        <input type="hidden" id="setting-${channelType}-template-name" value="${selectedTemplateName}">
+                    </div>
+                ` : `
+                    <div class="mt-2 text-xs text-red-600">
+                        <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        Bu kanal yap\u0131land\u0131r\u0131lmam\u0131\u015F. Ayarlar b\u00F6l\u00FCm\u00FCnden yap\u0131land\u0131rabilirsiniz.
+                    </div>
+                `}
+            </div>
+        `;
+    }
+
+    let currentTemplateChannelType = '';
+    let currentTemplateChannelName = '';
+
+    async function openTemplateSelector(channelType, channelName) {
+        currentTemplateChannelType = channelType;
+        currentTemplateChannelName = channelName;
+
+        try {
+            const response = await fetch(`/TemplateModule/GetChannelTemplates?channelType=${channelType}&moduleType=FavoriteProduct`);
+            const data = await response.json();
+            const templates = data.success && data.data ? data.data : (data.templates || []);
+            
+            if (!templates || templates.length === 0) {
+                showNotification(`${channelName} i\u00E7in \u015Fablon bulunamad\u0131.`, 'warning');
+                return;
+            }
+            
+            const currentSelectedTemplate = document.getElementById(`setting-${channelType}-template`)?.value || '';
+            
+            const modal = document.createElement('div');
+            modal.id = 'templateSelectorModal';
+            modal.className = 'fixed inset-0 bg-gray-900/40 z-[60] flex items-center justify-center';
+            
+            const templatesHtml = templates.map(t => {
+                const templateName = t.name || '';
+                const displayName = t.displayName || t.name || '';
+                const isSelected = currentSelectedTemplate === templateName;
+                
+                return `
+                    <div class="p-3 mb-2 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors ${isSelected ? 'bg-primary-50 border-primary ring-0' : ''}"
+                         onclick="selectTemplate('${templateName.replace(/'/g, "\\'")}', '${displayName.replace(/'/g, "\\'")}')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="font-medium text-sm text-gray-900">${displayName}</div>
+                                ${t.previewContent ? `<div class="text-xs text-gray-500 mt-1 line-clamp-2">${t.previewContent}</div>` : ''}
+                            </div>
+                            ${isSelected ? `
+                                <svg class="w-5 h-5 text-primary ml-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] border border-gray-200 max-w-md w-full mx-4 max-h-[80vh] flex flex-col fp-fade-in">
+                    <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 rounded-t-xl">
+                        <h3 class="text-base font-semibold text-gray-900">${channelName} \u015Eablonlar\u0131</h3>
+                        <button type="button" onclick="closeTemplateSelector()" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                    <div class="p-4 space-y-2 overflow-y-auto flex-1">
+                        ${templatesHtml}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.addEventListener('click', function(e) { if (e.target === modal) closeTemplateSelector(); });
+            
+        } catch (error) {
+            console.error('Error loading templates:', error);
+            showNotification('\u015Eablonlar y\u00FCklenirken hata olu\u015Ftu.', 'error');
+        }
+    }
+
+    function selectTemplate(name, display) {
+        document.getElementById(`setting-${currentTemplateChannelType}-template`).value = name;
+        document.getElementById(`setting-${currentTemplateChannelType}-template-name`).value = display;
+        document.getElementById(`selected-template-${currentTemplateChannelType}`).innerHTML = `<span class="font-medium">${display}</span>`;
+        closeTemplateSelector();
+        showNotification(`${currentTemplateChannelName} \u015Fablonu se\u00E7ildi: ${display}`, 'success');
+    }
+    function closeTemplateSelector() { const m = document.getElementById('templateSelectorModal'); if(m) m.remove(); }
+
+    async function saveSettings() {
+        const btn = document.getElementById('saveSettingsBtn');
+        btn.disabled = true; btn.textContent = 'Kaydediliyor...';
+        
+        try {
+            const settings = {
+                enabled: true,
+                emailEnabled: document.getElementById('setting-enable-email')?.checked || false,
+                smsEnabled: document.getElementById('setting-enable-sms')?.checked || false,
+                whatsAppEnabled: document.getElementById('setting-enable-whatsapp')?.checked || false,
+                emailTemplate: document.getElementById('setting-email-template')?.value || null,
+                emailTemplateName: document.getElementById('setting-email-template-name')?.value || null,
+                smsTemplate: document.getElementById('setting-sms-template')?.value || null,
+                smsTemplateName: document.getElementById('setting-sms-template-name')?.value || null,
+                whatsAppTemplate: document.getElementById('setting-whatsapp-template')?.value || null,
+                whatsAppTemplateName: document.getElementById('setting-whatsapp-template-name')?.value || null
+            };
+
+            const response = await fetch('/FavoriteProduct/UpdateSettings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                },
+                body: JSON.stringify(settings)
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showNotification('Ayarlar kaydedildi.', 'success');
+                currentSettings = { ...currentSettings, ...settings };
+                closeSettingsModal();
+                setTimeout(() => location.reload(), 500);
+            } else {
+                showNotification(data.message || 'Hata olu\u015Ftu', 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            showNotification('Hata olu\u015Ftu', 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = 'Kaydet';
+        }
+    }
+
+    // Close modals on overlay click
+    document.getElementById('memberModal')?.addEventListener('click', function(e) { if (e.target === this) closeMemberModal(); });
+    document.getElementById('settingsModal')?.addEventListener('click', function(e) { if (e.target === this) closeSettingsModal(); });
+</script>
+}

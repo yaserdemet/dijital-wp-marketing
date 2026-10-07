@@ -1,0 +1,719 @@
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+  // Module purchase functionality - dispatches to correct flow
+  async function purchaseModule(moduleId, moduleName, modulePrice, monthlyPrice, yearlyPrice, hasPackages) {
+    if (hasPackages === true || hasPackages === 'true') {
+      // Package-based purchase: fetch packages from API and show package selection modal
+      try {
+        showNotification('Paket bilgileri alınıyor...', 'info');
+        const response = await axios.get('/Store/GetModulesWithPackages');
+        if (response.data.success) {
+          const moduleData = response.data.data.find(m => m.moduleId == moduleId);
+          if (moduleData && moduleData.packages.length > 0) {
+            showPackagePurchaseModal(moduleId, moduleName, moduleData.packages);
+          } else {
+            showNotification('Bu modül için paket bulunamadı.', 'warning');
+          }
+        } else {
+          showNotification('Paket bilgileri alınamadı.', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showNotification('Hata oluştu.', 'error');
+      }
+    } else {
+      // Classic subscription-based purchase for all other modules
+      showPurchaseModal(moduleId, moduleName, modulePrice, monthlyPrice, yearlyPrice);
+    }
+  }
+
+  function showPackagePurchaseModal(moduleId, moduleName, packages) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-gray-900/40 overflow-y-auto h-full w-full z-50';
+    modal.id = 'purchase-modal';
+
+    let packagesHtml = packages.map((pkg, index) => `
+        <label class="subscription-option cursor-pointer block mb-2">
+            <input type="radio" name="packageId" value="${pkg.id}" 
+                   data-monthly-price="${pkg.monthlyPrice}" 
+                   data-yearly-price="${pkg.yearlyPrice}" 
+                   ${index === 0 ? 'checked' : ''} class="sr-only package-radio" />
+            <div class="border rounded-lg p-3 text-left transition-all bg-white hover:border-gray-400 package-card">
+              <div class="flex justify-between items-center">
+                  <span class="block text-sm font-medium text-gray-900">${pkg.name}</span>
+                  <div class="text-right">
+                      <span class="block text-lg font-semibold text-gray-900 package-price-display">₺${pkg.monthlyPrice.toFixed(2)} /ay</span>
+                      ${pkg.yearlyDiscountPercent > 0 ? `<span class="block text-xs text-green-600 font-medium package-discount-display hidden">%${pkg.yearlyDiscountPercent} tasarruf</span>` : ''}
+                  </div>
+              </div>
+              <span class="block text-xs text-gray-500 mt-1">Kota: ${pkg.quotaAmount}</span>
+              ${pkg.htmlContent ? `<div class="text-xs text-gray-500 mt-2 border-t pt-2">${pkg.htmlContent}</div>` : ''}
+            </div>
+        </label>
+    `).join('');
+
+    modal.innerHTML = `
+      <div class="relative top-20 mx-auto p-5 border border-gray-200 w-[420px] shadow-[0_8px_30px_rgba(0,0,0,0.08)] rounded-xl bg-white">
+        <div class="mt-3 text-center">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-lg bg-indigo-50 border border-indigo-100">
+            <svg class="h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+          </div>
+          <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">Paket Satın Al</h3>
+          <div class="mt-2 px-4 py-3 text-left">
+            <p class="text-sm text-gray-500 text-center mb-4">
+              <strong>${moduleName}</strong> için bir paket seçin. (Not: Yeni paket mevcut kotanızı sıfırlayacaktır!)
+            </p>
+
+            <div class="mb-4 flex justify-center bg-gray-100 p-1 rounded-lg">
+                <button type="button" id="btn-monthly" class="flex-1 py-1.5 text-sm font-medium rounded-md bg-white text-gray-900 transition-all">Aylık</button>
+                <button type="button" id="btn-yearly" class="flex-1 py-1.5 text-sm font-medium rounded-md text-gray-500 hover:text-gray-900 transition-all">Yıllık</button>
+            </div>
+
+            <div class="mb-4 max-h-[250px] overflow-y-auto pr-2">
+                ${packagesHtml}
+            </div>
+
+            <div class="bg-gray-50 p-3 rounded-lg">
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Ödenecek Tutar:</span>
+                <span id="selected-price" class="text-lg font-semibold text-gray-900">₺0.00</span>
+              </div>
+            </div>
+          </div>
+          <div class="items-center px-4 py-3">
+            <button id="confirm-purchase" 
+                    class="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded-lg w-28 mr-2 transition-colors">
+              Satın Al
+            </button>
+            <button id="cancel-purchase" 
+                    class="px-4 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium rounded-lg w-24 transition-colors">
+              İptal
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    let currentSubscriptionType = 'monthly';
+    const btnMonthly = modal.querySelector('#btn-monthly');
+    const btnYearly = modal.querySelector('#btn-yearly');
+
+    const updateDisplays = () => {
+      modal.querySelectorAll('.package-radio').forEach(radio => {
+        const monthlyPrice = parseFloat(radio.dataset.monthlyPrice);
+        const yearlyPrice = parseFloat(radio.dataset.yearlyPrice);
+        const priceDisplay = radio.parentElement.querySelector('.package-price-display');
+        const discountDisplay = radio.parentElement.querySelector('.package-discount-display');
+
+        if (currentSubscriptionType === 'monthly') {
+          if (priceDisplay) priceDisplay.textContent = '₺' + monthlyPrice.toFixed(2) + ' /ay';
+          if (discountDisplay) discountDisplay.classList.add('hidden');
+        } else {
+          if (priceDisplay) priceDisplay.textContent = '₺' + yearlyPrice.toFixed(2) + ' /yıl';
+          if (discountDisplay) discountDisplay.classList.remove('hidden');
+        }
+      });
+      updateSelectedPrice();
+    };
+
+    const updateSelectedPrice = () => {
+      const checkedRadio = modal.querySelector('input[name="packageId"]:checked');
+      if (checkedRadio) {
+        const monthlyPrice = parseFloat(checkedRadio.dataset.monthlyPrice);
+        const yearlyPrice = parseFloat(checkedRadio.dataset.yearlyPrice);
+        const selectedPrice = currentSubscriptionType === 'monthly' ? monthlyPrice : yearlyPrice;
+
+        modal.querySelector('#selected-price').textContent = '₺' + selectedPrice.toFixed(2);
+
+        modal.querySelectorAll('.package-card').forEach(card => {
+          card.classList.remove('border-primary', 'bg-gray-50');
+          card.classList.add('border-gray-200');
+        });
+        checkedRadio.nextElementSibling.classList.add('border-primary', 'bg-gray-50');
+        checkedRadio.nextElementSibling.classList.remove('border-gray-200');
+      }
+    };
+
+    btnMonthly.addEventListener('click', () => {
+      currentSubscriptionType = 'monthly';
+      btnMonthly.classList.add('bg-white', 'text-gray-900');
+      btnMonthly.classList.remove('text-gray-500', 'hover:text-gray-900');
+      btnYearly.classList.remove('bg-white', 'text-gray-900');
+      btnYearly.classList.add('text-gray-500', 'hover:text-gray-900');
+      updateDisplays();
+    });
+
+    btnYearly.addEventListener('click', () => {
+      currentSubscriptionType = 'yearly';
+      btnYearly.classList.add('bg-white', 'text-gray-900');
+      btnYearly.classList.remove('text-gray-500', 'hover:text-gray-900');
+      btnMonthly.classList.remove('bg-white', 'text-gray-900');
+      btnMonthly.classList.add('text-gray-500', 'hover:text-gray-900');
+      updateDisplays();
+    });
+
+    modal.querySelectorAll('.package-radio').forEach(radio => {
+      radio.addEventListener('change', updateSelectedPrice);
+    });
+
+    updateDisplays();
+
+    document.getElementById('confirm-purchase').addEventListener('click', () => {
+      const selectedPackageId = modal.querySelector('input[name="packageId"]:checked')?.value;
+      if (!selectedPackageId) {
+        showNotification('Lütfen bir paket seçin', 'warning');
+        return;
+      }
+      performPackagePurchase(moduleId, selectedPackageId, currentSubscriptionType);
+      document.body.removeChild(modal);
+    });
+
+    document.getElementById('cancel-purchase').addEventListener('click', () => document.body.removeChild(modal));
+    modal.addEventListener('click', (e) => { if (e.target === modal) document.body.removeChild(modal); });
+  }
+
+  async function performPackagePurchase(moduleId, packageId, subscriptionType) {
+    try {
+      showNotification('Satın alma işlemi gerçekleştiriliyor...', 'info');
+      const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+      const response = await axios.post('/Store/PurchasePackage', {
+        moduleId: parseInt(moduleId),
+        packageId: parseInt(packageId),
+        subscriptionType: subscriptionType
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'RequestVerificationToken': token
+        }
+      });
+
+      if (response.data.success) {
+        showNotification(response.data.message, 'success');
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        if (response.data.errorType === 'insufficient_balance') {
+          showInsufficientBalanceModal({
+            message: response.data.message,
+            requiredAmount: response.data.requiredAmount || 0,
+            currentBalance: response.data.currentBalance || 0,
+            missingAmount: (response.data.requiredAmount || 0) - (response.data.currentBalance || 0)
+          });
+        } else {
+          showNotification(response.data.message, 'error');
+        }
+      }
+    } catch (error) {
+      console.error('Purchase error:', error);
+      showNotification('Satın alma işlemi sırasında bir hata oluştu.', 'error');
+    }
+  }
+
+  // Classic subscription-based purchase modal (for all non-package modules)
+  function showPurchaseModal(moduleId, moduleName, modulePrice, monthlyPrice, yearlyPrice) {
+    const monthly = parseFloat(monthlyPrice) || parseFloat(String(modulePrice).replace('₺', ''));
+    const yearly = parseFloat(yearlyPrice) || monthly * 12;
+
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-gray-900/40 overflow-y-auto h-full w-full z-50';
+    modal.id = 'purchase-modal';
+
+    modal.innerHTML = `
+      <div class="relative top-20 mx-auto p-5 border border-gray-200 w-[420px] shadow-[0_8px_30px_rgba(0,0,0,0.08)] rounded-xl bg-white">
+        <div class="mt-3 text-center">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-lg bg-emerald-50 border border-emerald-100">
+            <svg class="h-6 w-6 text-emerald-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+          </div>
+          <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">Modül Satın Al</h3>
+          <div class="mt-2 px-4 py-3 text-left">
+            <p class="text-sm text-gray-500 text-center mb-4">
+              <strong>${moduleName}</strong> modülünü satın almak istiyorsunuz.
+            </p>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Abonelik Türü</label>
+              <div class="grid grid-cols-2 gap-3">
+                <label class="subscription-option cursor-pointer">
+                  <input type="radio" name="subscriptionType" value="monthly" checked class="sr-only" />
+                  <div class="border rounded-lg p-3 text-center transition-all border-primary bg-gray-50" id="subscription-monthly">
+                    <span class="block text-sm font-medium text-gray-900">Aylık</span>
+                    <span class="block text-lg font-semibold text-gray-900">₺${monthly.toFixed(2)}</span>
+                    <span class="block text-xs text-gray-500">/ay</span>
+                  </div>
+                </label>
+                <label class="subscription-option cursor-pointer">
+                  <input type="radio" name="subscriptionType" value="yearly" class="sr-only" />
+                  <div class="border rounded-lg p-3 text-center transition-all border-gray-200 hover:border-gray-300" id="subscription-yearly">
+                    <span class="block text-sm font-medium text-gray-900">Yıllık</span>
+                    <span class="block text-lg font-semibold text-gray-900">₺${yearly.toFixed(2)}</span>
+                    <span class="block text-xs text-gray-500">/yıl (${Math.round((1 - yearly / (monthly * 12)) * 100)}% tasarruf)</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+            <div class="mb-4">
+              <label class="flex items-center cursor-pointer">
+                <input type="checkbox" id="auto-renewal" checked class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary" />
+                <span class="ml-2 text-sm text-gray-700">Otomatik yenileme</span>
+              </label>
+              <p class="text-xs text-gray-500 mt-1 ml-6">Abonelik süresi dolduğunda bakiyenizden otomatik olarak yenilenecektir.</p>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Ödenecek Tutar:</span>
+                <span id="selected-price" class="text-lg font-semibold text-gray-900">₺${monthly.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+          <div class="items-center px-4 py-3">
+            <button id="confirm-purchase" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded-lg w-28 mr-2 transition-colors">
+              Satın Al
+            </button>
+            <button id="cancel-purchase" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium rounded-lg w-24 transition-colors">
+              İptal
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.dataset.monthlyPrice = monthly;
+    modal.dataset.yearlyPrice = yearly;
+
+    const subscriptionOptions = modal.querySelectorAll('input[name="subscriptionType"]');
+    const monthlyDiv = modal.querySelector('#subscription-monthly');
+    const yearlyDiv = modal.querySelector('#subscription-yearly');
+    const selectedPriceSpan = modal.querySelector('#selected-price');
+
+    subscriptionOptions.forEach(option => {
+      option.addEventListener('change', () => {
+        if (option.value === 'monthly') {
+          monthlyDiv.classList.add('border-primary', 'bg-gray-50');
+          monthlyDiv.classList.remove('border-gray-200');
+          yearlyDiv.classList.remove('border-primary', 'bg-gray-50');
+          yearlyDiv.classList.add('border-gray-200');
+          selectedPriceSpan.textContent = '₺' + parseFloat(modal.dataset.monthlyPrice).toFixed(2);
+        } else {
+          yearlyDiv.classList.add('border-primary', 'bg-gray-50');
+          yearlyDiv.classList.remove('border-gray-200');
+          monthlyDiv.classList.remove('border-primary', 'bg-gray-50');
+          monthlyDiv.classList.add('border-gray-200');
+          selectedPriceSpan.textContent = '₺' + parseFloat(modal.dataset.yearlyPrice).toFixed(2);
+        }
+      });
+    });
+
+    document.getElementById('confirm-purchase').addEventListener('click', () => {
+      const subscriptionType = modal.querySelector('input[name="subscriptionType"]:checked').value;
+      const autoRenewal = modal.querySelector('#auto-renewal').checked;
+      const price = subscriptionType === 'yearly'
+        ? parseFloat(modal.dataset.yearlyPrice)
+        : parseFloat(modal.dataset.monthlyPrice);
+      performPurchase(moduleId, moduleName, price, subscriptionType, autoRenewal);
+      document.body.removeChild(modal);
+    });
+
+    document.getElementById('cancel-purchase').addEventListener('click', () => document.body.removeChild(modal));
+    modal.addEventListener('click', (e) => { if (e.target === modal) document.body.removeChild(modal); });
+  }
+
+  async function performPurchase(moduleId, moduleName, modulePrice, subscriptionType = 'monthly', autoRenewal = true) {
+    try {
+      showNotification('Satın alma işlemi gerçekleştiriliyor...', 'info');
+      const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+      const purchaseData = {
+        moduleId: parseInt(moduleId),
+        moduleName: moduleName,
+        price: typeof modulePrice === 'string' ? parseFloat(modulePrice.replace('₺', '').replace(',', '.')) : modulePrice,
+        paymentMethod: 'credit',
+        acceptTerms: true,
+        subscriptionType: subscriptionType,
+        autoRenewal: autoRenewal
+      };
+
+      const response = await axios.post('/Store/PurchaseModule', purchaseData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'RequestVerificationToken': token
+        }
+      });
+
+      if (response.data.success) {
+        const successMessage = response.data.newBalance !== undefined
+          ? `${moduleName} başarıyla satın alındı! Yeni bakiye: ₺${response.data.newBalance.toFixed(2)}`
+          : `${moduleName} başarıyla satın alındı!`;
+        showNotification(successMessage, 'success');
+        if (typeof window.loadTransactionHistory === "function") {
+          window.loadTransactionHistory(1);
+        }
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        if (response.data.errorType === 'insufficient_balance') {
+          showInsufficientBalanceModal(response.data);
+        } else {
+          showNotification(response.data.message, 'error');
+        }
+      }
+    } catch (error) {
+      console.error('Purchase error:', error);
+      if (error.response && error.response.data && error.response.data.message) {
+        if (error.response.data.errorType === 'insufficient_balance') {
+          showInsufficientBalanceModal(error.response.data);
+        } else {
+          showNotification(error.response.data.message, 'error');
+        }
+      } else {
+        showNotification('Satın alma işlemi sırasında bir hata oluştu.', 'error');
+      }
+    }
+  }
+
+  // Filter functionality
+  // Filter functionality
+  function initializeFilters() {
+    const categorySelect = document.getElementById('category-filter');
+    const statusSelect = document.getElementById('status-filter');
+
+    if (categorySelect) {
+      categorySelect.addEventListener('change', function () {
+        filterModules();
+      });
+    }
+
+    if (statusSelect) {
+      statusSelect.addEventListener('change', function () {
+        filterModules();
+      });
+    }
+
+    // Initialize filter results counter
+    updateResultsCount();
+  }
+
+  function filterModules() {
+    const categorySelect = document.getElementById('category-filter');
+    const statusSelect = document.getElementById('status-filter');
+
+    const selectedCategory = categorySelect?.value || '';
+    const selectedStatus = statusSelect?.value || '';
+
+    const moduleCards = document.querySelectorAll('.module-card');
+    let visibleCount = 0;
+
+    moduleCards.forEach(card => {
+      let showCard = true;
+
+      // Filter by status
+      if (selectedStatus) {
+        const cardStatus = card.getAttribute('data-status');
+        if (cardStatus !== selectedStatus) {
+          showCard = false;
+        }
+      }
+
+      // Filter by category
+      if (selectedCategory && showCard) {
+        const cardCategoryId = card.getAttribute('data-category-id');
+        if (cardCategoryId !== selectedCategory) {
+          showCard = false;
+        }
+      }
+
+      // Show/hide card with animation
+      if (showCard) {
+        card.style.display = 'block';
+        card.style.opacity = '0';
+        setTimeout(() => {
+          card.style.opacity = '1';
+          card.style.transition = 'opacity 0.3s ease-in-out';
+        }, 50);
+        visibleCount++;
+      } else {
+        card.style.opacity = '0';
+        card.style.transition = 'opacity 0.3s ease-in-out';
+        setTimeout(() => {
+          card.style.display = 'none';
+        }, 300);
+      }
+    });
+
+    // Update results count
+    updateResultsCount();
+
+    // Show filter results info if filtering is active
+    showFilterResults(selectedCategory, selectedStatus, visibleCount);
+  }
+
+  function updateResultsCount() {
+    const visibleCards = document.querySelectorAll('.module-card:not([style*="display: none"])');
+    const totalCards = document.querySelectorAll('.module-card');
+
+    if (document.getElementById('visible-count')) {
+      document.getElementById('visible-count').textContent = visibleCards.length;
+    }
+    if (document.getElementById('total-count')) {
+      document.getElementById('total-count').textContent = totalCards.length;
+    }
+  }
+
+  function showFilterResults(selectedCategory, selectedStatus, visibleCount) {
+    const filterResults = document.getElementById('filter-results');
+    const totalCards = document.querySelectorAll('.module-card').length;
+
+    if (selectedCategory || selectedStatus) {
+      filterResults.classList.remove('hidden');
+
+      // Update filter description
+      let filterDescription = 'Filtreler: ';
+      const filters = [];
+
+      if (selectedCategory) {
+        const categorySelect = document.getElementById('category-filter');
+        const categoryName = categorySelect.options[categorySelect.selectedIndex].text;
+        filters.push(`Kategori: ${categoryName}`);
+      }
+
+      if (selectedStatus) {
+        const statusText = selectedStatus === 'owned' ? 'Sahip Olunan' : 'Satın Alınabilir';
+        filters.push(`Durum: ${statusText}`);
+      }
+
+      filterDescription += filters.join(', ');
+
+      filterResults.innerHTML = `
+        <div class="flex items-center justify-between">
+          <p class="text-sm text-gray-900">
+            ${filterDescription} - <span class="font-medium">${visibleCount}</span> modül gösteriliyor (toplam ${totalCards} modül)
+          </p>
+          <button onclick="clearFilters()" class="text-sm text-gray-500 hover:text-gray-900 underline">
+            Filtreleri Temizle
+          </button>
+        </div>
+      `;
+    } else {
+      filterResults.classList.add('hidden');
+    }
+    updateResultsCount();
+  }
+
+
+  function clearFilters() {
+    document.getElementById('category-filter').value = '';
+    document.getElementById('status-filter').value = '';
+    filterModules();
+  }
+
+  function updateResultsCount() {
+    const visibleCards = document.querySelectorAll('.module-card:not([style*="display: none"])');
+    const totalCards = document.querySelectorAll('.module-card');
+
+    // You can add a results counter element to show filtered results
+    console.log(`Showing ${visibleCards.length} of ${totalCards.length} modules`);
+  }
+
+  // Module toggle functionality
+  function toggleModule(moduleId, isActive) {
+    const action = isActive ? 'deactivate' : 'activate';
+    const actionText = isActive ? 'pasif yapmak' : 'aktif yapmak';
+
+    showConfirmationDialog('Modül Durumu', `Bu modülü ${actionText} istediğinizden emin misiniz?`, 'Evet', 'Hayır', () => {
+      performToggleModule(moduleId, !isActive);
+    });
+  }
+
+  async function performToggleModule(moduleId, activate) {
+    try {
+      showNotification(`Modül durumu güncelleniyor...`, 'info');
+
+      // Get CSRF token
+      const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+      // Make API call to toggle module status
+      const response = await fetch(`/Store/ToggleModuleStatus?moduleId=${moduleId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'RequestVerificationToken': token
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        showNotification(result.message, 'success');
+
+        // Update UI or refresh
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        showNotification(result.message || 'Modül durumu güncellenirken bir hata oluştu.', 'error');
+      }
+
+    } catch (error) {
+      console.error('Toggle error:', error);
+      showNotification('Modül durumu güncellenirken bir hata oluştu.', 'error');
+    }
+  }
+
+  // Toggle auto-renewal for a module subscription
+  async function toggleAutoRenewal(moduleId, checkbox) {
+    try {
+      const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+      const response = await axios.post('/Store/ToggleAutoRenewal', null, {
+        params: { moduleId: parseInt(moduleId) },
+        headers: {
+          'RequestVerificationToken': token
+        }
+      });
+
+      const result = response.data;
+      if (result.success) {
+        showNotification(result.message, 'success');
+      } else {
+        // Revert checkbox state on error
+        checkbox.checked = !checkbox.checked;
+        showNotification(result.message || 'Otomatik yenileme ayarı güncellenirken bir hata oluştu.', 'error');
+      }
+    } catch (error) {
+      console.error('Auto-renewal toggle error:', error);
+      // Revert checkbox state on error
+      checkbox.checked = !checkbox.checked;
+      showNotification('Otomatik yenileme ayarı güncellenirken bir hata oluştu.', 'error');
+    }
+  }
+
+  // Initialize auto-renewal toggles
+  function initializeAutoRenewalToggles() {
+    const toggles = document.querySelectorAll('.autorenewal-toggle');
+    toggles.forEach(toggle => {
+      toggle.addEventListener('change', function () {
+        const moduleId = this.dataset.moduleId;
+        toggleAutoRenewal(moduleId, this);
+      });
+    });
+  }
+
+  function closeFeaturePopover(popover, triggerBtn) {
+    if (!popover || popover.classList.contains('hidden')) return;
+    popover.style.transition = 'opacity .12s ease, transform .12s ease';
+    popover.style.opacity = '0';
+    popover.style.transform = 'translateY(6px) scale(.98)';
+    setTimeout(() => {
+      popover.classList.add('hidden');
+      popover.setAttribute('aria-hidden', 'true');
+      popover.style.opacity = '';
+      popover.style.transform = '';
+      if (popover._onDocClick) {
+        document.removeEventListener('pointerdown', popover._onDocClick, true);
+        popover._onDocClick = null;
+      }
+      if (popover._onDocKeydown) {
+        document.removeEventListener('keydown', popover._onDocKeydown);
+        popover._onDocKeydown = null;
+      }
+    }, 150);
+
+    if (triggerBtn) {
+      triggerBtn.setAttribute('aria-expanded', 'false');
+      const icon = triggerBtn.querySelector('svg[data-rotate-icon]');
+      if (icon) icon.style.transform = 'rotate(0deg)';
+    }
+  }
+
+  function toggleMoreFeatures(moduleId, btn) {
+    const popover = document.getElementById('more-features-' + moduleId);
+    if (!popover) return;
+    const isOpen = btn.getAttribute('aria-expanded') === 'true';
+    if (isOpen) {
+      closeFeaturePopover(popover, btn);
+      return;
+    }
+
+    document.querySelectorAll('[id^="more-features-"]').forEach(p => {
+      if (p !== popover && !p.classList.contains('hidden')) {
+        const otherBtn = document.querySelector('[aria-controls="' + p.id + '"]');
+        closeFeaturePopover(p, otherBtn);
+      }
+    });
+
+    btn.setAttribute('aria-expanded', 'true');
+    popover.classList.remove('hidden');
+    popover.setAttribute('aria-hidden', 'false');
+
+    popover.style.opacity = '0';
+    popover.style.transform = 'translateY(6px) scale(.98)';
+    requestAnimationFrame(() => {
+      popover.style.transition = 'opacity .18s ease, transform .18s ease';
+      popover.style.opacity = '1';
+      popover.style.transform = 'translateY(0) scale(1)';
+    });
+
+    const icon = btn.querySelector('svg[data-rotate-icon]');
+    if (icon) icon.style.transform = 'rotate(180deg)';
+
+    function onDocClick(e) {
+      if (!popover.contains(e.target) && !btn.contains(e.target)) {
+        closeFeaturePopover(popover, btn);
+      }
+    }
+    function onDocKeydown(e) {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        closeFeaturePopover(popover, btn);
+        btn.focus();
+      }
+    }
+
+    document.addEventListener('pointerdown', onDocClick, true);
+    document.addEventListener('keydown', onDocKeydown);
+
+    popover._onDocClick = onDocClick;
+    popover._onDocKeydown = onDocKeydown;
+
+    const firstItem = popover.querySelector('li');
+    if (firstItem) {
+      firstItem.setAttribute('tabindex', '-1');
+      firstItem.focus();
+    }
+  }
+
+  function initializeFeaturePopoverToggles() {
+    if (window._featurePopoverInitialized) return;
+    window._featurePopoverInitialized = true;
+
+    document.addEventListener('click', function (e) {
+      const btn = e.target.closest('.feature-popover-toggle');
+      if (!btn) return;
+      const moduleId = btn.dataset.moduleId;
+      toggleMoreFeatures(moduleId, btn);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      const btn = e.target.closest('.feature-popover-toggle');
+      if (!btn) return;
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const moduleId = btn.dataset.moduleId;
+        toggleMoreFeatures(moduleId, btn);
+      }
+    });
+  }
+
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', function () {
+    initializeFilters();
+    initializeAutoRenewalToggles();
+    initializeFeaturePopoverToggles();
+  });
+
+  // Export functions for global use
+  window.purchaseModule = purchaseModule;
+  window.toggleModule = toggleModule;
+  window.toggleAutoRenewal = toggleAutoRenewal;
+  window.toggleMoreFeatures = toggleMoreFeatures;
+
+</script>

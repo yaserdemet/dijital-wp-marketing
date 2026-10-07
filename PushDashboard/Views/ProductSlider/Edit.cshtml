@@ -1,0 +1,1307 @@
+@model PushDashboard.DTOs.ProductSliderDetailResponseDto
+@{
+    // Created by AI - Modernized Edit Page with Centralized Preview
+    ViewData["Title"] = "Slider Düzenle - " + Model.Name;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <style>
+        .product-item {
+            cursor: grab;
+            transition: all 0.2s ease;
+        }
+        .product-item:active {
+            cursor: grabbing;
+        }
+        .product-item.dragging {
+            opacity: 0.4;
+            transform: scale(0.98);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        /* Color Input Styles */
+        .color-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .color-input-wrapper input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            padding: 0;
+            background: none;
+        }
+        .color-input-wrapper input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        .color-input-wrapper input[type="color"]::-webkit-color-swatch {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem
+        }
+        .slider-preview-sticky {
+            position: sticky;
+            top: 2rem;
+            z-index: 10;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .product-item.product-item-inactive {
+            opacity: 0.75;
+            border-color: #e5e7eb;
+            background: #f9fafb;
+        }
+        .product-item.product-item-inactive .item-status-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+    </style>
+}
+
+@Html.AntiForgeryToken()
+<input type="hidden" id="sliderId" value="@Model.Id" />
+
+<main class="min-h-screen bg-gray-50/50 pb-20">
+    <!-- Header -->
+    <div class="sticky top-2 lg:top-4 z-20 px-2 lg:px-6 mb-4 lg:mb-6">
+        <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm px-4 py-3 lg:px-6 lg:py-4">
+            <div class="flex items-center gap-3 lg:gap-4 w-full md:w-auto">
+                <a href="@Url.Action("Index")" class="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all flex-shrink-0">
+                    <i class="fas fa-arrow-left text-lg"></i>
+                </a>
+                <div class="min-w-0">
+                    <h2 class="text-lg lg:text-xl font-bold text-gray-900 truncate">Slider Düzenle</h2>
+                    <div class="flex items-center gap-2 text-xs lg:text-sm text-gray-500 truncate">
+                        <span class="truncate">@Model.Name</span>
+                        <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
+                        <span class="text-blue-600 font-medium flex-shrink-0">Düzenleniyor</span>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:flex md:items-center gap-2 lg:gap-3 w-full md:w-auto mt-2 md:mt-0 justify-end">
+                 <!-- Status Toggle -->
+                 <input type="checkbox" id="isActive" name="isActive" @(Model.IsActive ? "checked" : "") class="hidden">
+                 <button type="button" onclick="toggleStatus()" id="statusBtn" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 border shadow-sm whitespace-nowrap w-full md:w-auto">
+                    <span id="statusIndicator" class="w-2.5 h-2.5 rounded-full flex-shrink-0"></span>
+                    <span id="statusText"></span>
+                 </button>
+
+                 <button type="button" onclick="triggerPreview()" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <i class="fas fa-play"></i> <span class="hidden sm:inline">Önizleme</span><span class="inline sm:hidden">Önizle</span>
+                </button>
+                 <button type="button" onclick="saveAllSettings()" class="px-4 lg:px-6 py-2 text-xs lg:text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm hover:shadow transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <i class="fas fa-save"></i> Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-[1600px] mx-auto px-2 lg:px-6 py-4 lg:py-8">
+
+    <!-- Settings and Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 items-start">
+
+    <!-- General Settings & Configuration -->
+    <div class="lg:col-span-6 xl:col-span-7 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="px-4 lg:px-6 py-3 border-b border-gray-100 bg-gray-50/50">
+        <h3 class="font-semibold text-gray-900 text-lg">Genel Ayarlar</h3>
+    </div>
+
+    <div class="p-4 lg:p-6 pt-4 space-y-6 lg:space-y-8">
+    <!-- General Info Form -->
+    <form id="sliderInfoForm" class="space-y-4 lg:space-y-6">
+        <div class="space-y-4 lg:space-y-6">
+            <!-- Basic Info -->
+            <div class="space-y-3 lg:space-y-5">
+                                <div>
+                                    <label for="sliderName" class="block text-sm font-semibold text-gray-800 mb-2">Slider Adı</label>
+                                    <input type="text" id="sliderName" name="name" value="@Model.Name" required
+                                            class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none">
+                                </div>
+                                <div>
+                                    <label for="sliderDescription" class="block text-sm font-semibold text-gray-800 mb-2">Açıklama</label>
+                                    <textarea id="sliderDescription" name="description" rows="3"
+                                        class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm resize-none transition-all focus:shadow-md outline-none">@Model.Description</textarea>
+                </div>
+            </div>
+
+            <!-- Visual Selection for Display Type -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-800 mb-3">Görüntüleme Tipi</label>
+                <input type="hidden" id="displayType" name="displayType" value="@Model.DisplayType">
+                <div class="grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
+                    <!-- Slider Card -->
+                    <div class="display-type-card cursor-pointer group relative rounded-xl border-2 transition-all duration-200 hover:border-blue-400 hover:shadow-md overflow-hidden bg-gray-50 @(Model.DisplayType == "slider" ? "border-blue-600 bg-blue-50/50 shadow-sm" : "border-gray-200")"
+                         onclick="selectDisplayType('slider')">
+                        <div class="aspect-video w-full bg-white border-b border-gray-200 flex items-center justify-center p-2 sm:p-3 relative overflow-hidden">
+                            <!-- Visual Mockup -->
+                            <div class="flex gap-1 sm:gap-2 w-full overflow-hidden opacity-60">
+                                <div class="h-8 sm:h-12 flex-1 bg-gray-200 rounded-md"></div>
+                                <div class="h-8 sm:h-12 flex-1 bg-gray-200 rounded-md"></div>
+                                <div class="h-8 sm:h-12 flex-1 bg-gray-200 rounded-md"></div>
+                            </div>
+                            <!-- Arrow overlay -->
+                            <div class="absolute inset-x-1 flex justify-between text-gray-400">
+                                <i class="fas fa-chevron-left text-[10px] sm:text-xs"></i>
+                                <i class="fas fa-chevron-right text-[10px] sm:text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="p-2 sm:p-3 text-center">
+                            <span class="block text-xs sm:text-sm font-semibold text-gray-800">Slider</span>
+                        </div>
+                        @if (Model.DisplayType == "slider")
+                        {
+                            <div class="absolute top-1 right-1 sm:top-2 sm:right-2 text-blue-600 bg-white rounded-full p-0.5 sm:p-1 shadow-sm selection-check"><i class="fas fa-check-circle text-base sm:text-lg"></i></div>
+                        }
+                    </div>
+
+                    <!-- Tabs Card -->
+                    <div class="display-type-card cursor-pointer group relative rounded-xl border-2 transition-all duration-200 hover:border-blue-400 hover:shadow-md overflow-hidden bg-gray-50 @(Model.DisplayType == "tabs" ? "border-blue-600 bg-blue-50/50 shadow-sm" : "border-gray-200")"
+                         onclick="selectDisplayType('tabs')">
+                        <div class="aspect-video w-full bg-white border-b border-gray-200 flex items-center justify-center p-2 sm:p-3">
+                            <!-- Sidebar Layout Mockup (Right Sidebar) -->
+                            <div class="flex h-full w-full gap-1 sm:gap-2 box-border opacity-80">
+                                <div class="w-2/3 flex flex-col gap-1 sm:gap-2 pt-1">
+                                    <div class="h-8 sm:h-10 w-full bg-gray-100 rounded-lg border border-gray-50"></div>
+                                    <div class="h-1.5 sm:h-2 w-1/2 bg-gray-100 rounded-full"></div>
+                                </div>
+                                <div class="w-1/3 bg-gray-50 rounded-lg h-full flex flex-col gap-1 p-1 border border-gray-100">
+                                    <div class="h-1.5 sm:h-2 w-full bg-blue-200/50 rounded-sm"></div>
+                                    <div class="h-1 sm:h-1.5 w-3/4 bg-gray-200 rounded-sm"></div>
+                                    <div class="h-1 sm:h-1.5 w-4/5 bg-gray-200 rounded-sm"></div>
+                                    <div class="h-1 sm:h-1.5 w-2/3 bg-gray-200 rounded-sm"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-2 sm:p-3 text-center">
+                            <span class="block text-xs sm:text-sm font-semibold text-gray-800">Sekmeler</span>
+                        </div>
+                        @if (Model.DisplayType == "tabs")
+                        {
+                            <div class="absolute top-1 right-1 sm:top-2 sm:right-2 text-blue-600 bg-white rounded-full p-0.5 sm:p-1 shadow-sm selection-check"><i class="fas fa-check-circle text-base sm:text-lg"></i></div>
+                        }
+                    </div>
+
+                    <!-- Grid Card -->
+                    <div class="display-type-card cursor-pointer group relative rounded-xl border-2 transition-all duration-200 hover:border-blue-400 hover:shadow-md overflow-hidden bg-gray-50 @(Model.DisplayType == "grid" ? "border-blue-600 bg-blue-50/50 shadow-sm" : "border-gray-200")"
+                         onclick="selectDisplayType('grid')">
+                        <div class="aspect-video w-full bg-white border-b border-gray-200 flex items-center justify-center p-2 sm:p-3">
+                            <div class="grid grid-cols-2 gap-1 sm:gap-2 w-full h-full opacity-60">
+                                <div class="bg-gray-200 rounded-md"></div>
+                                <div class="bg-gray-200 rounded-md"></div>
+                                <div class="bg-gray-200 rounded-md"></div>
+                                <div class="bg-gray-200 rounded-md"></div>
+                            </div>
+                        </div>
+                        <div class="p-2 sm:p-3 text-center">
+                            <span class="block text-xs sm:text-sm font-semibold text-gray-800">Grid</span>
+                        </div>
+                        @if (Model.DisplayType == "grid")
+                        {
+                            <div class="absolute top-1 right-1 sm:top-2 sm:right-2 text-blue-600 bg-white rounded-full p-0.5 sm:p-1 shadow-sm selection-check"><i class="fas fa-check-circle text-base sm:text-lg"></i></div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <hr class="border-gray-100"/>
+
+    <!-- Detailed Settings Form -->
+    <form id="sliderSettingsForm" class="space-y-6 lg:space-y-10">
+
+    <!-- Appearance Section -->
+    <div class="settings-section" data-section="appearance">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="p-2 bg-purple-50 text-purple-600 rounded-lg"><i class="fas fa-palette"></i></div>
+            <h4 class="text-base font-bold text-gray-900">Görünüm & Tema</h4>
+        </div>
+
+        <div class="space-y-6">
+            <!-- Theme Visual Select -->
+            <div>
+                <label for="theme" class="block text-sm font-semibold text-gray-700 mb-2">Tema Stili</label>
+                <div class="grid grid-cols-3 gap-3">
+                    <!-- Modern -->
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="theme_select" value="modern" class="peer sr-only" @(Model.Settings?.Theme == "modern" ? "checked" : "") onchange="updateTheme('modern')">
+                        <div class="rounded-xl border-2 border-gray-200 p-3 text-center peer-checked:border-purple-600 peer-checked:bg-purple-50 transition-all hover:border-gray-300">
+                            <div class="text-xs font-bold text-gray-800">Modern</div>
+                        </div>
+                    </label>
+                    <!-- Classic -->
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="theme_select" value="classic" class="peer sr-only" @(Model.Settings?.Theme == "classic" ? "checked" : "") onchange="updateTheme('classic')">
+                        <div class="rounded-xl border-2 border-gray-200 p-3 text-center peer-checked:border-purple-600 peer-checked:bg-purple-50 transition-all hover:border-gray-300">
+                            <div class="text-xs font-bold text-gray-800">Klasik</div>
+                        </div>
+                    </label>
+                    <!-- Minimal -->
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="theme_select" value="minimal" class="peer sr-only" @(Model.Settings?.Theme == "minimal" ? "checked" : "") onchange="updateTheme('minimal')">
+                        <div class="rounded-xl border-2 border-gray-200 p-3 text-center peer-checked:border-purple-600 peer-checked:bg-purple-50 transition-all hover:border-gray-300">
+                            <div class="text-xs font-bold text-gray-800">Minimal</div>
+                        </div>
+                    </label>
+                    <input type="hidden" id="theme" value="@(Model.Settings?.Theme ?? "modern")">
+                </div>
+            </div>
+
+            <!-- Aspect Ratio -->
+            <div>
+                <label for="imageAspectRatio" class="block text-sm font-semibold text-gray-700 mb-2">Görsel Oranı</label>
+                <div class="grid grid-cols-3 gap-3">
+                    <div onclick="document.getElementById('imageAspectRatio').value='square'; updateRatioUI(this);" class="ratio-option cursor-pointer rounded-xl border-2 border-gray-200 p-2 text-center hover:bg-gray-50 flex flex-col items-center gap-1 @(Model.Settings?.ImageAspectRatio == "square" ? "border-purple-600 bg-purple-50" : "")">
+                        <div class="w-6 h-6 border border-gray-400 bg-gray-200"></div>
+                        <span class="text-[10px] font-medium">Kare</span>
+                    </div>
+                    <div onclick="document.getElementById('imageAspectRatio').value='portrait'; updateRatioUI(this);" class="ratio-option cursor-pointer rounded-xl border-2 border-gray-200 p-2 text-center hover:bg-gray-50 flex flex-col items-center gap-1 @(Model.Settings?.ImageAspectRatio == "portrait" ? "border-purple-600 bg-purple-50" : "")">
+                        <div class="w-4 h-6 border border-gray-400 bg-gray-200"></div>
+                        <span class="text-[10px] font-medium">Dikey</span>
+                    </div>
+                    <div onclick="document.getElementById('imageAspectRatio').value='landscape'; updateRatioUI(this);" class="ratio-option cursor-pointer rounded-xl border-2 border-gray-200 p-2 text-center hover:bg-gray-50 flex flex-col items-center gap-1 @(Model.Settings?.ImageAspectRatio == "landscape" ? "border-purple-600 bg-purple-50" : "")">
+                        <div class="w-6 h-4 border border-gray-400 bg-gray-200 mt-1 mb-1"></div>
+                        <span class="text-[10px] font-medium">Yatay</span>
+                    </div>
+                    <select id="imageAspectRatio" class="hidden">
+                        <option value="square" selected="@(Model.Settings?.ImageAspectRatio == "square")">Kare</option>
+                        <option value="portrait" selected="@(Model.Settings?.ImageAspectRatio == "portrait")">Dikey</option>
+                        <option value="landscape" selected="@(Model.Settings?.ImageAspectRatio == "landscape")">Yatay</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colors Row -->
+        <div class="grid grid-cols-2 gap-4 mt-6">
+            <div>
+                <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">Birincil Renk</label>
+                <div class="flex items-center gap-2">
+                    <input type="color" id="primaryColorPicker" value="@(Model.Settings?.PrimaryColor ?? "#02379c")" class="h-10 w-10 rounded cursor-pointer border-0 p-0">
+                    <input type="text" id="primaryColor" value="@(Model.Settings?.PrimaryColor ?? "#02379c")" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">İkincil Renk</label>
+                <div class="flex items-center gap-2">
+                    <input type="color" id="secondaryColorPicker" value="@(Model.Settings?.SecondaryColor ?? "#1f2937")" class="h-10 w-10 rounded cursor-pointer border-0 p-0">
+                    <input type="text" id="secondaryColor" value="@(Model.Settings?.SecondaryColor ?? "#1f2937")" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">Arkaplan</label>
+                <div class="flex items-center gap-2">
+                    <input type="color" id="backgroundColorPicker" value="@(Model.Settings?.BackgroundColor ?? "#ffffff")" class="h-10 w-10 rounded cursor-pointer border-0 p-0">
+                    <input type="text" id="backgroundColor" value="@(Model.Settings?.BackgroundColor ?? "#ffffff")" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">Yazı Rengi</label>
+                <div class="flex items-center gap-2">
+                    <input type="color" id="textColorPicker" value="@(Model.Settings?.TextColor ?? "#1F2937")" class="h-10 w-10 rounded cursor-pointer border-0 p-0">
+                    <input type="text" id="textColor" value="@(Model.Settings?.TextColor ?? "#1F2937")" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="border-gray-100"/>
+
+    <!-- Content & Behavior Section -->
+    <div class="settings-section">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="p-2 bg-blue-50 text-blue-600 rounded-lg"><i class="fas fa-sliders-h"></i></div>
+            <h4 class="text-base font-bold text-gray-900">İçerik & Davranış</h4>
+        </div>
+
+        <div class="space-y-8">
+            <!-- Display Toggles -->
+            <div class="space-y-4">
+                <h5 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Kart İçeriği</h5>
+                <label class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-white hover:shadow-sm hover:border-blue-200 transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center"><i class="fas fa-image"></i></div>
+                        <span class="text-sm font-medium text-gray-700">Görsel</span>
+                    </div>
+                    <div class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="showProductImage" @(Model.Settings?.ShowProductImage != false ? "checked" : "") class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </div>
+                </label>
+                <label class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-white hover:shadow-sm hover:border-blue-200 transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center"><i class="fas fa-tag"></i></div>
+                        <span class="text-sm font-medium text-gray-700">Fiyat</span>
+                    </div>
+                    <div class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="showProductPrice" @(Model.Settings?.ShowProductPrice != false ? "checked" : "") class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </div>
+                </label>
+                <div class="mt-2 flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
+                    <i class="fas fa-info-circle mt-0.5 flex-shrink-0"></i>
+                    <p>Ürün fiyatlarında "KDV dahil" veya "KDV dahil değil" bilgisi Ticimax ürün varyasyonundan gelir; Ticimax panelinde ilgili ürünün varyasyon ayarından açıp kapatabilirsiniz.</p>
+                </div>
+                <label class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-white hover:shadow-sm hover:border-blue-200 transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center"><i class="fas fa-align-left"></i></div>
+                        <span class="text-sm font-medium text-gray-700">Açıklama</span>
+                    </div>
+                    <div class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="showProductDescription" @(Model.Settings?.ShowProductDescription == true ? "checked" : "") class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </div>
+                </label>
+
+                <div id="descriptionSourceContainer" class="mt-3 space-y-3 @(Model.Settings?.ShowProductDescription == true ? "" : "hidden")">
+                    <label for="descriptionSource" class="block text-xs font-semibold text-gray-700 mb-1.5">
+                        Açıklama Kaynağı
+                    </label>
+                    <select id="descriptionSource" name="descriptionSource" class="block w-full px-3 py-2 rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm bg-white">
+                        @{
+                            var descSource = Model.Settings?.DescriptionSource ?? "manual";
+                        }
+                        <option value="manual" selected="@(descSource == "manual")">Manuel Açıklama</option>
+                        <option value="description" selected="@(descSource == "description")">Ürün Açıklaması (Ticimax)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Slider Controls -->
+            <div class="space-y-4 slider-only-settings">
+                <h5 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Navigasyon</h5>
+
+                <!-- AutoPlay Group -->
+                <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-play-circle text-gray-400"></i>
+                            <span class="text-sm font-medium text-gray-700">Oto. Oynat</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="autoPlay" @(Model.Settings?.AutoPlay != false ? "checked" : "") class="sr-only peer">
+                            <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                    <div id="autoPlayIntervalContainer" class="flex items-center gap-2 border-t border-gray-200 pt-2 mt-2 opacity-100 transition-opacity">
+                        <i class="fas fa-stopwatch text-gray-400 text-xs"></i>
+                        <input type="number" id="autoPlayInterval" value="@(Model.Settings?.AutoPlayInterval ?? 5000)" min="1000" step="100" class="flex-1 bg-transparent border-0 p-0 text-sm text-gray-800 focus:ring-0 font-medium placeholder-gray-300" placeholder="5000">
+                        <span class="text-xs text-gray-500 font-bold bg-white px-1.5 py-0.5 rounded border border-gray-200">ms</span>
+                    </div>
+                </div>
+
+                <!-- Dots & Arrows Grid -->
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="flex flex-col items-center justify-center p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-white hover:shadow-sm hover:border-blue-200 transition-all gap-2">
+                        <span class="text-xs font-bold text-gray-600">Oklar</span>
+                        <div class="relative inline-flex items-center">
+                            <input type="checkbox" id="showArrows" @(Model.Settings?.ShowArrows != false ? "checked" : "") class="sr-only peer">
+                            <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                        </div>
+                    </label>
+                    <label class="flex flex-col items-center justify-center p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-white hover:shadow-sm hover:border-blue-200 transition-all gap-2">
+                        <span class="text-xs font-bold text-gray-600">Noktalar</span>
+                        <div class="relative inline-flex items-center">
+                            <input type="checkbox" id="showDots" @(Model.Settings?.ShowDots != false ? "checked" : "") class="sr-only peer">
+                            <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Responsive Count -->
+            <div class="space-y-4">
+                <h5 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Görüntülenecek Ürün Sayısı</h5>
+                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <div class="grid grid-cols-3 gap-4">
+                        <!-- Desktop -->
+                        <div>
+                            <label for="itemsPerView" class="block text-xs font-medium text-gray-500 mb-1.5 text-center flex flex-col items-center gap-1">
+                                <i class="fas fa-desktop text-gray-400"></i>
+                                <span>Masaüstü</span>
+                            </label>
+                            <input type="number" id="itemsPerView" value="@(Model.Settings?.ItemsPerView ?? 4)" min="1" max="10"
+                                   class="block w-full text-center rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5 focus:shadow-md transition-shadow">
+                        </div>
+                        <!-- Tablet -->
+                        <div>
+                            <label for="itemsPerViewTablet" class="block text-xs font-medium text-gray-500 mb-1.5 text-center flex flex-col items-center gap-1">
+                                <i class="fas fa-tablet-alt text-gray-400"></i>
+                                <span>Tablet</span>
+                            </label>
+                            <input type="number" id="itemsPerViewTablet" value="@(Model.Settings?.ItemsPerViewTablet ?? 2)" min="1" max="5"
+                                   class="block w-full text-center rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5 focus:shadow-md transition-shadow">
+                        </div>
+                        <!-- Mobile -->
+                        <div>
+                            <label for="itemsPerViewMobile" class="block text-xs font-medium text-gray-500 mb-1.5 text-center flex flex-col items-center gap-1">
+                                <i class="fas fa-mobile-alt text-gray-400"></i>
+                                <span>Mobil</span>
+                            </label>
+                            <input type="number" id="itemsPerViewMobile" value="@(Model.Settings?.ItemsPerViewMobile ?? 1)" min="1" max="3"
+                                   class="block w-full text-center rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5 focus:shadow-md transition-shadow">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Animations & Custom CSS -->
+    <div class="settings-section" data-section="advanced">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="p-2 bg-green-50 text-green-600 rounded-lg"><i class="fas fa-magic"></i></div>
+            <h4 class="text-base font-bold text-gray-900">Animasyon & Gelişmiş</h4>
+        </div>
+
+        <div class="space-y-8">
+            <!-- Left Column: Animation Controls -->
+            <div>
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="enableAnimations" @(Model.Settings?.EnableAnimations != false ? "checked" : "") class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600 shadow-sm"></div>
+                        </label>
+                        <label for="enableAnimations" class="ml-3 text-sm font-semibold text-gray-800 cursor-pointer select-none">Animasyonları Etkinleştir</label>
+                    </div>
+                </div>
+
+                <div id="animationSettingsContainer" class="pl-1 space-y-6 @(Model.Settings?.EnableAnimations == false ? "opacity-50 pointer-events-none grayscale" : "") transition-all duration-300">
+                    <!-- Visual Animation Type Selector -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Animasyon Tipi</label>
+                        <div class="grid grid-cols-3 gap-3">
+                            <!-- Slide -->
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="animationType" value="slide" class="peer sr-only" @(Model.Settings?.AnimationType == "slide" || Model.Settings?.AnimationType == null ? "checked" : "") onchange="updateAnimationType('slide')">
+                                <div class="rounded-xl border-2 border-gray-200 p-3 text-center peer-checked:border-green-600 peer-checked:bg-green-50 transition-all hover:border-gray-300">
+                                    <div class="text-xs font-bold text-gray-800">Kaydırma</div>
+                                </div>
+                            </label>
+                            <!-- Fade -->
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="animationType" value="fade" class="peer sr-only" @(Model.Settings?.AnimationType == "fade" ? "checked" : "") onchange="updateAnimationType('fade')">
+                                <div class="rounded-xl border-2 border-gray-200 p-3 text-center peer-checked:border-green-600 peer-checked:bg-green-50 transition-all hover:border-gray-300">
+                                    <div class="text-xs font-bold text-gray-800">Soluklaşma</div>
+                                </div>
+                            </label>
+                            <!-- Zoom -->
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="animationType" value="zoom" class="peer sr-only" @(Model.Settings?.AnimationType == "zoom" ? "checked" : "") onchange="updateAnimationType('zoom')">
+                                <div class="rounded-xl border-2 border-gray-200 p-3 text-center peer-checked:border-green-600 peer-checked:bg-green-50 transition-all hover:border-gray-300">
+                                    <div class="text-xs font-bold text-gray-800">Büyüme</div>
+                                </div>
+                            </label>
+                            <input type="hidden" id="animationType" value="@(Model.Settings?.AnimationType ?? "slide")">
+                        </div>
+                    </div>
+
+                    <!-- Duration Slider -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label for="transitionDuration" class="text-xs font-bold text-gray-500 uppercase tracking-wider">Geçiş Hızı</label>
+                            <span class="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-600"><span id="durationDisplay">@(Model.Settings?.TransitionDuration ?? 300)</span> ms</span>
+                        </div>
+                        <div class="relative flex items-center h-6">
+                            <input type="range" id="transitionDurationRange" min="100" max="1000" step="50" value="@(Model.Settings?.TransitionDuration ?? 300)"
+                                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                                   oninput="document.getElementById('transitionDuration').value = this.value; document.getElementById('durationDisplay').textContent = this.value">
+                            <input type="hidden" id="transitionDuration" value="@(Model.Settings?.TransitionDuration ?? 300)">
+                        </div>
+                        <div class="flex justify-between text-[10px] text-gray-400 mt-1 font-medium">
+                            <span>Hızlı (100ms)</span>
+                            <span>Yavaş (1000ms)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Right Column: Custom CSS -->
+            <div class="flex flex-col h-full">
+                <label for="customCSS" class="block text-sm font-semibold text-gray-800 mb-2 flex justify-between items-center">
+                    <span>Özel CSS</span>
+                    <span class="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">Gelişmiş</span>
+                </label>
+                <div class="relative flex-1">
+                    <textarea id="customCSS"
+                                            class="block w-full h-full min-h-[160px] rounded-xl border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-xs font-mono bg-gray-50 text-gray-900 p-4 leading-relaxed"
+                                            placeholder="/* Örnek: */
+.pushonica-slider .item {
+    border-radius: 8px;
+}">@(Model.Settings?.CustomCSS)</textarea>
+                    <div class="absolute bottom-3 right-3 text-xs text-gray-500 pointer-events-none opacity-50">CSS</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </form>
+    </div>
+    </div>
+
+    <!-- Products Card -->
+    <div class="lg:col-span-6 xl:col-span-5 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden lg:sticky lg:top-24">
+        <div class="px-4 py-3 lg:px-6 lg:py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+                <h3 class="font-semibold text-gray-900">Ürünler</h3>
+                <span id="productCountBadge" class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">@Model.Items.Count</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="syncWithTicimax()" id="syncTicimaxBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm font-medium transition-all shadow-sm hover:shadow flex items-center gap-2">
+                    <i class="fas fa-sync-alt"></i> <span class="hidden sm:inline">Ticimaxla Eşitle</span>
+                </button>
+                <button onclick="openEcommerceProductModal()" class="bg-gray-900 hover:bg-black text-white px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm font-medium transition-all shadow-sm hover:shadow flex items-center gap-2">
+                    <i class="fas fa-plus"></i> <span class="hidden sm:inline">Ürün Ekle</span><span class="sm:hidden">Ekle</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="p-3 lg:p-6 bg-gray-50/30">
+            <div id="productsList" class="space-y-3 min-h-[100px]">
+                <!-- Empty State -->
+                <div id="emptyState" class="@(Model.Items.Any() ? "hidden" : "") flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors cursor-pointer" onclick="openEcommerceProductModal()">
+                    <div class="w-16 h-16 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-box-open text-gray-300 text-2xl"></i>
+                    </div>
+                    <h4 class="text-sm font-semibold text-gray-800">Henüz ürün eklenmemiş</h4>
+                    <p class="text-xs text-gray-500 mt-1 max-w-[200px]">Sürükle bırak yapmak veya ürün eklemek için yukarıdaki butonu kullanın.</p>
+                </div>
+
+                @foreach (var item in Model.Items.OrderBy(i => i.SortOrder))
+                {
+                    <div class="group bg-white border border-gray-200 rounded-xl p-2 sm:p-3 hover:shadow-md transition-all product-item @(item.IsActive ? "" : "product-item-inactive")" data-item-id="@item.Id" data-item-active="@(item.IsActive ? "true" : "false")">
+                        <div class="flex items-center gap-2 sm:gap-3">
+                            <div class="drag-handle cursor-move text-gray-300 hover:text-gray-500 p-1 sm:p-2 flex-shrink-0">
+                                <i class="fas fa-grip-vertical"></i>
+                            </div>
+
+                            <div class="relative w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-100 flex-shrink-0">
+                                @if (!string.IsNullOrEmpty(item.ProductImage))
+                                {
+                                    <img src="@item.ProductImage" alt="@item.ProductTitle" class="w-full h-full object-cover">
+                                }
+                                else
+                                {
+                                    <div class="w-full h-full flex items-center justify-center text-gray-300">
+                                        <i class="fas fa-image text-xl"></i>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h4 class="font-semibold text-gray-900 truncate" title="@item.ProductTitle">@item.ProductTitle</h4>
+                                    @if (!item.IsActive)
+                                    {
+                                        <span class="item-status-badge">Pasif</span>
+                                    }
+                                </div>
+                                <div class="flex items-center gap-3 mt-1 flex-wrap">
+                                    @if (item.ProductPrice.HasValue || item.DiscountPrice.HasValue)
+                                    {
+                                        var taxRateDec = (decimal)(item.TaxRate > 0 ? item.TaxRate : 18) / 100m;
+                                        var hasDiscount = item.DiscountPrice.HasValue && item.DiscountPrice > item.ProductPrice;
+                                        decimal priceDisplay = item.ProductPrice ?? 0;
+                                        decimal? origDisplay = hasDiscount ? item.DiscountPrice : null;
+                                        if (!item.KdvIncluded && item.ProductPrice.HasValue)
+                                        {
+                                            priceDisplay = Math.Round(item.ProductPrice.Value * (1 + taxRateDec), 2);
+                                            if (origDisplay.HasValue)
+                                                origDisplay = Math.Round(origDisplay.Value * (1 + taxRateDec), 2);
+                                        }
+                                        <span class="inline-flex items-baseline gap-2 flex-wrap">
+                                            @if (origDisplay.HasValue && origDisplay > priceDisplay)
+                                            {
+                                                <span class="text-xs text-gray-400 line-through opacity-75">@origDisplay.Value.ToString("N0") @item.Currency</span>
+                                            }
+                                            @if (item.ProductPrice.HasValue)
+                                            {
+                                                <span class="text-sm text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded">@priceDisplay.ToString("N0") @item.Currency</span>
+                                            }
+                                            <span class="text-xs @(item.KdvIncluded ? "text-green-600" : "text-gray-500")">@(item.KdvIncluded ? "KDV dahil değil" : "KDV dahil")</span>
+                                        </span>
+                                    }
+                                    <a href="@item.ProductUrl" target="_blank" class="text-xs text-gray-400 hover:text-blue-500 truncate max-w-[200px] hover:underline">
+                                        <i class="fas fa-external-link-alt mr-1"></i> Ürüne Git
+                                    </a>
+                                </div>
+                                @{
+                                    var descSourceForItem = Model.Settings?.DescriptionSource ?? "manual";
+                                    var effectiveDesc = string.Equals(descSourceForItem, "manual", StringComparison.OrdinalIgnoreCase) ? item.ManualDescription : item.ProductDescription;
+                                }
+                                <p class="mt-1.5 text-xs text-gray-500 line-clamp-3 break-words description-preview" id="descriptionPreview-@item.Id" data-product-description="@(item.ProductDescription != null ? System.Net.WebUtility.HtmlEncode(item.ProductDescription) : "")" title="@(effectiveDesc ?? "")">@(effectiveDesc ?? "")</p>
+                                <div class="mt-2 @(string.IsNullOrWhiteSpace(item.ManualDescription) ? "hidden" : "")" id="manualDescriptionContainer-@item.Id">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Manuel Açıklama</label>
+                                    <textarea
+                                                id="manualDescription-@item.Id"
+                                                data-item-id="@item.Id"
+                                                rows="2"
+                                                class="w-full px-2 py-1.5 text-xs rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
+                                                placeholder="Bu ürün için özel açıklama girin...">@item.ManualDescription</textarea>
+                                </div>
+                            </div>
+
+                            @{
+                                var isManualDesc = string.Equals(Model.Settings?.DescriptionSource ?? "manual", "manual", StringComparison.OrdinalIgnoreCase);
+                            }
+                            <div class="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 px-0 sm:px-1 flex-shrink-0">
+                                <button type="button" onclick="toggleProductStatus(@item.Id)" class="p-1.5 sm:p-2 @(item.IsActive ? "text-green-600 hover:bg-green-50" : "text-gray-400 hover:bg-gray-100") rounded-lg transition-all" title="@(item.IsActive ? "Aktif - Pasife al" : "Pasif - Aktife al")">
+                                    <i class="fas fa-@(item.IsActive ? "eye" : "eye-slash")"></i>
+                                </button>
+                                <button type="button" class="btn-toggle-manual-desc p-1.5 sm:p-2 @(string.IsNullOrWhiteSpace(item.ManualDescription) ? "text-gray-400" : "text-blue-600") hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all @(!isManualDesc ? "opacity-50 cursor-not-allowed" : "")" data-item-id="@item.Id" title="@(isManualDesc ? "Açıklama Düzenle" : "Açıklama kaynağı manuel seçili değilken bu düğme kullanılamaz.")" @(!isManualDesc ? "disabled" : "") onclick="if(document.getElementById('descriptionSource')?.value==='manual') toggleManualDescription(@item.Id)">
+                                    <i class="fas fa-align-left"></i>
+                                </button>
+                                <button onclick="deleteProduct(@item.Id)" class="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Sil">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+
+    </div>
+    </div>
+</main>
+
+<!-- Product Selection Modal -->
+<div id="ecommerceProductModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-4xl border border-gray-100 flex flex-col max-h-[85vh]">
+                <div class="bg-white px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">E-ticaret Ürünü Seç</h3>
+                        <p class="text-sm text-gray-500">Sitenizdeki ürünlerden arama yaparak ekleyin.</p>
+                    </div>
+                    <button onclick="closeEcommerceProductModal()" class="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-all">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="flex-1 overflow-hidden p-6 flex flex-col bg-gray-50/30">
+                    <div class="space-y-4 mb-4">
+                        <div class="flex gap-3">
+                            <div class="flex-1 relative">
+                                <input type="text" id="productSearch" placeholder="Ürün adı, stok kodu veya barkod..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                                <i class="fas fa-search absolute left-3.5 top-3 text-gray-400"></i>
+                            </div>
+                            <button onclick="searchEcommerceProducts()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-sm transition-all">Ara</button>
+                             <button id="refreshCacheBtn" onclick="refreshProductCache()" class="bg-orange-100 hover:bg-orange-200 text-orange-700 px-4 py-2.5 rounded-xl font-medium transition-all" title="Verileri Güncelle"><i class="fas fa-sync-alt"></i></button>
+                        </div>
+                    </div>
+                    <div class="flex-1 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
+                         <div class="p-3 bg-gray-50/50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider flex justify-between">
+                            <span>Ürün Listesi</span><span id="resultCount">0 Sonuç</span>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-2 relative custom-scrollbar">
+                             <div id="ecommerceProductsList" class="space-y-1"></div>
+                             <div id="ecommerceProductsLoading" class="hidden absolute inset-0 bg-white/80 flex items-center justify-center z-10">Loading...</div>
+                             <div id="ecommerceProductsEmpty" class="hidden h-full flex items-center justify-center text-gray-400">Sonuç bulunamadı</div>
+                        </div>
+                    </div>
+                    <div id="selectedProductsSection" class="mt-4 bg-white rounded-xl border border-gray-200 p-4 hidden">
+                         <div class="flex justify-between items-center mb-2">
+                             <h4 class="text-sm font-semibold text-gray-800">Seçilen Ürünler (<span id="selectedCount">0</span>)</h4>
+                         </div>
+                         <div id="selectedProductsList" class="flex gap-2 overflow-x-auto pb-2 custom-scrollbar"></div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+                    <button onclick="closeEcommerceProductModal()" class="px-4 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm">Vazgeç</button>
+                    <button onclick="addSelectedProducts()" id="addSelectedBtn" disabled class="px-6 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 text-sm">Seçilenleri Ekle</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/modules/product-slider-module.js"></script>
+    <script src="~/js/product-slider-edit.js"></script>
+
+    <script>
+        // --- UI HELPER FUNCTIONS ---
+
+        // 1. Display Type Selection
+        window.selectDisplayType = function(type) {
+            // Update hidden input
+            const input = document.getElementById('displayType');
+            if(input) {
+                input.value = type;
+                input.dispatchEvent(new Event('change')); // Trigger visibility handlers
+            }
+
+            // Visual Update
+            document.querySelectorAll('.display-type-card').forEach(card => {
+                // Reset styling
+                card.className = 'display-type-card cursor-pointer group relative rounded-xl border-2 transition-all duration-200 hover:border-blue-400 hover:shadow-md overflow-hidden bg-gray-50 border-gray-200';
+
+                // Remove checkmark
+                const check = card.querySelector('.selection-check');
+                if(check) check.remove();
+            });
+
+            // Highlight selected
+            // We find the card by looking at the onclick attribute somewhat loosely or assume structure
+            // Better: loop and check onclick argument? simpler: use event target if passed, but here we passed string.
+            // Let's re-query based on onclick attribute matching
+            const cards = document.querySelectorAll('.display-type-card');
+            cards.forEach(card => {
+                if(card.getAttribute('onclick').includes(`'${type}'`)) {
+                    card.classList.remove('border-gray-200');
+                    card.classList.add('border-blue-600', 'bg-blue-50/50', 'shadow-sm');
+
+                    // Add checkmark
+                    const check = document.createElement('div');
+                    check.className = 'absolute top-2 right-2 text-blue-600 bg-white rounded-full p-1 shadow-sm selection-check';
+                    check.innerHTML = '<i class="fas fa-check-circle text-lg"></i>';
+                    card.appendChild(check);
+                }
+            });
+        };
+
+        // 2. Theme Selection
+        window.updateTheme = function(theme) {
+            const input = document.getElementById('theme');
+            if(input) input.value = theme;
+        };
+
+        // 3. Aspect Ratio Selection
+        window.updateRatioUI = function(element) {
+             // Reset all options
+             document.querySelectorAll('.ratio-option').forEach(el => {
+                 el.classList.remove('border-purple-600', 'bg-purple-50');
+             });
+             // Select clicked
+             element.classList.add('border-purple-600', 'bg-purple-50');
+        };
+
+        // 4. Animation Type Selection
+        window.updateAnimationType = function(type) {
+            const input = document.getElementById('animationType');
+            if(input) input.value = type;
+        };
+
+        // --- ENHANCED LOGIC FOR NEW UI ---
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Color picker synchronization
+            setupColorSync('primaryColor', 'primaryColorPicker');
+            setupColorSync('secondaryColor', 'secondaryColorPicker');
+            setupColorSync('backgroundColor', 'backgroundColorPicker');
+            setupColorSync('textColor', 'textColorPicker');
+
+            // Visibility logic
+            setupVisibilityHandlers();
+
+            // Açıklama toggle ve kaynak değişikliklerini dinle
+            const showProductDescription = document.getElementById('showProductDescription');
+            const descriptionSource = document.getElementById('descriptionSource');
+
+            if (showProductDescription) {
+                showProductDescription.addEventListener('change', function() {
+                    const container = document.getElementById('descriptionSourceContainer');
+                    if (container) {
+                        container.classList.toggle('hidden', !this.checked);
+                    }
+                    updateManualDescriptionVisibility();
+                });
+            }
+
+            if (descriptionSource) {
+                descriptionSource.addEventListener('change', function() {
+                    updateManualDescriptionVisibility();
+                    updateDescriptionPreviews();
+                    window.updateManualDescButtons();
+                });
+            }
+
+            window.updateManualDescButtons = function() {
+                const source = document.getElementById('descriptionSource')?.value || 'manual';
+                const isManual = source === 'manual';
+                document.querySelectorAll('.btn-toggle-manual-desc').forEach(btn => {
+                    if (isManual) {
+                        btn.removeAttribute('disabled');
+                        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        btn.title = 'Açıklama Düzenle';
+                    } else {
+                        btn.setAttribute('disabled', 'disabled');
+                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                        btn.title = 'Açıklama kaynağı manuel seçili değilken bu düğme kullanılamaz.';
+                    }
+                });
+            };
+
+            function updateDescriptionPreviews() {
+                const source = descriptionSource?.value || 'manual';
+                document.querySelectorAll('.description-preview').forEach(el => {
+                    const id = el.id?.replace('descriptionPreview-', '');
+                    if (!id) return;
+                    const manualEl = document.getElementById('manualDescription-' + id);
+                    const manual = manualEl?.value?.trim() || '';
+                    const product = (el.getAttribute('data-product-description') || '').trim();
+                    const text = source === 'manual' ? manual : product;
+                    el.textContent = text || '';
+                    el.title = text || '';
+                });
+            }
+
+            // Manuel açıklama görünürlüğünü güncelle
+            function updateManualDescriptionVisibility() {
+                const isDescriptionEnabled = showProductDescription?.checked || false;
+                const source = descriptionSource?.value || 'manual';
+                const showManual = isDescriptionEnabled && source === 'manual';
+
+                document.querySelectorAll('[id^="manualDescriptionContainer-"]').forEach(container => {
+                    if (showManual) {
+                        container.classList.remove('hidden');
+                    } else {
+                        container.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Toggle manual description
+            window.toggleManualDescription = function(itemId) {
+                const container = document.getElementById(`manualDescriptionContainer-${itemId}`);
+                if (container) {
+                    container.classList.toggle('hidden');
+                    if (!container.classList.contains('hidden')) {
+                        const textarea = document.getElementById(`manualDescription-${itemId}`);
+                        if (textarea) {
+                            textarea.focus();
+                        }
+                    }
+                }
+            };
+
+            // Listen to all inputs for preview update
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    handleVisibilityChange(input);
+                    if (input.id && input.id.startsWith('manualDescription-')) updateDescriptionPreviews();
+                });
+                input.addEventListener('change', () => {
+                    handleVisibilityChange(input);
+                    if (input.id && input.id.startsWith('manualDescription-')) updateDescriptionPreviews();
+                });
+            });
+
+            // Initial checks
+            handleVisibilityChange(document.getElementById('displayType'));
+            handleVisibilityChange(document.getElementById('enableAnimations'));
+
+            window.updateManualDescButtons();
+
+            // Initialize Status UI
+            updateStatusUI();
+        });
+
+        window.toggleStatus = function() {
+            const checkbox = document.getElementById('isActive');
+            if(checkbox) {
+                checkbox.checked = !checkbox.checked;
+                updateStatusUI();
+            }
+        };
+
+        window.updateStatusUI = function() {
+            const checkbox = document.getElementById('isActive');
+            const btn = document.getElementById('statusBtn');
+            const indicator = document.getElementById('statusIndicator');
+            const text = document.getElementById('statusText');
+
+            if(checkbox && btn && indicator && text) {
+                if(checkbox.checked) {
+                    // Active State
+                    btn.className = "px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 border shadow-sm whitespace-nowrap w-full md:w-auto bg-green-50 text-green-700 border-green-200 hover:bg-green-100";
+                    indicator.className = "w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse flex-shrink-0";
+                    text.textContent = "Aktif";
+                } else {
+                    // Passive State
+                    btn.className = "px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 border shadow-sm whitespace-nowrap w-full md:w-auto bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100";
+                    indicator.className = "w-2.5 h-2.5 rounded-full bg-gray-400 flex-shrink-0";
+                    text.textContent = "Pasif";
+                }
+            }
+        };
+
+        function setupColorSync(textId, pickerId) {
+            const text = document.getElementById(textId);
+            const picker = document.getElementById(pickerId);
+
+            if(text && picker) {
+                picker.addEventListener('input', () => { text.value = picker.value; });
+                // Only if user types a valid hex
+                text.addEventListener('input', () => {
+                   if(/^#[0-9A-Fa-f]{6}$/i.test(text.value)) {
+                       picker.value = text.value;
+                   }
+                });
+            }
+        }
+
+        function setupVisibilityHandlers() {
+             // Handled largely by the generic input listener calling handleVisibilityChange
+        }
+
+        function handleVisibilityChange(input) {
+            if(!input) return;
+
+            if(input.id === 'displayType') {
+                const isSlider = input.value === 'slider';
+                const sliderSettings = document.querySelectorAll('.slider-only-settings');
+                sliderSettings.forEach(el => {
+                    if(isSlider) el.classList.remove('hidden');
+                    else el.classList.add('hidden');
+                });
+            }
+
+            if(input.id === 'enableAnimations') {
+                const container = document.getElementById('animationSettingsContainer');
+                if(container) {
+                     if(input.checked) container.classList.remove('opacity-50', 'pointer-events-none');
+                     else container.classList.add('opacity-50', 'pointer-events-none');
+                }
+            }
+        }
+
+
+        // --- OVERRIDES FOR PREVIEW & SAVING ---
+
+        window.triggerPreview = function() {
+            console.log('[Edit] triggerPreview clicked');
+            try {
+                const config = window.getPreviewConfig();
+                console.log('[Edit] Preview config:', config);
+
+                // If it's a slider, grid or tabs, we trigger the popup directly
+                if (config.displayType === 'slider' || config.displayType === 'grid' || config.displayType === 'tabs') {
+                     if (window.productSlider) {
+                         // Force inject base styles first
+                         if (window.productSlider && typeof window.productSlider.injectBaseStyles === 'function') {
+                             if (!document.getElementById('pushonica-slider-base-styles')) {
+                                 window.productSlider.injectBaseStyles();
+                             }
+                         }
+
+                         // Inject CSS first (using renderSlider logic part)
+                         const styleId = `pushonica-style-${config.id || 'preview'}`;
+                         let styleTag = document.getElementById(styleId);
+                         if(styleTag) styleTag.remove();
+
+                         styleTag = document.createElement('style');
+                         styleTag.id = styleId;
+                         // Use generateDynamicCSS to include all styles (layout + theme)
+                         styleTag.textContent = window.productSlider.generateDynamicCSS(config.settings, config.id || 'preview');
+                         document.head.appendChild(styleTag);
+
+                         // Fix: Always remove existing preview popup to force fresh re-render
+                         const existingPopup = document.querySelector(`.pushonica-slider-popup-${config.id || 'preview'}`);
+                         if(existingPopup) {
+                             existingPopup.remove();
+                         }
+
+                         // Now trigger the overlay
+                         window.productSlider.showSliderOverlay(config);
+                     }
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification("Önizleme başlatılamadı: " + e.message, 'error');
+            }
+        };
+
+        window.saveAllSettings = async function() {
+            const saveBtn = document.querySelector('button[onclick="saveAllSettings()"]');
+            const originalContent = saveBtn.innerHTML;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+
+            try {
+                // 1. Save Info
+                const sliderId = document.getElementById('sliderId').value;
+
+
+                // Settings Data
+                const sliderNameEl = document.getElementById('sliderName');
+                const sliderDescEl = document.getElementById('sliderDescription');
+                const displayTypeEl = document.getElementById('displayType');
+                const isActiveEl = document.getElementById('isActive');
+                const descriptionSourceEl = document.getElementById('descriptionSource');
+
+                const itemManualDescriptions = [];
+                if (descriptionSourceEl?.value === 'manual') {
+                    document.querySelectorAll('#productsList .product-item').forEach((el) => {
+                        const itemId = parseInt(el.getAttribute('data-item-id'));
+                        if (isNaN(itemId)) return;
+                        const textarea = document.getElementById('manualDescription-' + itemId);
+                        const value = textarea?.value?.trim() || '';
+                        if (value) {
+                            itemManualDescriptions.push({ itemId: itemId, manualDescription: value });
+                        }
+                    });
+                }
+
+                const settingsData = {
+                    sliderId: parseInt(sliderId),
+                    name: sliderNameEl?.value || null,
+                    description: sliderDescEl?.value || null,
+                    displayType: displayTypeEl?.value || null,
+                    isActive: isActiveEl?.checked ?? null,
+                    itemManualDescriptions: itemManualDescriptions.length ? itemManualDescriptions : null,
+                    autoPlay: document.getElementById('autoPlay')?.checked ?? true,
+                    autoPlayInterval: parseInt(document.getElementById('autoPlayInterval')?.value) || 5000,
+                    showArrows: document.getElementById('showArrows')?.checked ?? true,
+                    showDots: document.getElementById('showDots')?.checked ?? true,
+                    itemsPerView: parseInt(document.getElementById('itemsPerView')?.value) || 4,
+                    itemsPerViewMobile: parseInt(document.getElementById('itemsPerViewMobile')?.value) || 1,
+                    itemsPerViewTablet: parseInt(document.getElementById('itemsPerViewTablet')?.value) || 2,
+                    theme: document.getElementById('theme')?.value || 'modern',
+                    primaryColor: document.getElementById('primaryColor')?.value || '#02379c',
+                    secondaryColor: document.getElementById('secondaryColor')?.value || '#1f2937',
+                    backgroundColor: document.getElementById('backgroundColor')?.value || '#ffffff',
+                    textColor: document.getElementById('textColor')?.value || '#1F2937',
+                    enableAnimations: document.getElementById('enableAnimations')?.checked ?? true,
+                    transitionDuration: parseInt(document.getElementById('transitionDuration')?.value) || 300,
+                    animationType: document.getElementById('animationType')?.value || 'slide',
+                    showProductPrice: document.getElementById('showProductPrice')?.checked ?? true,
+                    showProductDescription: document.getElementById('showProductDescription')?.checked ?? false,
+                    showProductImage: document.getElementById('showProductImage')?.checked ?? true,
+                    imageAspectRatio: document.getElementById('imageAspectRatio')?.value || 'square',
+                    descriptionSource: document.getElementById('descriptionSource')?.value || 'manual',
+                    customCSS: document.getElementById('customCSS')?.value || ''
+                };
+
+                 const settingsResponse = await fetch('/ProductSlider/UpdateSliderSettings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(settingsData)
+                });
+
+                if (!settingsResponse.ok) {
+                    const errorText = await settingsResponse.text();
+                    console.error('UpdateSliderSettings error:', settingsResponse.status, errorText);
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        showNotification(errorJson.message || 'Ayarlar kaydedilirken hata oluştu.', 'error');
+                    } catch {
+                        showNotification('Ayarlar kaydedilirken hata oluştu: ' + errorText, 'error');
+                    }
+                    return;
+                }
+
+                const settingsResult = await settingsResponse.json();
+                if (!settingsResult.success) {
+                    showNotification(settingsResult.message || 'Ayarlar kaydedilirken hata oluştu.', 'error');
+                    return;
+                }
+
+                 showNotification('Tüm ayarlar başarıyla kaydedildi!', 'success');
+
+            } catch(e) {
+                console.error("Save error:", e);
+                showNotification('Kaydederken bir hata oluştu: ' + e.message, 'error');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalContent;
+            }
+        };
+
+        window.getPreviewConfig = function() {
+            const products = [];
+             document.querySelectorAll('#productsList .product-item').forEach((el) => {
+                const title = el.querySelector('h4')?.textContent;
+                const priceText = el.querySelector('.text-blue-600')?.textContent;
+                const img = el.querySelector('img')?.src;
+                products.push({
+                    productTitle: title || 'Ürün',
+                    productPrice: priceText ? parseFloat(priceText.split(' ')[0]) : 0,
+                    currency: 'TRY',
+                    productImage: img || '',
+                    productUrl: '#',
+                    productDescription: 'Örnek açıklama metni'
+                });
+            });
+
+             if (products.length === 0) {
+                 for(let i=1; i<=5; i++) {
+                     products.push({
+                         productTitle: 'Örnek Ürün ' + i,
+                         productPrice: 150 * i,
+                         currency: 'TRY',
+                         productImage: 'https://via.placeholder.com/300x300?text=Product+' + i,
+                         productDescription: 'Bu bir örnek ürün açıklamasıdır.'
+                     });
+                 }
+            }
+
+            return {
+                id: 'preview',
+                sliderId: 'preview',
+                name: document.getElementById('sliderName').value,
+                displayType: document.getElementById('displayType').value,
+                items: products,
+                settings: {
+                    autoPlay: document.getElementById('autoPlay')?.checked ?? true,
+                    autoPlayInterval: parseInt(document.getElementById('autoPlayInterval')?.value) || 5000,
+                    showArrows: document.getElementById('showArrows')?.checked ?? true,
+                    showDots: document.getElementById('showDots')?.checked ?? true,
+                    itemsPerView: parseInt(document.getElementById('itemsPerView')?.value) || 4,
+                    itemsPerViewMobile: parseInt(document.getElementById('itemsPerViewMobile')?.value) || 1,
+                    itemsPerViewTablet: parseInt(document.getElementById('itemsPerViewTablet')?.value) || 2,
+                    theme: document.getElementById('theme')?.value || 'modern',
+                    primaryColor: document.getElementById('primaryColor')?.value || '#02379c',
+                    secondaryColor: document.getElementById('secondaryColor')?.value || '#1f2937',
+                    backgroundColor: document.getElementById('backgroundColor')?.value || '#ffffff',
+                    textColor: document.getElementById('textColor')?.value || '#1F2937',
+                    enableAnimations: document.getElementById('enableAnimations')?.checked ?? true,
+                    transitionDuration: parseInt(document.getElementById('transitionDuration')?.value) || 300,
+                    animationType: document.getElementById('animationType')?.value || 'slide',
+                    showProductPrice: document.getElementById('showProductPrice')?.checked ?? true,
+                    showProductDescription: document.getElementById('showProductDescription')?.checked ?? false,
+                    showProductImage: document.getElementById('showProductImage')?.checked ?? true,
+                    imageAspectRatio: document.getElementById('imageAspectRatio')?.value || 'square',
+                    customCSS: document.getElementById('customCSS')?.value || ''
+                }
+            };
+        };
+
+        window.renderPreview = function() {
+           // Disabled auto-render for clean separation
+        };
+
+        // Product List HTML Generator (Keep compatible)
+        window.createProductItemHTML = function(product, itemId) {
+             const priceVal = parseFloat(product.price) || 0;
+             const discountVal = product.discountPrice != null ? parseFloat(product.discountPrice) : null;
+             const name = product.name || 'Ürün';
+             const image = product.image || '';
+             const currency = product.currency || 'TRY';
+             const kdvIncluded = product.kdvIncluded !== false;
+             const taxRate = typeof product.taxRate === 'number' ? product.taxRate : (parseFloat(product.taxRate) || 18);
+             const fmt = (n) => (Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }));
+             let priceDisplay = priceVal;
+             let origDisplay = discountVal;
+             if (!kdvIncluded && priceVal > 0) {
+                 priceDisplay = Math.round(priceVal * (1 + taxRate / 100) * 100) / 100;
+                 if (origDisplay != null && origDisplay > 0) origDisplay = Math.round(origDisplay * (1 + taxRate / 100) * 100) / 100;
+             }
+             const hasDiscount = origDisplay != null && origDisplay > priceDisplay;
+             const priceHtml = priceVal > 0 ? (hasDiscount ? `<span class="text-xs text-gray-400 line-through opacity-75">${fmt(origDisplay)} ${currency}</span>` : '') + `<span class="text-sm text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded">${fmt(priceDisplay)} ${currency}</span><span class="text-xs ${kdvIncluded ? 'text-green-600' : 'text-gray-500'}">${kdvIncluded ? 'KDV dahil değil' : 'KDV dahil'}</span>` : '';
+             const imageHtml = image ? `<img src="${image}" alt="${name}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-gray-300"><i class="fas fa-image text-xl"></i></div>`;
+
+             return `
+                <div class="group bg-white border border-gray-200 rounded-xl p-3 hover:shadow-md transition-all product-item" data-item-id="${itemId}" data-item-active="true" draggable="true">
+                    <div class="flex items-center gap-4">
+                        <div class="drag-handle cursor-move text-gray-300 hover:text-gray-500 p-2"><i class="fas fa-grip-vertical"></i></div>
+                        <div class="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-100 flex-shrink-0">${imageHtml}</div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-semibold text-gray-900 truncate" title="${name}">${name}</h4>
+                            <div class="flex items-center gap-3 mt-1 flex-wrap">${priceHtml}</div>
+                        </div>
+                        <div class="flex items-center gap-1 px-2">
+                             <button type="button" onclick="toggleProductStatus(${itemId})" class="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-all" title="Aktif - Pasife al"><i class="fas fa-eye"></i></button>
+                             <button type="button" class="btn-toggle-manual-desc p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" data-item-id="${itemId}" title="Açıklama Düzenle" onclick="if(document.getElementById('descriptionSource')?.value==='manual') toggleManualDescription(${itemId})"><i class="fas fa-align-left"></i></button>
+                             <button onclick="deleteProduct(${itemId})" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                </div>`;
+        };
+
+        window.addProductToDOM = function(product, itemId) {
+             const emptyState = document.getElementById('emptyState');
+             if(emptyState) emptyState.style.display = 'none';
+
+             const productsList = document.getElementById('productsList');
+             if(productsList) {
+                 const html = window.createProductItemHTML(product, itemId);
+                 productsList.insertAdjacentHTML('beforeend', html);
+                 if(typeof window.updateManualDescButtons === 'function') window.updateManualDescButtons();
+                 if(typeof initializeDragAndDrop === 'function') initializeDragAndDrop();
+                 const countBadge = document.getElementById('productCountBadge');
+                 const count = document.querySelectorAll('.product-item').length;
+                 if(countBadge) countBadge.textContent = count;
+             }
+        };
+
+        window.loadEcommerceProducts = async function(page = 1) {
+            const searchTerm = document.getElementById('productSearch')?.value || '';
+            const categoryId = document.getElementById('categoryFilter')?.value || '';
+            const brandId = document.getElementById('brandFilter')?.value || '';
+            const inStock = document.getElementById('stockFilter')?.value || '';
+
+            if(typeof window.showEcommerceLoading === 'function') window.showEcommerceLoading(true);
+
+            try {
+                 const sliderId = document.getElementById('sliderId').value;
+                 const params = new URLSearchParams({
+                    page: page,
+                    pageSize: 10,
+                    sliderId: sliderId,
+                    ...(searchTerm && { searchTerm }),
+                    ...(categoryId && { categoryId }),
+                    ...(brandId && { brandId }),
+                    ...(inStock && { inStock })
+                });
+
+                const response = await fetch(`/ProductSlider/GetEcommerceProducts?${params}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    if(typeof window.displayEcommerceProducts === 'function') window.displayEcommerceProducts(result.data);
+                    if(typeof window.displayPagination === 'function') window.displayPagination(result.pagination);
+                    if(typeof currentPage !== 'undefined') currentPage = page;
+                } else {
+                     if(typeof window.showError === 'function') window.showError(result.message || 'Ürünler yüklenirken hata oluştu.');
+                     if(typeof window.showEcommerceEmpty === 'function') window.showEcommerceEmpty(true);
+                     if(typeof window.hidePagination === 'function') window.hidePagination();
+                }
+            } catch (error) {
+                console.error('Error loading ecommerce products:', error);
+                if(typeof window.showEcommerceEmpty === 'function') window.showEcommerceEmpty(true);
+            } finally {
+                if(typeof window.showEcommerceLoading === 'function') window.showEcommerceLoading(false);
+            }
+        };
+
+        // EXPLICIT OVERRIDE FOR SELECTION DISPLAY TO FIX MISSING ELEMENT ERRORS
+        window.updateSelectedProductsDisplay = function() {
+            const section = document.getElementById('selectedProductsSection');
+            const countSpan = document.getElementById('selectedCount');
+            const addBtn = document.getElementById('addSelectedBtn');
+
+            if(countSpan) countSpan.textContent = selectedEcommerceProducts.length;
+            if(addBtn) addBtn.disabled = selectedEcommerceProducts.length === 0;
+
+            if (section) {
+                if (selectedEcommerceProducts.length > 0) {
+                    section.classList.remove('hidden');
+                } else {
+                    section.classList.add('hidden');
+                }
+            }
+        };
+
+
+    </script>
+}

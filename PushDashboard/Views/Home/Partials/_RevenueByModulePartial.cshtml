@@ -1,0 +1,229 @@
+@model List<PushDashboard.ViewModels.ModuleFinancialStatsViewModel>
+@{
+    var toplamCiro = Model?.Sum(m => m.TotalRevenue) ?? 0;
+    var toplamHarcama = Model?.Sum(m => m.TotalExpenditure) ?? 0;
+    var net = (Model?.Sum(m => m.NetIncome) ?? 0);
+}
+
+<div id="revenueByModuleContainer" class="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col transition-shadow hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+    <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white">
+        <div>
+            <h3 class="text-lg font-semibold text-gray-800">Ciro ve Harcama Analizi</h3>
+            <p class="text-sm text-gray-500 mt-0.5">Modül bazlı gelir ve gider özeti</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <input type="date" id="revStart" value="@ViewBag.StartDate" class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:border-gray-200 focus:ring focus:border-gray-300 focus:ring-opacity-50" placeholder="Başlangıç" />
+            <input type="date" id="revEnd" value="@ViewBag.EndDate" class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:border-gray-200 focus:ring focus:border-gray-300 focus:ring-opacity-50" placeholder="Bitiş" />
+            <button onclick="updateRevenueModule()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-gray-400 hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:border-gray-300 transition-colors">
+                Filtrele
+            </button>
+        </div>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <!-- Tek satır: sol liste (özet + tablo), sağ grafik -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-5 min-h-0">
+            <!-- Sol: Özet kartları + tablo -->
+            <div class="flex flex-col gap-4 min-h-0">
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-white rounded-xl p-3 border border-gray-200 transition-shadow hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                        <p class="text-xs font-medium text-gray-700 uppercase tracking-wide">Toplam Ciro</p>
+                        <p class="text-lg font-bold text-gray-900 mt-0.5">₺@toplamCiro.ToString("N2")</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-3 border border-gray-200 transition-shadow hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                        <p class="text-xs font-medium text-gray-700 uppercase tracking-wide">Toplam Harcama</p>
+                        <p class="text-lg font-bold text-gray-900 mt-0.5">₺@toplamHarcama.ToString("N2")</p>
+                    </div>
+                    <div class="bg-white border-gray-200 rounded-xl p-3 border transition-shadow hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Net</p>
+                        <p class="text-lg font-bold mt-0.5 @(net >= 0 ? "text-gray-900" : "text-red-600")">₺@net.ToString("N2")</p>
+                    </div>
+                </div>
+                <div class="overflow-auto flex-1 min-h-0 border border-gray-100 rounded-xl">
+                    <table class="w-full text-left border-collapse min-w-[400px]">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider">
+                        <th class="p-3 font-semibold border-b border-gray-200 rounded-tl-lg">Modül</th>
+                        <th class="p-3 font-semibold border-b border-gray-200 text-right">Harcama</th>
+                        <th class="p-3 font-semibold border-b border-gray-200 text-right">Ciro</th>
+                        <th class="p-3 font-semibold border-b border-gray-200 text-right rounded-tr-lg">Net</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    @foreach (var item in Model)
+                    {
+                        <tr class="hover:bg-gray-50/80 transition-colors duration-150">
+                            <td class="p-3">
+                                <div class="flex flex-col">
+                                    <span class="font-medium text-gray-800">@item.ModuleName</span>
+                                    @if (item.Templates.Any())
+                                    {
+                                        <div class="mt-1 pl-2 border-l-2 border-gray-200">
+                                            @foreach (var t in item.Templates.Take(3))
+                                            {
+                                                <div class="text-xs text-gray-500 flex justify-between gap-2 max-w-xs">
+                                                    <span class="truncate">@t.TemplateName</span>
+                                                    <span class="font-medium">@t.FormattedRevenue</span>
+                                                </div>
+                                            }
+                                            @if (item.Templates.Count > 3)
+                                            {
+                                                <div class="text-xs text-gray-400 italic">+@(item.Templates.Count - 3) diğer şablon</div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                            <td class="p-3 text-right font-medium text-rose-600">@item.FormattedExpenditure</td>
+                            <td class="p-3 text-right font-medium text-emerald-600">@item.FormattedRevenue</td>
+                            <td class="p-3 text-right font-bold @(item.NetIncome >= 0 ? "text-gray-700" : "text-gray-700")">@item.FormattedNetIncome</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="bg-gray-50 border-t-2 border-gray-200">
+                    <tr>
+                        <td class="p-3 font-semibold text-gray-700 rounded-bl-lg">Toplam</td>
+                        <td class="p-3 text-right font-bold text-rose-600">₺@Model.Sum(m => m.TotalExpenditure).ToString("N2")</td>
+                        <td class="p-3 text-right font-bold text-emerald-600">₺@Model.Sum(m => m.TotalRevenue).ToString("N2")</td>
+                        <td class="p-3 text-right font-bold rounded-br-lg @(Model.Sum(m => m.NetIncome) >= 0 ? "text-gray-900" : "text-gray-900")">₺@Model.Sum(m => m.NetIncome).ToString("N2")</td>
+                    </tr>
+                </tfoot>
+            </table>
+                </div>
+            </div>
+
+            <!-- Sağ: Grafik (tüm satırı kaplar) -->
+            <div class="rounded-xl border border-gray-100 bg-gray-50/50 p-4 flex flex-col h-full min-h-[320px]">
+                <p class="text-sm font-medium text-gray-700 mb-3">Modül bazında ciro ve harcama</p>
+                <div class="relative flex-1 min-h-[280px]">
+                    <canvas id="revenueExpenseChart" class="w-full h-full"></canvas>
+                </div>
+                <div class="mt-3 flex items-center justify-center gap-6 text-sm text-gray-600">
+                    <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-emerald-400"></span> Ciro</span>
+                    <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-rose-400"></span> Harcama</span>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function renderRevenueChart() {
+                var rawData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Select(m => new { m.ModuleName, Ciro = (double)m.TotalRevenue, Harcama = (double)m.TotalExpenditure })));
+                var chartData = rawData.filter(function(d) { return d.Ciro > 0 || d.Harcama > 0; });                
+                var canvas = document.getElementById('revenueExpenseChart');
+
+                if (!canvas) {
+                    return;
+                }
+                if (typeof Chart === 'undefined') {
+                    return;
+                }
+                if (!chartData || chartData.length === 0) {
+                    return;
+                }
+
+                var ctx = canvas.getContext('2d');
+                
+                var existing = Chart.getChart(canvas);
+                if (existing) {
+                    existing.destroy();
+                }
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: chartData.map(function(d) { return d.ModuleName; }),
+                        datasets: [
+                            { label: 'Ciro', data: chartData.map(function(d) { return d.Ciro; }), backgroundColor: '#34d399', borderWidth: 0, borderRadius: 4, maxBarThickness: 28 },
+                            { label: 'Harcama', data: chartData.map(function(d) { return d.Harcama; }), backgroundColor: '#fb7185', borderWidth: 0, borderRadius: 4, maxBarThickness: 28 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#64748b' } },
+                            y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.04)' }, ticks: { color: '#64748b' } }
+                        }
+                    }
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', renderRevenueChart);
+            } else {
+                setTimeout(renderRevenueChart, 50);
+            }
+        </script>
+    }
+    else
+    {
+        <div class="flex flex-col items-center justify-center py-12 px-4 text-center flex-grow">
+            <div class="bg-gray-100 rounded-full p-4 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+            </div>
+            <h4 class="text-gray-800 font-medium mb-1">Henüz veri yok</h4>
+            <p class="text-sm text-gray-500 max-w-sm">Bu tarih aralığında herhangi bir harcama veya gelir kaydı bulunamadı.</p>
+        </div>
+    }
+</div>
+
+<script>
+    async function updateRevenueModule() {
+    var start = document.getElementById('revStart').value;
+    var end = document.getElementById('revEnd').value;
+    var container = document.getElementById('revenueByModuleContainer');
+    var btn = container ? container.querySelector('button') : null;
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<svg class="animate-spin h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+    }
+
+    try {
+        var url = '/Home/GetRevenueByModule';
+        var params = new URLSearchParams();
+        if (start) params.append('startDate', start);
+        if (end) params.append('endDate', end);
+        if (params.toString()) url += '?' + params.toString();
+
+        var res = await fetch(url);
+        if (res.ok) {
+            var html = await res.text();
+            if (container) {
+                // 1. Yeni HTML'i sayfaya basıyoruz
+                container.outerHTML = html;
+                
+                // 2. DOM yenilendiği için yeni container'ı tekrar seçiyoruz
+                var newContainer = document.getElementById('revenueByModuleContainer');
+                
+                // 3. İçindeki çalışmayan scriptleri bulup, zorla çalıştırıyoruz
+                if (newContainer) {
+                    var scripts = newContainer.querySelectorAll('script');
+                    scripts.forEach(function(oldScript) {
+                        var newScript = document.createElement('script');
+                        // Tüm özellikleri (src, type vb.) yeni scripte kopyala
+                        Array.from(oldScript.attributes).forEach(function(attr) {
+                            newScript.setAttribute(attr.name, attr.value);
+                        });
+                        // İçeriği kopyala
+                        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                        // Eski çalışmayan scripti, çalışan yenisiyle değiştir
+                        oldScript.parentNode.replaceChild(newScript, oldScript);
+                    });
+                }
+            }
+        } else {
+            if (btn) { btn.disabled = false; btn.innerText = 'Filtrele'; }
+        }
+    } catch (e) {
+        console.error("AJAX Hatası:", e);
+        if (btn) { btn.disabled = false; btn.innerText = 'Filtrele'; }
+    }
+}
+</script>

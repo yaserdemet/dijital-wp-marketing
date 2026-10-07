@@ -1,0 +1,47 @@
+@model PushDashboard.ViewModels.StoreIndexViewModel
+
+<!-- Modül Grid -->
+<div class="bg-white rounded-xl border border-gray-200 p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h3 class="text-lg font-semibold">Mevcut Modüller</h3>
+    <div class="flex space-x-2">
+      <select id="category-filter" name="category" class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+        <option value="">Tüm Kategoriler</option>
+        @foreach (var category in Model.Categories)
+        {
+          <option value="@category.Id">
+            @category.Name
+          </option>
+        }
+      </select>
+      <select id="status-filter" name="status" class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+        <option value="">Tüm Durumlar</option>
+        <option value="owned">Sahip Olunan</option>
+        <option value="available">Satın Alınabilir</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="modules-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    @foreach (var module in Model.Modules)
+    {
+      @await Html.PartialAsync("Partials/_ModuleCardPartial", module)
+    }
+  </div>
+
+  @if (!Model.Modules.Any())
+  {
+    <div class="text-center py-12">
+      <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>
+      <h3 class="mt-2 text-sm font-medium text-gray-900">Modül bulunamadı</h3>
+      <p class="mt-1 text-sm text-gray-500">Seçilen kriterlere uygun modül bulunmuyor.</p>
+    </div>
+  }
+
+  <!-- Filter Results Info -->
+  <div id="filter-results" class="hidden mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md">
+    <p class="text-sm text-gray-900">
+      <span id="visible-count">0</span> modül gösteriliyor (toplam <span id="total-count">0</span> modül)
+    </p>
+  </div>
+</div>

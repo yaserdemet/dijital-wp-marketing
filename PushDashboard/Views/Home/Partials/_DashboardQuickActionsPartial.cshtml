@@ -1,0 +1,113 @@
+@model List<PushDashboard.ViewModels.QuickActionViewModel>
+
+<!-- Quick Actions -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h3 class="text-lg font-semibold text-gray-900">Hızlı İşlemler</h3>
+            <p class="text-sm text-gray-600">Sık kullanılan işlemleri buradan gerçekleştirebilirsiniz</p>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        @foreach (var action in Model)
+        {
+            <div class="border border-gray-200 rounded-lg p-4 hover:border-primary hover:shadow-md transition-all duration-200 @(action.IsEnabled ? "" : "opacity-50 cursor-not-allowed")">
+                <div class="flex items-center mb-3">
+                    <div class="p-2 rounded-lg @GetActionColorClass(action.Color)">
+                        @await Html.PartialAsync("Partials/_IconPartial", action.Icon)
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <h4 class="font-medium text-gray-900">@action.Title</h4>
+                        @if (!string.IsNullOrEmpty(action.Badge))
+                        {
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium @GetBadgeColorClass(action.BadgeColor)">
+                                @action.Badge
+                            </span>
+                        }
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600 mb-4">@action.Description</p>
+                
+                @if (action.ActionType == "button")
+                {
+                    <button onclick="@GetActionHandler(action)" 
+                            class="w-full px-4 py-2 text-white text-sm font-medium rounded-md transition-colors duration-200 @GetButtonColorClass(action.Color) @(action.IsEnabled ? "" : "cursor-not-allowed")"
+                            @(action.IsEnabled ? "" : "disabled")>
+                        @GetActionButtonText(action)
+                    </button>
+                }
+                else
+                {
+                    <a href="@action.ActionUrl" 
+                       class="w-full inline-block px-4 py-2 text-white text-sm font-medium rounded-md transition-colors duration-200 text-center @GetButtonColorClass(action.Color) @(action.IsEnabled ? "" : "pointer-events-none")">
+                        @GetActionButtonText(action)
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@functions {
+    private string GetActionColorClass(string color)
+    {
+        return color?.ToLower() switch
+        {
+            "pink" => "bg-pink-100 text-pink-600",
+            "blue" => "bg-blue-100 text-blue-600",
+            "purple" => "bg-purple-100 text-purple-600",
+            "green" => "bg-green-100 text-green-600",
+            "orange" => "bg-orange-100 text-orange-600",
+            "red" => "bg-red-100 text-red-600",
+            _ => "bg-gray-100 text-gray-600"
+        };
+    }
+
+    private string GetButtonColorClass(string color)
+    {
+        return color?.ToLower() switch
+        {
+            "pink" => "bg-pink-600 hover:bg-pink-700 focus:ring-pink-500",
+            "blue" => "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500",
+            "purple" => "bg-purple-600 hover:bg-purple-700 focus:ring-purple-500",
+            "green" => "bg-green-600 hover:bg-green-700 focus:ring-green-500",
+            "orange" => "bg-orange-600 hover:bg-orange-700 focus:ring-orange-500",
+            "red" => "bg-red-600 hover:bg-red-700 focus:ring-red-500",
+            _ => "bg-gray-600 hover:bg-gray-700 focus:ring-gray-500"
+        };
+    }
+
+    private string GetBadgeColorClass(string? badgeColor)
+    {
+        return badgeColor?.ToLower() switch
+        {
+            "green" => "bg-green-100 text-green-800",
+            "blue" => "bg-blue-100 text-blue-800",
+            "yellow" => "bg-yellow-100 text-yellow-800",
+            "red" => "bg-red-100 text-red-800",
+            _ => "bg-gray-100 text-gray-800"
+        };
+    }
+
+    private string GetActionHandler(PushDashboard.ViewModels.QuickActionViewModel action)
+    {
+        return action.Title switch
+        {
+            "Doğum Günü Bildirimleri" => "sendBirthdayNotifications()",
+            _ => $"window.location.href='{action.ActionUrl}'"
+        };
+    }
+
+    private string GetActionButtonText(PushDashboard.ViewModels.QuickActionViewModel action)
+    {
+        return action.Title switch
+        {
+            "Doğum Günü Bildirimleri" => "Bildirimleri Gönder",
+            "Mağaza" => "Mağazayı Ziyaret Et",
+            "Harcama Geçmişi" => "Geçmişi Görüntüle",
+            "Ayarlar" => "Ayarları Aç",
+            _ => "Git"
+        };
+    }
+}

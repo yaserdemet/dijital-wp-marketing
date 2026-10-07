@@ -1,0 +1,95 @@
+<script>
+    // Tooltip functionality
+    const chartContainer = document.getElementById('chartContainer');
+    const tooltip = document.getElementById('tooltip');
+    const tooltipTitle = document.getElementById('tooltipTitle');
+    const tooltipCount = document.getElementById('tooltipCount');
+    const tooltipValue = document.getElementById('tooltipValue');
+    const barColumns = document.querySelectorAll('.bar-column');
+
+    barColumns.forEach(column => {
+        column.addEventListener('mouseenter', function(e) {
+            const day = this.getAttribute('data-day');
+            const count = this.getAttribute('data-count');
+            const value = this.getAttribute('data-value');
+            
+            tooltipTitle.textContent = day;
+            tooltipCount.textContent = `${count} sepet`;
+            tooltipValue.textContent = `₺${parseInt(value).toLocaleString()}`;
+            
+            tooltip.classList.remove('opacity-0');
+            tooltip.classList.add('opacity-100');
+        });
+
+        column.addEventListener('mousemove', function(e) {
+            const rect = chartContainer.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            tooltip.style.left = `${x + 10}px`;
+            tooltip.style.top = `${y - 10}px`;
+        });
+
+        column.addEventListener('mouseleave', function() {
+            tooltip.classList.remove('opacity-100');
+            tooltip.classList.add('opacity-0');
+        });
+    });
+
+    // Chart animation on load
+    document.addEventListener('DOMContentLoaded', function() {
+        const bars = document.querySelectorAll('.bar');
+        bars.forEach((bar, index) => {
+            setTimeout(() => {
+                bar.style.transform = 'scaleY(1)';
+                bar.style.transformOrigin = 'bottom';
+            }, index * 100);
+        });
+    });
+
+    // Donut chart animation
+    function animateDonutChart() {
+        const circle = document.querySelector('circle[stroke="#02379c"]');
+        if (circle) {
+            const circumference = 2 * Math.PI * 40; // radius = 40
+            const percentage = 75;
+            const offset = circumference - (percentage / 100) * circumference;
+            
+            circle.style.strokeDasharray = circumference;
+            circle.style.strokeDashoffset = circumference;
+            
+            setTimeout(() => {
+                circle.style.transition = 'stroke-dashoffset 2s ease-in-out';
+                circle.style.strokeDashoffset = offset;
+            }, 500);
+        }
+    }
+
+    // Call animation on load
+    document.addEventListener('DOMContentLoaded', animateDonutChart);
+
+    // Refresh data functionality
+    function refreshDashboard() {
+        // Show loading state
+        const refreshButton = document.querySelector('[data-refresh]');
+        if (refreshButton) {
+            refreshButton.innerHTML = '<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+            refreshButton.disabled = true;
+        }
+
+        // Simulate data refresh
+        setTimeout(() => {
+            if (refreshButton) {
+                refreshButton.innerHTML = 'Yenile';
+                refreshButton.disabled = false;
+            }
+            
+            // Show success notification
+            showNotification('Dashboard verileri güncellendi', 'success');
+        }, 2000);
+    }
+
+    // Export functions for global use
+    window.refreshDashboard = refreshDashboard;
+
+</script>

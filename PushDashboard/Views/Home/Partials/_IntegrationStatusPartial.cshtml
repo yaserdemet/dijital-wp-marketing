@@ -1,0 +1,200 @@
+@model List<PushDashboard.ViewModels.IntegrationStatusViewModel>
+
+<!-- Integration Status -->
+<div class="bg-white rounded-xl border border-gray-200 p-6 transition-shadow hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h3 class="text-lg font-semibold text-gray-900">Entegrasyon Durumu</h3>
+            <p class="text-sm text-gray-600">Bağlı servisler ve senkronizasyon durumu</p>
+        </div>
+        <a href="/Integration" class="text-sm text-primary hover:text-primary-dark font-medium">
+            Yönet →
+        </a>
+    </div>
+    <!-- Summary Metrics -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+        <div class="p-3 bg-green-50 rounded-lg">
+            <div class="text-xl font-bold text-green-600">@Model.Count(i => i.IsConnected && i.IsActive)</div>
+            <div class="text-xs text-gray-700">Aktif</div>
+        </div>
+        <div class="p-3 bg-gray-50 rounded-lg">
+            <div class="text-xl font-bold text-gray-500" id="integrationSuccessToday">@Model.Sum(i => i.SuccessfulOperationsToday)</div>
+            <div class="text-xs text-gray-700">Bugün Başarılı</div>
+        </div>
+        <div class="p-3 bg-red-50 rounded-lg">
+            <div class="text-xl font-bold text-red-600" id="integrationFailedToday">@Model.Sum(i => i.FailedOperationsToday)</div>
+            <div class="text-xs text-gray-700">Bugün Hatalı</div>
+        </div>
+    </div>
+    <div class="mt-6 pt-4 border-t border-gray-200"></div>
+    @if (Model.Any())
+    {
+        <div class="space-y-3">
+            @foreach (var integration in Model)
+            {
+                var statusColor = integration.IsConnected && integration.IsActive && string.IsNullOrEmpty(integration.LastError)
+                    ? "border-gray-200 bg-green-50/30"
+                    : (!integration.IsConnected ? "border-gray-200 bg-gray-50/30" 
+                        : (integration.DeactivatedByService ? "border-gray-200 bg-red-50/30" : "border-gray-200 bg-gray-50"));
+                var dotColor = integration.IsConnected && integration.IsActive && string.IsNullOrEmpty(integration.LastError)
+                    ? "bg-green-500"
+                    : (!integration.IsConnected ? "bg-gray-400" 
+                        : (integration.DeactivatedByService ? "bg-red-500" : "bg-gray-500"));
+
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg @statusColor transition-shadow gap-4 sm:gap-0">
+                    <div class="flex items-center flex-1 min-w-0">
+                        <div class="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
+                            @await Html.PartialAsync("Partials/_IntegrationIconPartial", integration.IntegrationType)
+                        </div>
+                        <div class="ml-4 min-w-0 flex-1">
+                            <div class="flex items-center flex-wrap gap-2">
+                                <h4 class="font-medium text-gray-900">@integration.IntegrationName</h4>
+                                <span class="px-2 py-0.5 text-xs font-medium rounded-full @integration.StatusBadgeClass">
+                                    @integration.StatusText
+                                </span>
+                            </div>
+                            <div class="flex items-center flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-500">
+                                <span>
+                                    <span class="text-gray-400">Tip:</span> <span class="font-medium text-gray-600">@integration.IntegrationType</span>
+                                </span>
+                                <span>
+                                    <span class="text-gray-400">Son Senkronizasyon:</span> <span class="font-medium text-gray-600">@integration.FormattedLastSync</span>
+                                </span>
+                                @if (integration.SuccessfulOperationsToday > 0 || integration.FailedOperationsToday > 0)
+                                {
+                                    <span>
+                                        <span class="text-gray-400">Başarı:</span> <span class="font-medium text-gray-600">@integration.FormattedSuccessRate</span>
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3 ml-4 flex-shrink-0">
+                        <!-- Durum göstergesi -->
+                        <div class="flex items-center">
+                            <div class="w-2.5 h-2.5 rounded-full @dotColor mr-2"></div>
+                            @if (integration.IsConnected && integration.IsActive && string.IsNullOrEmpty(integration.LastError))
+                            {
+                                <span class="text-sm font-medium text-green-600">Aktif</span>
+                            }
+                            else if (!integration.IsConnected)
+                            {
+                                <span class="text-sm font-medium text-gray-500">Yapılandır</span>
+                            }
+                            else if (!integration.IsActive && integration.DeactivatedByService)
+                            {
+                                <span class="text-sm font-medium text-red-600">Servis Tarafından Pasife Alındı</span>
+                            }
+                            else if (!integration.IsActive)
+                            {
+                                <span class="text-sm font-medium text-gray-500">Pasif</span>
+                            }
+                            else
+                            {
+                                <span class="text-sm font-medium text-red-600">Hata</span>
+                            }
+                        </div>
+
+                        @if (integration.DeactivatedByService && !string.IsNullOrEmpty(integration.DeactivationReason))
+                        {
+                            <button class="p-1.5 text-red-500 hover:text-gray-700 hover:bg-red-50 rounded-full transition-colors"
+                                    title="Pasife alınma nedenini göster"
+                                    onclick="showDeactivationDetails('@integration.IntegrationName', '@Html.Raw(integration.DeactivationReason?.Replace("'", "\\'").Replace("\n", " ") ?? "")')">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                            </button>
+                        }
+
+                        @if (!string.IsNullOrEmpty(integration.LastError))
+                        {
+                            <button class="p-1.5 text-red-500 hover:text-gray-700 hover:bg-red-50 rounded-full transition-colors"
+                                    title="Hata detaylarını göster"
+                                    onclick="showErrorDetails('@integration.IntegrationName', '@Html.Raw(integration.LastError?.Replace("'", "\\'").Replace("\n", " ") ?? "")')">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                            </button>
+                        }
+
+                        <!-- Ayarlar butonu -->
+                        <a href="/Integration" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors" title="Ayarları düzenle">
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-8">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+            </div>
+            <h4 class="text-lg font-medium text-gray-900 mb-2">Henüz entegrasyon yok</h4>
+            <p class="text-gray-600 mb-4">E-ticaret platformlarınızı bağlayarak başlayın</p>
+            <a href="/Integration" class="inline-flex items-center px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors">
+                <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Entegrasyon Ekle
+            </a>
+        </div>
+    }
+</div>
+
+<!-- Error Details Modal -->
+<div id="errorModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg max-w-md w-full">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 id="errorModalTitle" class="text-lg font-semibold text-gray-900"></h3>
+                        <p class="text-sm text-gray-500">Entegrasyon Hatası</p>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <p id="errorModalMessage" class="text-sm text-gray-700 bg-gray-50 p-3 rounded-md"></p>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button onclick="closeErrorModal()" class="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                        Kapat
+                    </button>
+                    <a href="/Integration" class="px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary-dark">
+                        Düzelt
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showErrorDetails(integrationName, errorMessage) {
+    document.getElementById('errorModalTitle').textContent = integrationName;
+    document.getElementById('errorModalMessage').textContent = errorMessage;
+    document.getElementById('errorModal').classList.remove('hidden');
+}
+
+function showDeactivationDetails(integrationName, deactivationReason) {
+    document.getElementById('errorModalTitle').textContent = integrationName + ' - Servis Tarafından Pasife Alındı';
+    document.getElementById('errorModalMessage').textContent = deactivationReason || 'Entegrasyon servis tarafından otomatik olarak pasife alınmıştır.';
+    document.getElementById('errorModal').classList.remove('hidden');
+}
+
+function closeErrorModal() {
+    document.getElementById('errorModal').classList.add('hidden');
+}
+</script>

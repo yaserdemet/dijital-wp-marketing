@@ -1,0 +1,406 @@
+@model List<PushDashboard.DTOs.ProductSliderResponseDto>
+
+@{
+    ViewData["Title"] = "Ürün Slider Yönetimi";
+    var stats = ViewBag.Stats as dynamic;
+}
+
+<!-- Anti-forgery token for AJAX requests -->
+@Html.AntiForgeryToken()
+
+<main class="min-h-screen bg-gray-50/50 pb-20">
+    <!-- Sticky Header -->
+    <div class="sticky top-2 lg:top-4 z-20 px-2 lg:px-6 mb-4 lg:mb-6">
+        <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm px-4 py-3 lg:px-6 lg:py-4">
+            <div class="flex items-center gap-3 lg:gap-4 w-full md:w-auto">
+                <div class="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl text-white shadow-sm">
+                    <i class="fas fa-sliders-h text-lg"></i>
+                </div>
+                <div class="min-w-0">
+                    <h2 class="text-lg lg:text-xl font-bold text-gray-900 truncate">Ürün Slider Yönetimi</h2>
+                    <div class="flex items-center gap-2 text-xs lg:text-sm text-gray-500 truncate">
+                        <span class="truncate">E-ticaret sitenize gömülebilir ürün slider'ları</span>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:flex md:items-center gap-2 lg:gap-3 w-full md:w-auto mt-2 md:mt-0 justify-end">
+                @if (Model.Any(s => s.IsActive))
+                {
+                    <!-- Export Button -->
+                    <button id="exportToR2Btn" onclick="exportToR2()" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg hover:from-green-700 hover:to-emerald-700 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                        <i class="fas fa-upload"></i> <span class="hidden sm:inline">Siteye Aktar</span><span class="inline sm:hidden">Aktar</span>
+                    </button>
+                }
+                else
+                {
+                    <!-- Delete from Site Button -->
+                    <button id="deleteFromR2Btn" onclick="exportToR2()" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-white bg-gradient-to-r from-red-600 to-rose-600 rounded-lg hover:from-red-700 hover:to-rose-700 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                         <i class="fas fa-trash-alt"></i> <span class="hidden sm:inline">Siteden Sil</span><span class="inline sm:hidden">Sil</span>
+                    </button>
+                }
+                <!-- Create Button -->
+                <button onclick="openCreateSliderModal()" class="px-4 lg:px-6 py-2 text-xs lg:text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm hover:shadow transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <i class="fas fa-plus"></i> <span class="hidden sm:inline">Yeni Slider</span><span class="inline sm:hidden">Yeni</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-[1600px] mx-auto px-2 lg:px-6">
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 mt-12">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-blue-100 rounded-lg">
+                    <i class="fas fa-sliders-h text-blue-600" style="font-size: 1.5rem;"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Toplam Slider</p>
+                    <p class="text-2xl font-semibold text-gray-900">@(stats?.TotalSliders ?? 0)</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-green-100 rounded-lg">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Aktif Slider</p>
+                    <p class="text-2xl font-semibold text-gray-900">@(stats?.ActiveSliders ?? 0)</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-purple-100 rounded-lg">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Toplam Ürün</p>
+                    <p class="text-2xl font-semibold text-gray-900">@(stats?.TotalProducts ?? 0)</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-yellow-100 rounded-lg">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Aktif Ürün</p>
+                    <p class="text-2xl font-semibold text-gray-900">@(stats?.ActiveProducts ?? 0)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sliders Grid -->
+    <div class="mt-8">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-800">Slider Listesi</h3>
+        </div>
+
+        @if (Model.Any())
+        {
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach (var slider in Model)
+                {
+                    <div class="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-hidden relative">
+                        <!-- Active Status Indicator Strip -->
+                        <div class="@(slider.IsActive ? "bg-green-500" : "bg-gray-300") absolute top-0 left-0 w-1 h-full transition-colors duration-300"></div>
+
+                        <div class="p-6 pl-8">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h4 class="text-lg font-bold text-gray-800 group-hover:text-blue-600 transition-colors">@slider.Name</h4>
+                                    <p class="text-xs text-gray-500 mt-1 line-clamp-2">@(string.IsNullOrEmpty(slider.Description) ? "Açıklama belirtilmemiş" : slider.Description)</p>
+                                </div>
+
+                                <div class="flex flex-col items-end gap-2">
+                                    <span class="@(slider.IsActive
+                                        ? "bg-green-50 text-green-700 ring-green-600/20"
+                                        : "bg-gray-50 text-gray-600 ring-gray-600/20")
+                                        inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset">
+                                        @(slider.IsActive ? "Aktif" : "Pasif")
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 mb-6 mt-6">
+                                <div class="flex items-center gap-3 p-2 rounded-lg bg-gray-50 group-hover:bg-blue-50/50 transition-colors">
+                                    <div class="p-2 bg-white rounded-md shadow-sm text-blue-500">
+                                        <i class="fas @(slider.DisplayType == "slider" ? "fa-images" : slider.DisplayType == "grid" ? "fa-th" : "fa-list")"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">TİP</div>
+                                        <div class="text-xs font-semibold text-gray-700 capitalize">
+                                            @(slider.DisplayType == "slider" ? "Slider" :
+                                              slider.DisplayType == "tabs" ? "Sekmeler" :
+                                              slider.DisplayType == "grid" ? "Grid" : slider.DisplayType)
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-3 p-2 rounded-lg bg-gray-50 group-hover:bg-blue-50/50 transition-colors">
+                                    <div class="p-2 bg-white rounded-md shadow-sm text-purple-500">
+                                        <i class="fas fa-box-open"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">AKTİF ÜRÜNLER</div>
+                                        <div class="text-xs font-semibold text-gray-700">@slider.ItemCount Adet</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between items-center text-[11px] text-gray-400 mb-6 border-t border-gray-100 pt-4">
+                                <div class="flex items-center gap-1.5">
+                                    <i class="far fa-calendar-alt"></i>
+                                    <span>@slider.CreatedAt.ToString("d MMMM yyyy")</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <i class="far fa-clock"></i>
+                                    <span>@slider.CreatedAt.ToString("HH:mm")</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <a href="@Url.Action("Edit", "ProductSlider", new { id = slider.Id })"
+                                   class="flex-1 bg-gray-900 hover:bg-black text-white text-center py-2 px-4 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 group/btn">
+                                    <i class="fas fa-edit text-xs group-hover/btn:text-blue-300 transition-colors"></i> Düzenle
+                                </a>
+
+                                <button onclick="toggleSliderStatus(@slider.Id)"
+                                        class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-yellow-600 hover:border-yellow-600 hover:bg-yellow-50 transition-all"
+                                        title="@(slider.IsActive ? "Pasife Al" : "Aktife Al")">
+                                    <i class="fas @(slider.IsActive ? "fa-pause" : "fa-play")"></i>
+                                </button>
+                                <button onclick="deleteSlider(@slider.Id, '@slider.Name')"
+                                        class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-red-600 hover:border-red-600 hover:bg-red-50 transition-all"
+                                        title="Sil">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 lg:p-16 text-center">
+                <div class="w-16 h-16 lg:w-20 lg:h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
+                    <i class="fas fa-magic text-blue-500 text-2xl lg:text-3xl"></i>
+                </div>
+                <h3 class="text-lg lg:text-xl font-bold text-gray-900 mb-2">Henüz slider oluşturmadınız</h3>
+                <p class="text-sm lg:text-base text-gray-500 mb-6 lg:mb-8 max-w-sm mx-auto">E-ticaret siteniz için modern ve etkileyici ürün sliderları oluşturmaya hemen başlayın.</p>
+                <div class="mt-4 lg:mt-6">
+                    <button onclick="openCreateSliderModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 lg:px-8 py-2 lg:py-3 rounded-xl font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2 mx-auto text-sm lg:text-base">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        İlk Slider'ı Oluştur
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+    </div>
+</main>
+
+<!-- Create Slider Modal -->
+<div id="createSliderModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"></div>
+
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-100">
+
+                <!-- Header -->
+                <div class="bg-gray-50/50 px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900" id="modal-title">Yeni Slider Oluştur</h3>
+                        <p class="text-sm text-gray-500 mt-1">Slider özelliklerini aşağıdan belirleyebilirsiniz.</p>
+                    </div>
+                    <button type="button" onclick="closeCreateSliderModal()" class="text-gray-400 hover:text-gray-500 hover:bg-gray-100 p-2 rounded-full transition-all">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <form id="createSliderForm" class="p-6 space-y-6">
+                    <!-- Slider Name -->
+                    <div>
+                        <label for="sliderName" class="block text-sm font-semibold text-gray-700 mb-1">Slider Adı</label>
+                        <div class="relative rounded-md shadow-sm">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <i class="fas fa-heading text-gray-400 text-sm"></i>
+                            </div>
+                            <input type="text" id="sliderName" name="name" required
+                                   class="block w-full rounded-xl border-0 py-3 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 bg-gray-50/50 focus:bg-white transition-all"
+                                   placeholder="Örn: Ana Sayfa Çok Satanlar">
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <label for="sliderDescription" class="block text-sm font-semibold text-gray-700 mb-1">
+                            Açıklama <span class="font-normal text-gray-400 text-xs ml-1">(Opsiyonel)</span>
+                        </label>
+                        <div class="relative rounded-md shadow-sm">
+                             <div class="pointer-events-none absolute top-3 left-0 flex items-center pl-3">
+                                <i class="fas fa-align-left text-gray-400 text-sm"></i>
+                            </div>
+                            <textarea id="sliderDescription" name="description" rows="3"
+                                      class="block w-full rounded-xl border-0 py-3 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 bg-gray-50/50 focus:bg-white transition-all resize-none"
+                                      placeholder="Bu slider hakkında kısa bir not..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Display Type -->
+                    <div>
+                        <label for="displayType" class="block text-sm font-semibold text-gray-700 mb-1">Görüntüleme Tipi</label>
+                        <div class="grid grid-cols-3 gap-3">
+                            <label class="cursor-pointer group relative">
+                                <input type="radio" name="displayType" value="slider" class="peer sr-only" checked>
+                                <div class="rounded-xl border border-gray-200 p-4 text-center hover:bg-gray-50 peer-checked:border-blue-600 peer-checked:bg-blue-50/50 peer-checked:ring-1 peer-checked:ring-blue-600 transition-all">
+                                    <i class="fas fa-images text-2xl mb-2 text-gray-400 peer-checked:text-blue-600"></i>
+                                    <div class="text-sm font-medium text-gray-900 peer-checked:text-blue-900">Slider</div>
+                                </div>
+                            </label>
+
+                            <label class="cursor-pointer group relative">
+                                <input type="radio" name="displayType" value="tabs" class="peer sr-only">
+                                <div class="rounded-xl border border-gray-200 p-4 text-center hover:bg-gray-50 peer-checked:border-blue-600 peer-checked:bg-blue-50/50 peer-checked:ring-1 peer-checked:ring-blue-600 transition-all">
+                                    <i class="fas fa-layer-group text-2xl mb-2 text-gray-400 peer-checked:text-blue-600"></i>
+                                    <div class="text-sm font-medium text-gray-900 peer-checked:text-blue-900">Sekmeler</div>
+                                </div>
+                            </label>
+
+                            <label class="cursor-pointer group relative">
+                                <input type="radio" name="displayType" value="grid" class="peer sr-only">
+                                <div class="rounded-xl border border-gray-200 p-4 text-center hover:bg-gray-50 peer-checked:border-blue-600 peer-checked:bg-blue-50/50 peer-checked:ring-1 peer-checked:ring-blue-600 transition-all">
+                                    <i class="fas fa-th text-2xl mb-2 text-gray-400 peer-checked:text-blue-600"></i>
+                                    <div class="text-sm font-medium text-gray-900 peer-checked:text-blue-900">Grid</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="pt-2 flex gap-3">
+                        <button type="button" onclick="closeCreateSliderModal()"
+                                class="flex-1 rounded-xl bg-white px-3 py-3 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 hover:text-gray-900 transition-all">
+                            Vazgeç
+                        </button>
+                        <button type="submit"
+                                class="flex-1 rounded-xl bg-blue-600 px-3 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-plus"></i> Oluştur
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Embed Code Modal
+<div id="embedCodeModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg max-w-2xl w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Embed Kodu</h3>
+                <button onclick="closeEmbedCodeModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Bu kodu sitenizin HTML'ine yapıştırın:</label>
+                    <div class="relative">
+                        <textarea id="embedCodeText" readonly rows="3"
+                                  class="w-full p-3 border border-gray-300 rounded-md bg-gray-50 font-mono text-sm"></textarea>
+                        <button onclick="copyEmbedCode()"
+                                class="absolute top-2 right-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                            Kopyala
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 p-4 rounded-md">
+                    <h4 class="font-medium text-blue-900 mb-2">Kullanım Talimatları:</h4>
+                    <ul class="text-sm text-blue-800 space-y-1">
+                        <li>• Bu kodu slider'ın görünmesini istediğiniz sayfanın HTML'ine yapıştırın</li>
+                        <li>• Kod otomatik olarak slider'ı yükleyecek ve görüntüleyecektir</li>
+                        <li>• Slider responsive tasarıma sahiptir ve tüm cihazlarda çalışır</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+ R2 Embed Code Modal
+<div id="r2EmbedCodeModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Dijitaldesin Modülleri - Embed Kodu</h3>
+                <button onclick="closeR2EmbedCodeModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Embed Kodu:</label>
+                <textarea id="r2EmbedCodeText" readonly class="w-full h-32 p-3 border border-gray-300 rounded-md bg-gray-50 font-mono text-sm resize-none"></textarea>
+                <button onclick="copyR2EmbedCode()" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">
+                    Kopyala
+                </button>
+            </div>
+
+            <div class="bg-green-50 p-4 rounded-md">
+                <h4 class="font-medium text-green-900 mb-2">Yeni Sistem Avantajları:</h4>
+                <ul class="text-sm text-green-800 space-y-1">
+                    <li>• <strong>Tek Script:</strong> Bu kodu sitenizin tüm sayfalarına ekleyin</li>
+                    <li>• <strong>Otomatik Tanıma:</strong> Script hangi sayfalarda çalışacağını otomatik belirler</li>
+                    <li>• <strong>CDN Hızı:</strong> R2 CDN üzerinden hızlı yükleme</li>
+                    <li>• <strong>Responsive:</strong> Tüm cihazlarda mükemmel görünüm</li>
+                    <li>• <strong>Ticimax Uyumlu:</strong> Ticimax e-ticaret yapısına özel optimize edilmiş</li>
+                </ul>
+            </div>
+
+            <div class="bg-blue-50 p-4 rounded-md mt-4">
+                <h4 class="font-medium text-blue-900 mb-2">Kurulum Talimatları:</h4>
+                <ol class="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                    <li>Yukarıdaki kodu kopyalayın</li>
+                    <li>Ticimax admin panelinde "Tasarım > Script Yönetimi" bölümüne gidin</li>
+                    <li>Kodu "Header" veya "Footer" bölümüne yapıştırın</li>
+                    <li>Değişiklikleri kaydedin</li>
+                    <li>Sitenizi ziyaret ederek slider'ların çalıştığını kontrol edin</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+ -->
+@section Scripts {
+    <script src="~/js/product-slider-admin.js"></script>
+}

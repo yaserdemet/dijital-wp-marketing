@@ -1,0 +1,388 @@
+<script>
+    let paymentLoaded = false;
+    let selectedAmount = 0;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add click listener to payment tab
+        const paymentTabBtn = document.querySelector('.tab-button[data-tab="payment"]');
+        if (paymentTabBtn) {
+            paymentTabBtn.addEventListener('click', function() {
+                loadPaymentInfo();
+            });
+        }
+        
+        // Check if payment tab is already active
+        const paymentTab = document.getElementById('payment');
+        if (paymentTab && paymentTab.classList.contains('active')) {
+             loadPaymentInfo();
+        }
+    });
+
+    function loadPaymentInfo(reload = false) {
+        if (paymentLoaded && !reload) return;
+        
+        loadCreditBalance();
+        loadSavedCards();
+        loadTransactionHistory();
+        paymentLoaded = true;
+    }
+
+    async function loadCreditBalance() {
+        try {
+            const response = await axios.get('/Settings/GetCreditBalanceAjax');
+            if (response.data.success) {
+                document.getElementById('current-credit-balance').innerText = formatCurrency(response.data.balance);
+            }
+        } catch (error) {
+            console.error('Error loading credit balance:', error);
+        }
+    }
+
+    async function loadSavedCards() {
+        const container = document.getElementById('saved-cards-container');
+        const paymentSelect = document.getElementById('payment-method-select');
+        
+        if (!container) return;
+
+        try {
+            const response = await axios.get('/Settings/GetSavedCardsAjax');
+            if (response.data.success) {
+                const cards = response.data.cards || []; // Changed from response.data.data to response.data.cards based on controller
+                
+                // Update UI list
+                if (cards.length === 0) {
+                    container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8">Kayıtlı kartınız bulunmamaktadır.</div>';
+                } else {
+                    container.innerHTML = cards.map(card => `
+                        <div class="border border-gray-200 rounded-xl p-4 relative group hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)] transition-shadow">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="font-semibold text-gray-700">${card.cardBankName || 'Kart'} ${card.cardAlias ? '(' + card.cardAlias + ')' : ''}</div>
+                                <button onclick="deleteCard('${card.ctoken}')" class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity" title="Kartı Sil">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="text-lg text-gray-800 tracking-wider mb-1">**** **** **** ${card.lastFour}</div>
+                            <div class="flex justify-between text-sm text-gray-500">
+                                <span>${card.cardBrand || card.cardType || ''}</span>
+                                
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                // Update Select Options
+                // Keep "new_card" as first option
+                paymentSelect.innerHTML = '<option value="new_card">Yeni Kart ile Öde</option>';
+                cards.forEach(card => {
+                    const option = document.createElement('option');
+                    option.value = card.ctoken;
+                    option.text = `${card.bankName || 'Kart'} (**** ${card.lastFour})`;
+                    // Store requirement in data attribute (lowercase boolean string)
+                    option.setAttribute('data-require-cvv', card.requireCvv);
+                    paymentSelect.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading saved cards:', error);
+            container.innerHTML = '<div class="col-span-full text-center text-red-500 py-4">Kartlar yüklenirken bir hata oluştu.</div>';
+        }
+    }
+
+    async function loadTransactionHistory(page = 1) {
+        const tbody = document.getElementById('transaction-history-body');
+        if (!tbody) return;
+
+        try {
+            const response = await axios.get(`/Settings/GetTransactionHistoryAjax?page=${page}&pageSize=10`);
+            if (response.data.success) {
+                const transactions = response.data.transactions.items; // Controller returns { success=true, transactions=paginatedResult }
+                
+                if (!transactions || transactions.length === 0) {
+                     tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">İşlem geçmişi bulunamadı.</td></tr>';
+                } else {
+                    tbody.innerHTML = transactions.map(t => `
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(t.createdAt).toLocaleString('tr-TR')}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${getTransactionTypeText(t.type)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${t.description || '-'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${t.amount >= 0 ? 'text-emerald-600' : 'text-rose-600'}">
+                                ${t.amount >= 0 ? '+' : ''}${formatCurrency(t.amount)}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-medium rounded-md ${getStatusBadgeClass(t.status)}">
+                                    ${getStatusText(t.status)}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(t.balanceAfter)}</td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        } catch (error) {
+            console.error('Error loading transactions:', error);
+            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">İşlem geçmişi yüklenirken hata oluştu.</td></tr>';
+        }
+    }
+
+    function getTransactionTypeText(type) {
+        if (type === 0 || type === 'Payment') return 'Ödeme / Yükleme';
+        if (type === 1 || type === 'Refund') return 'İade';
+        if (type === 2 || type === 'ManualAdjustment') return 'Manuel Düzeltme';
+        if (type === 'Spend') return 'Harcama';
+        return type || 'Diğer';
+    }
+
+    function getStatusText(status) {
+        if (status === 'Success') return 'Başarılı';
+        if (status === 'Failed') return 'Başarısız';
+        if (status === 'Pending') return 'Bekliyor';
+        return status;
+    }
+
+    function getStatusBadgeClass(status) {
+        switch (status) {
+            case 'Success': return 'bg-emerald-50 text-emerald-700';
+            case 'Failed': return 'bg-rose-50 text-rose-700';
+            case 'Pending': return 'bg-amber-50 text-amber-700';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    }
+
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
+    }
+
+    // Modal Functions
+    function openAddCreditModal() {
+        document.getElementById('add-credit-modal').classList.remove('hidden');
+        document.getElementById('add-credit-modal').classList.add('block');
+        resetPaymentForm();
+    }
+
+    function closeAddCreditModal() {
+        document.getElementById('add-credit-modal').classList.add('hidden');
+        document.getElementById('add-credit-modal').classList.remove('block');
+    }
+
+    function selectAmount(amount) {
+        selectedAmount = amount;
+        document.getElementById('custom-amount').value = '';
+        
+        // Visual feedback for buttons
+        document.querySelectorAll('.amount-btn').forEach(btn => {
+            if (parseInt(btn.innerText) === amount) {
+                btn.classList.add('bg-primary', 'text-white', 'border-primary');
+                btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
+            } else {
+                btn.classList.remove('bg-primary', 'text-white', 'border-primary');
+                btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+            }
+        });
+    }
+
+    document.getElementById('custom-amount').addEventListener('input', function(e) {
+        selectedAmount = parseFloat(e.target.value) || 0;
+        // Reset buttons
+        document.querySelectorAll('.amount-btn').forEach(btn => {
+            btn.classList.remove('bg-primary', 'text-white', 'border-primary');
+            btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+        });
+    });
+
+    function togglePaymentForm() {
+        const select = document.getElementById('payment-method-select');
+        const method = select.value;
+        const newCardForm = document.getElementById('new-card-form');
+        const savedCardCvv = document.getElementById('saved-card-cvv-area');
+
+        if (method === 'new_card') {
+            newCardForm.classList.remove('hidden');
+            savedCardCvv.classList.add('hidden');
+        } else {
+            newCardForm.classList.add('hidden');
+            
+            // Check if CVV is required for this card
+            const selectedOption = select.options[select.selectedIndex];
+            // attr is string "true" or "false"
+            const requireCvv = selectedOption.getAttribute('data-require-cvv') === 'true';
+            
+            if (requireCvv) {
+                savedCardCvv.classList.remove('hidden');
+            } else {
+                savedCardCvv.classList.add('hidden');
+            }
+        }
+    }
+
+    function resetPaymentForm() {
+        selectedAmount = 0;
+        document.getElementById('custom-amount').value = '';
+        document.getElementById('payment-method-select').value = 'new_card';
+        togglePaymentForm();
+        document.querySelectorAll('input[type="text"]').forEach(i => i.value = '');
+        document.querySelectorAll('.amount-btn').forEach(btn => {
+            btn.classList.remove('bg-primary', 'text-white', 'border-primary');
+            btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+        });
+    }
+
+    async function processPayment() {
+        if (selectedAmount < 10) {
+            showNotification('Minimum yükleme tutarı 10 TL dir.', 'error');
+            return;
+        }
+
+        const select = document.getElementById('payment-method-select');
+        const method = select.value;
+        const submitBtn = document.querySelector('#add-credit-modal button[onclick="processPayment()"]');
+        
+        try {
+            setButtonLoading(submitBtn, true);
+
+            let payload = {};
+            let endpoint = '';
+
+            if (method === 'new_card') {
+                endpoint = '/Settings/InitiatePaymentAjax';
+                payload = {
+                    amount: selectedAmount,
+                    cardHolderName: document.getElementById('card-holder').value,
+                    cardNumber: document.getElementById('card-number').value.replace(/\s/g, ''),
+                    expiryMonth: document.getElementById('expiry-month').value,
+                    expiryYear: document.getElementById('expiry-year').value,
+                    cvv: document.getElementById('cvv').value,
+                    storeCard: document.getElementById('store-card').checked
+                };
+            } else {
+                 endpoint = '/Settings/PayWithSavedCardAjax';
+                 
+                 // Get CVV only if visible/required
+                 const selectedOption = select.options[select.selectedIndex];
+                 const requireCvv = selectedOption.getAttribute('data-require-cvv') === 'true';
+                 const cvvValue = document.getElementById('saved-card-cvv').value;
+
+                 if (requireCvv && !cvvValue) {
+                      showNotification('Lütfen güvenlik kodunu (CVV) giriniz.', 'error');
+                      setButtonLoading(submitBtn, false);
+                      return;
+                 }
+
+                 payload = {
+                    ctoken: method,
+                    cvv: requireCvv ? cvvValue : null,
+                    amount: selectedAmount
+                 };
+            }
+            
+            const response = await axios.post(endpoint, payload);
+
+            if (response.data.success) {
+                // Check for 3D Secure
+                if (response.data.is3D && response.data.htmlContent) {
+                     show3DModal(response.data.htmlContent);
+                     return; 
+                }
+
+                showNotification(response.data.message || 'Ödeme başarıyla tamamlandı.', 'success');
+                closeAddCreditModal();
+                loadPaymentInfo(true); 
+            } else {
+                showNotification(response.data.message || 'Ödeme başarısız.', 'error');
+            }
+        } catch (error) {
+            console.error('Payment error:', error);
+            if (error.response && error.response.data && error.response.data.message) {
+                 showNotification(error.response.data.message, 'error');
+            } else {
+                 showNotification('Ödeme işlemi sırasında bir hata oluştu.', 'error');
+            }
+        } finally {
+            setButtonLoading(submitBtn, false);
+        }
+    }
+
+    async function deleteCard(cardToken) {
+        if (!confirm('Bu kartı silmek istediğinize emin misiniz?')) return;
+
+        try {
+            const response = await axios.post('/Settings/DeleteSavedCardAjax', { ctoken: cardToken }); // request body expects DeleteCardRequest which has Ctoken property?
+            // Need to check DeleteSavedCard signature. It takes [FromBody] DeleteCardRequest request.
+            // If the name of the property in DeleteCardRequest is Ctoken, then passing { ctoken: ... } is correct (case-insensitive usually).
+            if (response.data.success) {
+                showNotification('Kart başarıyla silindi.', 'success');
+                loadSavedCards();
+            } else {
+                showNotification(response.data.message, 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting card:', error);
+            showNotification('Kart silinirken bir hata oluştu.', 'error');
+        }
+    }
+
+    // Make functions globally available
+    window.loadPaymentInfo = loadPaymentInfo;
+
+    // 3D Secure Modal Logic
+    function show3DModal(htmlContent) {
+        // Remove existing if any
+        close3DModal();
+        
+        const modalId = 'paytr-3d-modal';
+        const modal = document.createElement('div');
+        modal.id = modalId;
+        modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center';
+        modal.innerHTML = `
+            <div class="relative p-5 border border-gray-200 w-full max-w-4xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] rounded-xl bg-white">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900">3D Secure Doğrulama</h3>
+                    <button onclick="close3DModal()" class="text-gray-400 hover:text-gray-500">
+                        <span class="sr-only">Kapat</span>
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="paytr-3d-content" class="min-h-[500px]"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        const contentDiv = modal.querySelector('#paytr-3d-content');
+        
+        // Use iframe to isolate PayTR content and scripts
+        const iframe = document.createElement('iframe');
+        iframe.style.width = '100%';
+        iframe.style.height = '600px';
+        iframe.style.border = 'none';
+        contentDiv.appendChild(iframe);
+        
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+    }
+
+    function close3DModal() {
+        const modal = document.getElementById('paytr-3d-modal');
+        if (modal) modal.remove();
+    }
+    
+    // Listen for messages from iframe (if implemented) or just manual closure
+    window.addEventListener('message', function(event) {
+        const data = event.data;
+        if (data === 'paytr_success' || data === 'paymentSuccess' || (data && data.type === 'paytr_success')) {
+             close3DModal();
+             showNotification('Ödeme başarıyla tamamlandı.', 'success');
+             closeAddCreditModal();
+             loadPaymentInfo(true);
+        } else if (data === 'paytr_fail' || (data && data.type === 'paytr_fail')) {
+             close3DModal();
+             showNotification(data.message || 'Ödeme başarısız.', 'error');
+        }
+    });
+
+    window.close3DModal = close3DModal;
+</script>

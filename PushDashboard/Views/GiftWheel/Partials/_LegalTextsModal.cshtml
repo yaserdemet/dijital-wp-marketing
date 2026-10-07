@@ -1,0 +1,499 @@
+<script>
+    // Templates for Legal Texts
+    const kvkkTemplate = {
+        title: 'Kişisel Verilerin Korunması İzni Metni',
+        text: `KİŞİSEL VERİLERİN KORUNMASI AYDINLATMA METNİ
+
+1. Veri Sorumlusu
+
+6698 sayılı Kişisel Verilerin Korunması Kanunu (“KVKK”) uyarınca, kişisel verileriniz [FIRMA_UNVANI] (“Veri Sorumlusu”) tarafından işlenmektedir.
+Kayıt olunan sayfa adresi: [KAYIT_URL]
+
+2. İşlenen Kişisel Veriler
+
+Tarafınızdan paylaşılan ve işlenen kişisel veriler şunlardır:
+- Ad, soyad
+- Telefon numarası
+- E-posta adresi
+- İletişim tercih bilgileri
+- Elektronik ticari ileti onay ve ret bilgileri
+- İşlem ve log kayıtları
+
+3. Kişisel Verilerin İşlenme Amaçları
+
+Kişisel verileriniz;
+- İletişim ve hizmet süreçlerinin yürütülmesi,
+- Elektronik ticari iletilerin gönderilmesi,
+- Onay ve ret kayıtlarının tutulması,
+- İlgili mevzuat kapsamında yasal yükümlülüklerin yerine getirilmesi
+amaçlarıyla işlenmektedir.
+
+4. Kişisel Verilerin İşlenmesinin Hukuki Sebebi
+
+Kişisel verileriniz;
+- KVKK’nın 5. maddesi,
+- 6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun ve ilgili mevzuat
+kapsamında, açık rızanızın bulunması veya kanuni yükümlülüklerin yerine getirilmesi hukuki sebeplerine dayanılarak işlenmektedir.
+
+5. Kişisel Verilerin Aktarılması
+
+Kişisel verileriniz;
+- Hizmet alınan teknik altyapı sağlayıcılarına,
+- Yetkili kamu kurum ve kuruluşlarına
+mevzuata uygun olarak aktarılabilecektir.
+
+Teknik altyapı sağlayıcısı olan Dijitaldesin, kişisel verileri yalnızca sistem sağlama ve barındırma kapsamında, veri sorumlusunun talimatları doğrultusunda işlemektedir.
+
+6. Kişisel Verilerin Saklama Süresi
+
+Kişisel verileriniz, ilgili mevzuatta öngörülen süreler boyunca veya işlenme amacının gerektirdiği süre ile sınırlı olarak saklanır.
+Sürenin sona ermesi halinde veriler silinir, yok edilir veya anonim hale getirilir.
+
+7. KVKK Kapsamındaki Haklarınız
+
+KVKK’nın 11. maddesi uyarınca;
+- Kişisel verilerinizin işlenip işlenmediğini öğrenme,
+- İşlenmişse buna ilişkin bilgi talep etme,
+- Eksik veya yanlış işlenmişse düzeltilmesini isteme,
+- Kanuni şartlar çerçevesinde silinmesini veya yok edilmesini talep etme
+haklarına sahipsiniz.
+
+Bu haklarınıza ilişkin taleplerinizi veri sorumlusu [FIRMA_UNVANI]’na iletebilirsiniz.
+
+8. Yürürlük
+İşbu Aydınlatma Metni yayımlandığı tarihte yürürlüğe girer.`,
+        
+        html: `<h3>KİŞİSEL VERİLERİN KORUNMASI AYDINLATMA METNİ</h3>
+<h4>1. Veri Sorumlusu</h4>
+<p>6698 sayılı Kişisel Verilerin Korunması Kanunu (“KVKK”) uyarınca, kişisel verileriniz <strong>[FIRMA_UNVANI]</strong> (“Veri Sorumlusu”) tarafından işlenmektedir.</p>
+<p>Kayıt olunan sayfa adresi: <a href="[KAYIT_URL]" target="_blank">[KAYIT_URL]</a></p>
+
+<h4>2. İşlenen Kişisel Veriler</h4>
+<p>Tarafınızdan paylaşılan ve işlenen kişisel veriler şunlerdir:</p>
+<ul>
+    <li>Ad, soyad</li>
+    <li>Telefon numarası</li>
+    <li>E-posta adresi</li>
+    <li>İletişim tercih bilgileri</li>
+    <li>Elektronik ticari ileti onay ve ret bilgileri</li>
+    <li>İşlem ve log kayıtları</li>
+</ul>
+
+<h4>3. Kişisel Verilerin İşlenme Amaçları</h4>
+<p>Kişisel verileriniz;</p>
+<ul>
+    <li>İletişim ve hizmet süreçlerinin yürütülmesi,</li>
+    <li>Elektronik ticari iletilerin gönderilmesi,</li>
+    <li>Onay ve ret kayıtlarının tutulması,</li>
+    <li>İlgili mevzuat kapsamında yasal yükümlülüklerin yerine getirilmesi</li>
+</ul>
+<p>amaçlarıyla işlenmektedir.</p>
+
+<h4>4. Kişisel Verilerin İşlenmesinin Hukuki Sebebi</h4>
+<p>Kişisel verileriniz;</p>
+<ul>
+    <li>KVKK’nın 5. maddesi,</li>
+    <li>6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun ve ilgili mevzuat</li>
+</ul>
+<p>kapsamında, açık rızanızın bulunması veya kanuni yükümlülüklerin yerine getirilmesi hukuki sebeplerine dayanılarak işlenmektedir.</p>
+
+<h4>5. Kişisel Verilerin Aktarılması</h4>
+<p>Kişisel verileriniz;</p>
+<ul>
+    <li>Hizmet alınan teknik altyapı sağlayıcılarına,</li>
+    <li>Yetkili kamu kurum ve kuruluşlarına</li>
+</ul>
+<p>mevzuata uygun olarak aktarılabilecektir.</p>
+<p>Teknik altyapı sağlayıcısı olan Dijitaldesin, kişisel verileri yalnızca sistem sağlama ve barındırma kapsamında, veri sorumlusunun talimatları doğrultusunda işlemektedir.</p>
+
+<h4>6. Kişisel Verilerin Saklama Süresi</h4>
+<p>Kişisel verileriniz, ilgili mevzuatta öngörülen süreler boyunca veya işlenme amacının gerektirdiği süre ile sınırlı olarak saklanır. Sürenin sona ermesi halinde veriler silinir, yok edilir veya anonim hale getirilir.</p>
+
+<h4>7. KVKK Kapsamındaki Haklarınız</h4>
+<p>KVKK’nın 11. maddesi uyarınca;</p>
+<ul>
+    <li>Kişisel verilerinizin işlenip işlenmediğini öğrenme,</li>
+    <li>İşlenmişse buna ilişkin bilgi talep etme,</li>
+    <li>Eksik veya yanlış işlenmişse düzeltilmesini isteme,</li>
+    <li>Kanuni şartlar çerçevesinde silinmesini veya yok edilmesini talep etme</li>
+</ul>
+<p>haklarına sahipsiniz.</p>
+<p>Bu haklarınıza ilişkin taleplerinizi veri sorumlusu <strong>[FIRMA_UNVANI]</strong>’na iletebilirsiniz.</p>
+
+<h4>8. Yürürlük</h4>
+<p>İşbu Aydınlatma Metni yayımlandığı tarihte yürürlüğe girer.</p>`
+    };
+
+    const etkTemplate = {
+        title: 'Ticari Elektronik İleti İzni Metni',
+        text: `ELEKTRONİK TİCARİ İLETİ AÇIK RIZA VE BİLGİLENDİRME METNİ
+
+1. Veri Sorumlusunun Kimliği
+
+İşbu Elektronik Ticari İleti Açık Rıza ve Bilgilendirme Metni (“Metin”); Dijitaldesin tarafından sağlanan elektronik ticari ileti yönetim altyapısı kullanılarak, sistemi kullanan [FIRMA_UNVANI] (“Veri Sorumlusu”) tarafından,
+6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun, Ticari İletişim ve Ticari Elektronik İletiler Hakkında Yönetmelik ve 6698 sayılı Kişisel Verilerin Korunması Kanunu (“KVKK”) kapsamında hazırlanmıştır.
+Kayıt olunan sayfa adresi: [KAYIT_URL]
+
+2. Dijitaldesin’in Hukuki Konumu
+
+Dijitaldesin;
+- Kişisel verilerin mülkiyetine sahip olmayan,
+- Veriler üzerinde bağımsız karar alma yetkisi bulunmayan,
+- Kişisel verileri yalnızca veri sorumlusu olan ilgili firmanın talimatları doğrultusunda,
+- Teknik altyapı sağlama ve veri barındırma hizmeti kapsamında işleyen
+veri işleyen konumundadır.
+
+Dijitaldesin, kişisel verileri kendi adına, kendi amaçları doğrultusunda veya ticari, analitik ya da pazarlama amaçlı olarak kesinlikle kullanmaz.
+
+3. Elektronik Ticari İleti Kapsamı
+
+Tarafıma;
+- Kampanya, indirim ve promosyon duyuruları,
+- Ürün ve hizmet tanıtımları,
+- Pazarlama, reklam ve bilgilendirme içerikleri
+SMS, e-posta, telefon araması, otomatik arama sistemleri ve diğer elektronik iletişim kanalları aracılığıyla gönderilebilecektir.
+
+4. İşlenen Kişisel Veriler
+
+Elektronik ticari ileti süreçleri kapsamında aşağıdaki kişisel verilerim işlenebilecektir:
+- Ad ve soyad
+- Telefon numarası
+- E-posta adresi
+- İletişim tercih bilgileri
+- Ticari elektronik ileti onay ve ret kayıtları
+
+5. Kişisel Verilerin İşlenme Amaçları
+
+Kişisel verilerim yalnızca;
+- Elektronik ticari iletilerin gönderilmesi,
+- Onay ve ret kayıtlarının mevzuata uygun şekilde saklanması,
+- İleti tercih yönetiminin sağlanması,
+- Yetkili kamu kurum ve kuruluşlarına karşı yasal yükümlülüklerin yerine getirilmesi
+amaçlarıyla işlenmektedir.
+
+Bu amaçlar dışında herhangi bir kullanım söz konusu değildir.
+
+6. Hukuki Sebep
+
+Kişisel verilerim;
+- 6563 sayılı Kanun ve ilgili yönetmelikler,
+- KVKK’nın 5/1 maddesi uyarınca açık rızama dayanılarak
+işlenmektedir.
+
+7. Kişisel Verilerin Aktarımı
+
+Kişisel verilerim;
+- Veri sorumlusu [FIRMA_UNVANI],
+- Dijitaldesin (yalnızca sistem ve veri barındırma hizmeti kapsamında),
+- Yetkili kamu kurum ve kuruluşları
+ile mevzuata uygun, sınırlı ve kontrollü şekilde paylaşılabilecektir.
+
+Dijitaldesin, kişisel verileri üçüncü kişilere aktaramaz, devredemez ve kendi adına kullanamaz.
+
+8. İleti Reddetme (İptal) Hakkı
+
+Tarafıma gönderilen her ticari elektronik iletide;
+- Ücretsiz,
+- Kolay ve hızlı
+şekilde ileti almayı reddetme (iptal) hakkı sunulacaktır.
+Ret talepleri, mevzuatta öngörülen süreler içinde yerine getirilir.
+
+9. KVKK Kapsamındaki Haklar
+
+KVKK’nın 11. maddesi kapsamında;
+kişisel verilerime ilişkin tüm yasal haklara sahip olduğumu biliyorum ve bu haklarımı veri sorumlusu [FIRMA_UNVANI] nezdinde kullanabilirim.
+
+10. Açık Rıza Beyanı
+İşbu metni okuduğumu ve anladığımı; [FIRMA_UNVANI] tarafından, Dijitaldesin altyapısı kullanılarak tarafıma elektronik ticari ileti gönderilmesine özgür irademle açık rıza verdiğimi kabul ve beyan ederim.`,
+
+        html: `<h3>ELEKTRONİK TİCARİ İLETİ AÇIK RIZA VE BİLGİLENDİRME METNİ</h3>
+<h4>1. Veri Sorumlusunun Kimliği</h4>
+<p>İşbu Elektronik Ticari İleti Açık Rıza ve Bilgilendirme Metni (“Metin”); Dijitaldesin tarafından sağlanan elektronik ticari ileti yönetim altyapısı kullanılarak, sistemi kullanan <strong>[FIRMA_UNVANI]</strong> (“Veri Sorumlusu”) tarafından,</p>
+<p>6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun, Ticari İletişim ve Ticari Elektronik İletiler Hakkında Yönetmelik ve 6698 sayılı Kişisel Verilerin Korunması Kanunu (“KVKK”) kapsamında hazırlanmıştır.</p>
+<p>Kayıt olunan sayfa adresi: <a href="[KAYIT_URL]" target="_blank">[KAYIT_URL]</a></p>
+
+<h4>2. Dijitaldesin’in Hukuki Konumu</h4>
+<p>Dijitaldesin;</p>
+<ul>
+    <li>Kişisel verilerin mülkiyetine sahip olmayan,</li>
+    <li>Veriler üzerinde bağımsız karar alma yetkisi bulunmayan,</li>
+    <li>Kişisel verileri yalnızca veri sorumlusu olan ilgili firmanın talimatları doğrultusunda,</li>
+    <li>Teknik altyapı sağlama ve veri barındırma hizmeti kapsamında işleyen</li>
+</ul>
+<p>veri işleyen konumundadır.</p>
+<p>Dijitaldesin, kişisel verileri kendi adına, kendi amaçları doğrultusunda veya ticari, analitik ya da pazarlama amaçlı olarak kesinlikle kullanmaz.</p>
+
+<h4>3. Elektronik Ticari İleti Kapsamı</h4>
+<p>Tarafıma;</p>
+<ul>
+    <li>Kampanya, indirim ve promosyon duyuruları,</li>
+    <li>Ürün ve hizmet tanıtımları,</li>
+    <li>Pazarlama, reklam ve bilgilendirme içerikleri</li>
+</ul>
+<p>SMS, e-posta, telefon araması, otomatik arama sistemleri ve diğer elektronik iletişim kanalları aracılığıyla gönderilebilecektir.</p>
+
+<h4>4. İşlenen Kişisel Veriler</h4>
+<p>Elektronik ticari ileti süreçleri kapsamında aşağıdaki kişisel verilerim işlenebilecektir:</p>
+<ul>
+    <li>Ad ve soyad</li>
+    <li>Telefon numarası</li>
+    <li>E-posta adresi</li>
+    <li>İletişim tercih bilgileri</li>
+    <li>Ticari elektronik ileti onay ve ret kayıtları</li>
+</ul>
+
+<h4>5. Kişisel Verilerin İşlenme Amaçları</h4>
+<p>Kişisel verilerim yalnızca;</p>
+<ul>
+    <li>Elektronik ticari iletilerin gönderilmesi,</li>
+    <li>Onay ve ret kayıtlarının mevzuata uygun şekilde saklanması,</li>
+    <li>İleti tercih yönetiminin sağlanması,</li>
+    <li>Yetkili kamu kurum ve kuruluşlarına karşı yasal yükümlülüklerin yerine getirilmesi</li>
+</ul>
+<p>amaçlarıyla işlenmektedir.</p>
+<p>Bu amaçlar dışında herhangi bir kullanım söz konusu değildir.</p>
+
+<h4>6. Hukuki Sebep</h4>
+<p>Kişisel verilerim;</p>
+<ul>
+    <li>6563 sayılı Kanun ve ilgili yönetmelikler,</li>
+    <li>KVKK’nın 5/1 maddesi uyarınca açık rızama dayanılarak</li>
+</ul>
+<p>işlenmektedir.</p>
+
+<h4>7. Kişisel Verilerin Aktarımı</h4>
+<p>Kişisel verilerim;</p>
+<ul>
+    <li>Veri sorumlusu <strong>[FIRMA_UNVANI]</strong>,</li>
+    <li>Dijitaldesin (yalnızca sistem ve veri barındırma hizmeti kapsamında),</li>
+    <li>Yetkili kamu kurum ve kuruluşları</li>
+</ul>
+<p>ile mevzuata uygun, sınırlı ve kontrollü şekilde paylaşılabilecektir.</p>
+<p>Dijitaldesin, kişisel verileri üçüncü kişilere aktaramaz, devredemez ve kendi adına kullanamaz.</p>
+
+<h4>8. İleti Reddetme (İptal) Hakkı</h4>
+<p>Tarafıma gönderilen her ticari elektronik iletide;</p>
+<ul>
+    <li>Ücretsiz,</li>
+    <li>Kolay ve hızlı</li>
+</ul>
+<p>şekilde ileti almayı reddetme (iptal) hakkı sunulacaktır.</p>
+<p>Ret talepleri, mevzuatta öngörülen süreler içinde yerine getirilir.</p>
+
+<h4>9. KVKK Kapsamındaki Haklar</h4>
+<p>KVKK’nın 11. maddesi kapsamında;</p>
+<p>kişisel verilerime ilişkin tüm yasal haklara sahip olduğumu biliyorum ve bu haklarımı veri sorumlusu <strong>[FIRMA_UNVANI]</strong> nezdinde kullanabilirim.</p>
+
+<h4>10. Açık Rıza Beyanı</h4>
+<p>İşbu metni okuduğumu ve anladığımı; <strong>[FIRMA_UNVANI]</strong> tarafından, Dijitaldesin altyapısı kullanılarak tarafıma elektronik ticari ileti gönderilmesine özgür irademle açık rıza verdiğimi kabul ve beyan ederim.</p>`
+    };
+
+    let pushLegalDialog = null;
+
+    function openLegalTextsModal(type) {
+        const template = type === 'kvkk' ? kvkkTemplate : etkTemplate;
+        
+        const contentHtml = `
+            <div class="space-y-4">
+                <!-- Helper Inputs Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div>
+                        <label for="modalCompanyName" class="block text-xs font-semibold text-gray-700 mb-1">
+                            Firma Unvanı (Metinlerde görünecek)
+                        </label>
+                        <input type="text" id="modalCompanyName" 
+                            class="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="Örn: ABC Ticaret A.Ş.">
+                    </div>
+                    <div>
+                        <label for="modalRegUrl" class="block text-xs font-semibold text-gray-700 mb-1">
+                            Müşteri Kayıt Sayfası Adresi
+                        </label>
+                        <input type="text" id="modalRegUrl" 
+                            class="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="https://siteniz.com/uye-ol">
+                    </div>
+                    <div class="md:col-span-2">
+                        <p class="text-xs text-gray-500">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Yukarıdaki bilgileri girdiğinizde metinler otomatik olarak güncellenir.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Warning -->
+                <div class="bg-red-50 border-l-4 border-red-500 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-triangle text-red-500"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-xs text-red-700 font-medium">
+                                Bu metinler birebir aynı şekilde kullanılmalıdır. Metinlerde yapılacak değişiklikler sonrası oluşabilecek her türlü hukuki sorumluluk site sahibine aittir.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- View Toggle Buttons -->
+                <div class="flex justify-between items-center bg-gray-100 p-1 rounded-lg">
+                    <span class="text-xs font-medium text-gray-500 ml-2">Önizleme Türü:</span>
+                    <div class="flex gap-1">
+                        <button type="button" id="btnModalText" onclick="updateLegalView('text')"
+                            class="px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-white shadow-sm text-gray-900 border border-gray-200">
+                            <i class="fas fa-align-left mr-1.5"></i> Düz Metin
+                        </button>
+                        <button type="button" id="btnModalHtml" onclick="updateLegalView('html')"
+                            class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-gray-500 hover:text-gray-900 hover:bg-white/50">
+                            <i class="fas fa-code mr-1.5"></i> HTML Kodu
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Content Areas -->
+                <div class="relative">
+                    <textarea id="modalContentText" 
+                        class="w-full h-80 p-4 border border-gray-300 rounded-lg font-mono text-xs leading-relaxed focus:ring-indigo-500 focus:border-indigo-500 resize-none bg-white" 
+                        readonly></textarea>
+                    
+                    <textarea id="modalContentHtml" 
+                        class="hidden w-full h-80 p-4 border border-gray-300 rounded-lg font-mono text-xs leading-relaxed text-blue-700 focus:ring-indigo-500 focus:border-indigo-500 resize-none bg-white" 
+                        readonly></textarea>
+                    
+                    <!-- Copy Overlay Confirmation -->
+                    <div id="copyOverlay" class="absolute inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center rounded-lg opacity-0 pointer-events-none transition-opacity duration-300">
+                        <div class="bg-white px-4 py-2 rounded-lg shadow-lg flex items-center">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            <span class="text-sm font-medium text-gray-900">Kopyalandı!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const footerHtml = `
+            <div class="flex w-full justify-end gap-3">
+                <button type="button" onclick="window.pushLegalDialog.close()" 
+                    class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Kapat
+                </button>
+                <button type="button" onclick="copyLegalModalContent()" 
+                    class="px-4 py-2 bg-indigo-600 text-white border border-transparent rounded-lg text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm flex items-center">
+                    <i class="fas fa-copy mr-2"></i>
+                    Metni Kopyala
+                </button>
+            </div>
+        `;
+
+        // Initialize PushDialog
+        pushLegalDialog = new PushDialog({
+            title: template.title,
+            content: contentHtml,
+            footer: footerHtml,
+            size: '2xl', 
+            closeOnOverlayClick: true,
+            closeOnEsc: true,
+            zIndex: '2000'
+        });
+
+        // Open Dialog
+        pushLegalDialog.open();
+
+        // Store dialog reference globally to close it from button
+        window.pushLegalDialog = pushLegalDialog;
+
+        // --- Post-Render Setup ---
+        window.currentLegalTemplate = template;
+        
+        // Attach listeners for dynamic updates
+        setTimeout(() => {
+             const companyInput = document.getElementById('modalCompanyName');
+            const urlInput = document.getElementById('modalRegUrl');
+            
+            if(companyInput && urlInput) {
+                // Try to load any saved values from localStorage? Or just start fresh.
+                // Optionally start with example values.
+                
+                companyInput.addEventListener('input', generateLegalText);
+                urlInput.addEventListener('input', generateLegalText);
+            }
+            
+            // Initial Generation
+            generateLegalText();
+        }, 50);
+    }
+
+    function generateLegalText() {
+        // Use fallbacks for empty inputs
+        const companyName = (document.getElementById('modalCompanyName')?.value) || '[FİRMA UNVANI]';
+        const regUrl = (document.getElementById('modalRegUrl')?.value) || '[KAYIT ADRESİ]';
+        const template = window.currentLegalTemplate;
+
+        if (!template) return;
+
+        // Text Version
+        const textContent = template.text
+            .replaceAll('[FIRMA_UNVANI]', companyName)
+            .replaceAll('[KAYIT_URL]', regUrl);
+            
+        // HTML Version
+        const htmlContent = template.html
+            .replaceAll('[FIRMA_UNVANI]', companyName)
+            .replaceAll('[KAYIT_URL]', regUrl);
+
+        const textArea = document.getElementById('modalContentText');
+        const htmlArea = document.getElementById('modalContentHtml');
+
+        if(textArea) textArea.value = textContent;
+        if(htmlArea) htmlArea.value = htmlContent;
+    }
+
+    function updateLegalView(viewType) {
+        const txtArea = document.getElementById('modalContentText');
+        const htmlArea = document.getElementById('modalContentHtml');
+        const btnTxt = document.getElementById('btnModalText');
+        const btnHtml = document.getElementById('btnModalHtml');
+
+        if (!txtArea || !htmlArea) return;
+
+        // Reset Styles
+        btnTxt.className = "px-3 py-1.5 rounded-md text-xs font-medium transition-all text-gray-500 hover:text-gray-900 hover:bg-white/50";
+        btnHtml.className = "px-3 py-1.5 rounded-md text-xs font-medium transition-all text-gray-500 hover:text-gray-900 hover:bg-white/50";
+
+        if (viewType === 'text') {
+            txtArea.classList.remove('hidden');
+            htmlArea.classList.add('hidden');
+            // Active Style for Text
+            btnTxt.className = "px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-white shadow-sm text-gray-900 border border-gray-200";
+        } else {
+            txtArea.classList.add('hidden');
+            htmlArea.classList.remove('hidden');
+            // Active Style for HTML
+            btnHtml.className = "px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-white shadow-sm text-gray-900 border border-gray-200";
+        }
+    }
+
+    function copyLegalModalContent() {
+        const txtArea = document.getElementById('modalContentText');
+        const htmlArea = document.getElementById('modalContentHtml');
+        let textToCopy = '';
+
+        if (!txtArea.classList.contains('hidden')) {
+            textToCopy = txtArea.value;
+        } else {
+            textToCopy = htmlArea.value;
+        }
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            // Show Feedback
+            const overlay = document.getElementById('copyOverlay');
+            if (overlay) {
+                overlay.style.opacity = '1';
+                setTimeout(() => {
+                    overlay.style.opacity = '0';
+                }, 1500);
+            }
+        });
+    }
+
+</script>

@@ -1,0 +1,520 @@
+@model PushDashboard.ViewModels.BillingPageViewModel
+@{
+    ViewData["Title"] = "Fatura Bilgileri";
+}
+
+<div class="w-full px-4 sm:px-6 lg:px-8 py-4 md:py-6">
+    <!-- Sticky Header -->
+    <div class="sticky top-0 z-30 mb-4 md:mb-6">
+        <div class="bg-white border border-gray-200 rounded-xl px-4 md:px-6 py-3 md:py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-lg md:text-xl font-semibold text-gray-900">Fatura Bilgileri</h1>
+                    <p class="text-xs md:text-sm text-gray-500">Fatura bilgilerinizi eksiksiz ve doğru giriniz</p>
+                </div>
+                @if (Model.CanEdit)
+                {
+                    <button type="button" onclick="document.getElementById('billingForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))" id="submitBtn"
+                            class="px-4 lg:px-6 py-2 text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium flex items-center gap-2">
+                        <span id="submitBtnText" class="flex items-center gap-2">
+                            <i class="fas fa-save"></i>
+                            <span class="hidden sm:inline">Kaydet</span>
+                        </span>
+                        <span id="submitBtnLoading" class="hidden flex items-center gap-2">
+                            <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="hidden sm:inline">Kaydediliyor...</span>
+                        </span>
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Header with Info Banner -->
+    <div class="bg-primary-50 border border-primary-100 rounded-xl p-6 mb-8">
+        <h1 class="text-2xl font-semibold text-gray-900 mb-2">Fatura Bilginizi Girmeden Sistemi Kullanamazsınız.</h1>
+        <p class="text-gray-600 mb-6">Lütfen Bilgilerinizi Eksiksiz ve Doğru Giriniz.</p>
+        
+        <!-- Steps -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-lg bg-white border border-primary-100 text-primary flex items-center justify-center mr-3 text-sm font-medium">1</div>
+                <span class="text-sm text-gray-700">Şirket logonuzu yükleyin.</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-lg bg-white border border-primary-100 text-primary flex items-center justify-center mr-3 text-sm font-medium">2</div>
+                <span class="text-sm text-gray-700">İlgili Kişinin Bilgilerini Girin.</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-lg bg-white border border-primary-100 text-primary flex items-center justify-center mr-3 text-sm font-medium">3</div>
+                <span class="text-sm text-gray-700">Adres bilgilerinizi güncel tutun.</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-lg bg-white border border-primary-100 text-primary flex items-center justify-center mr-3 text-sm font-medium">4</div>
+                <span class="text-sm text-gray-700">Vergi bilgilerinizi doğru girin.</span>
+            </div>
+        </div>
+    </div>
+
+    <form id="billingForm" novalidate>
+        @Html.AntiForgeryToken()
+        
+        <!-- Company Logo Section -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Şirket Logosu</h2>
+            <div class="flex items-center gap-6">
+                <div class="flex-shrink-0">
+                    <div id="logoPreviewContainer" class="w-32 h-32 bg-gray-50 rounded-xl border border-dashed border-gray-300 flex items-center justify-center overflow-hidden">
+                        @if (!string.IsNullOrEmpty(Model.LogoUrl))
+                        {
+                            <img id="logoPreview" src="@Model.LogoUrl" alt="Şirket Logosu" class="w-full h-full object-contain">
+                        }
+                        else
+                        {
+                            <div id="logoPlaceholder" class="text-center text-gray-400">
+                                <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                    <rect width="18" height="18" x="3" y="3" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                                </svg>
+                                <span class="text-sm">Logo seçilmedi</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <input type="file" id="logoFile" accept=".png,.jpg,.jpeg,.gif" class="hidden" @(!Model.CanEdit ? "disabled" : "")>
+                    <div class="flex gap-3 mb-3">
+                        <button type="button" id="selectLogoBtn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2 @(!Model.CanEdit ? "opacity-50 cursor-not-allowed" : "")" @(!Model.CanEdit ? "disabled" : "")>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle>
+                            </svg>
+                            Logo Seç
+                        </button>
+                        <button type="button" id="uploadLogoBtn" class="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 @(!Model.CanEdit ? "opacity-50 cursor-not-allowed" : "")" @(!Model.CanEdit ? "disabled" : "")>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m17 8-5-5-5 5"></path><path d="M12 3v12"></path>
+                            </svg>
+                            Yükle
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-500">İzin verilen formatlar: PNG, JPEG, JPG, GIF • Maksimum boyut: 2MB</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Person Information -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-1">İlgili Kişinin Bilgileri</h2>
+            <p class="text-sm text-red-500 mb-4">* Zorunlu alanlar</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="contactFirstName" class="block text-sm font-medium text-gray-700 mb-1">
+                        Ad <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="contactFirstName" name="contactFirstName" 
+                           value="@Model.ContactFirstName"
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors @(!Model.CanEdit ? "bg-gray-50 cursor-not-allowed" : "")"
+                           placeholder="Adınızı girin" @(!Model.CanEdit ? "readonly" : "") required>
+                </div>
+                <div>
+                    <label for="contactLastName" class="block text-sm font-medium text-gray-700 mb-1">
+                        Soyad <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="contactLastName" name="contactLastName" 
+                           value="@Model.ContactLastName"
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors @(!Model.CanEdit ? "bg-gray-50 cursor-not-allowed" : "")"
+                           placeholder="Soyadınızı girin" @(!Model.CanEdit ? "readonly" : "") required>
+                </div>
+                <div>
+                    <label for="contactEmail" class="block text-sm font-medium text-gray-700 mb-1">
+                        E-posta <span class="text-red-500">*</span>
+                    </label>
+                    <input type="email" id="contactEmail" name="contactEmail" 
+                           value="@Model.ContactEmail"
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors @(!Model.CanEdit ? "bg-gray-50 cursor-not-allowed" : "")"
+                           placeholder="ornek@firma.com" @(!Model.CanEdit ? "readonly" : "") required>
+                </div>
+                <div>
+                    <label for="contactPhone" class="block text-sm font-medium text-gray-700 mb-1">
+                        Telefon <span class="text-red-500">*</span>
+                    </label>
+                    <div class="flex">
+                        <span class="inline-flex items-center px-4 py-2.5 border border-r-0 border-gray-200 bg-gray-50 text-gray-500 rounded-l-lg text-sm">
+                            90
+                        </span>
+                        <input type="tel" id="contactPhone" name="contactPhone" 
+                               value="@Model.ContactPhone"
+                               class="flex-1 px-4 py-2.5 border border-gray-200 rounded-r-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors @(!Model.CanEdit ? "bg-gray-50 cursor-not-allowed" : "")"
+                               placeholder="5XX XXX XXXX" @(!Model.CanEdit ? "readonly" : "") required>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Address Information -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-1">Adres Bilgileri</h2>
+            <p class="text-sm text-red-500 mb-4">* Zorunlu alanlar</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label for="province" class="block text-sm font-medium text-gray-700 mb-1">
+                        İl <span class="text-red-500">*</span>
+                    </label>
+                    <select id="province" name="province" 
+                            class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors @(!Model.CanEdit ? "bg-gray-50 cursor-not-allowed" : "")"
+                            @(!Model.CanEdit ? "disabled" : "") required>
+                        <option value="">İl seçiniz</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="district" class="block text-sm font-medium text-gray-700 mb-1">
+                        İlçe <span class="text-red-500">*</span>
+                    </label>
+                    <select id="district" name="district" 
+                            class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors @(!Model.CanEdit ? "bg-gray-50 cursor-not-allowed" : "")"
+                            @(!Model.CanEdit ? "disabled" : "") required>
+                        <option value="">Önce il seçiniz</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="addressLine1" class="block text-sm font-medium text-gray-700 mb-1">
+                        Adres Satırı 1 <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="addressLine1" name="addressLine1" 
+                           value="@Model.AddressLine1"
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors @(!Model.CanEdit ? "bg-gray-50 cursor-not-allowed" : "")"
+                           placeholder="Mahalle, Sokak/Cadde, No" @(!Model.CanEdit ? "readonly" : "") required>
+                </div>
+                <div>
+                    <label for="addressLine2" class="block text-sm font-medium text-gray-700 mb-1">
+                        Adres Satırı 2 (Opsiyonel)
+                    </label>
+                    <input type="text" id="addressLine2" name="addressLine2" 
+                           value="@Model.AddressLine2"
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors @(!Model.CanEdit ? "bg-gray-50 cursor-not-allowed" : "")"
+                           placeholder="Adres satırı 2" @(!Model.CanEdit ? "readonly" : "")>
+                </div>
+            </div>
+        </div>
+
+        <!-- Billing Information -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-1">Fatura Bilgileri</h2>
+            <p class="text-sm text-red-500 mb-4">* Zorunlu alanlar</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div>
+                    <label for="companyName" class="block text-sm font-medium text-gray-700 mb-1">
+                        Şirket Adı <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="companyName" name="companyName" 
+                           value="@Model.CompanyName"
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors @(!Model.CanEdit ? "bg-gray-50 cursor-not-allowed" : "")"
+                           placeholder="Şirket adını girin" @(!Model.CanEdit ? "readonly" : "") required>
+                </div>
+                <div>
+                    <label for="taxOffice" class="block text-sm font-medium text-gray-700 mb-1">
+                        Vergi Dairesi <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="taxOffice" name="taxOffice" 
+                           value="@Model.TaxOffice"
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors @(!Model.CanEdit ? "bg-gray-50 cursor-not-allowed" : "")"
+                           placeholder="Vergi dairesini girin" @(!Model.CanEdit ? "readonly" : "") required>
+                </div>
+                <div>
+                    <label for="companyCategory" class="block text-sm font-medium text-gray-700 mb-1">
+                        Şirket Kategorisi <span class="text-red-500">*</span>
+                    </label>
+                    <select id="companyCategory" name="companyCategory" 
+                            class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors @(!Model.CanEdit ? "bg-gray-50 cursor-not-allowed" : "")"
+                            @(!Model.CanEdit ? "disabled" : "") required>
+                        <option value="">Kategori seçiniz</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label for="taxNumber" class="block text-sm font-medium text-gray-700 mb-1">
+                    Vergi Numarası (Şahıs firmaları için T.C. Kimlik No, LTD ve AŞ firmaları için Vergi Kimlik No yazılmalıdır.) <span class="text-red-500">*</span>
+                </label>
+                <input type="text" id="taxNumber" name="taxNumber" 
+                       value="@Model.TaxNumber"
+                       maxlength="11"
+                       class="w-full md:w-1/2 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors @(!Model.CanEdit ? "bg-gray-50 cursor-not-allowed" : "")"
+                       placeholder="10 veya 11 haneli numara" @(!Model.CanEdit ? "readonly" : "") required>
+            </div>
+        </div>
+
+        <!-- Submit Button (now in header) -->
+        @if (!Model.CanEdit)
+        {
+            <div class="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-amber-500 mr-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path>
+                    </svg>
+                    <div>
+                        <h3 class="text-sm font-medium text-amber-800">Düzenleme Yetkisi Gerekli</h3>
+                        <p class="text-sm text-amber-700 mt-1">Fatura bilgilerini düzenlemek için firma sahibi yetkisine sahip olmanız gerekmektedir.</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canEdit = @(Model.CanEdit.ToString().ToLower());
+            const currentProvince = '@Model.Province';
+            const currentDistrict = '@Model.District';
+            const currentCategory = '@Model.CompanyCategory';
+            
+            // Load provinces
+            loadProvinces();
+            
+            // Load categories
+            loadCategories();
+            
+            // Province change handler
+            document.getElementById('province').addEventListener('change', function() {
+                loadDistricts(this.value);
+            });
+            
+            // Logo file selection
+            document.getElementById('selectLogoBtn').addEventListener('click', function() {
+                document.getElementById('logoFile').click();
+            });
+            
+            // Logo file change preview
+            document.getElementById('logoFile').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const container = document.getElementById('logoPreviewContainer');
+                        const placeholder = document.getElementById('logoPlaceholder');
+                        let preview = document.getElementById('logoPreview');
+                        
+                        if (placeholder) {
+                            placeholder.remove();
+                        }
+                        
+                        if (!preview) {
+                            preview = document.createElement('img');
+                            preview.id = 'logoPreview';
+                            preview.className = 'w-full h-full object-contain';
+                            preview.alt = 'Şirket Logosu';
+                            container.appendChild(preview);
+                        }
+                        
+                        preview.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Logo upload
+            document.getElementById('uploadLogoBtn').addEventListener('click', async function() {
+                const fileInput = document.getElementById('logoFile');
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    showNotification('Lütfen önce bir logo dosyası seçin.', 'warning');
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                
+                try {
+                    const response = await fetch('/Billing/UploadLogo', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showNotification(result.message, 'success');
+                    } else {
+                        showNotification(result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showNotification('Logo yüklenirken bir hata oluştu.', 'error');
+                }
+            });
+            
+            // Form submission
+            document.getElementById('billingForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                if (!canEdit) return;
+                
+                const submitBtn = document.getElementById('submitBtn');
+                const submitBtnText = document.getElementById('submitBtnText');
+                const submitBtnLoading = document.getElementById('submitBtnLoading');
+                
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtnText.classList.add('hidden');
+                submitBtnLoading.classList.remove('hidden');
+                
+                try {
+                    // Check if there's a logo file to upload
+                    const fileInput = document.getElementById('logoFile');
+                    const file = fileInput.files[0];
+                    
+                    if (file) {
+                        // Upload logo first if a file is selected
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                        
+                        const logoResponse = await fetch('/Billing/UploadLogo', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const logoResult = await logoResponse.json();
+                        
+                        if (!logoResult.success) {
+                            showNotification('Logo yüklenemedi: ' + logoResult.message, 'error');
+                            return;
+                        }
+                        
+                        // Clear the file input after successful upload
+                        fileInput.value = '';
+                    }
+                    
+                    // Now save billing info
+                    const data = {
+                        contactFirstName: document.getElementById('contactFirstName').value,
+                        contactLastName: document.getElementById('contactLastName').value,
+                        contactEmail: document.getElementById('contactEmail').value,
+                        contactPhone: document.getElementById('contactPhone').value,
+                        province: document.getElementById('province').value,
+                        district: document.getElementById('district').value,
+                        addressLine1: document.getElementById('addressLine1').value,
+                        addressLine2: document.getElementById('addressLine2').value,
+                        companyName: document.getElementById('companyName').value,
+                        taxOffice: document.getElementById('taxOffice').value,
+                        companyCategory: document.getElementById('companyCategory').value,
+                        taxNumber: document.getElementById('taxNumber').value
+                    };
+                    
+                    const response = await fetch('/Billing/SaveBillingInfo', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showNotification(result.message, 'success');
+                    } else {
+                        showNotification(result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showNotification('Bilgiler kaydedilirken bir hata oluştu.', 'error');
+                } finally {
+                    // Reset button state
+                    submitBtn.disabled = false;
+                    submitBtnText.classList.remove('hidden');
+                    submitBtnLoading.classList.add('hidden');
+                }
+            });
+            
+            async function loadProvinces() {
+                try {
+                    const response = await fetch('/Billing/GetProvinces');
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const select = document.getElementById('province');
+                        result.data.forEach(province => {
+                            const option = document.createElement('option');
+                            option.value = province;
+                            option.textContent = province;
+                            if (province === currentProvince) {
+                                option.selected = true;
+                            }
+                            select.appendChild(option);
+                        });
+                        
+                        // Load districts if province is already selected
+                        if (currentProvince) {
+                            await loadDistricts(currentProvince);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error loading provinces:', error);
+                }
+            }
+            
+            async function loadDistricts(province) {
+                const select = document.getElementById('district');
+                select.innerHTML = '<option value="">İlçe seçiniz</option>';
+                
+                if (!province) return;
+                
+                try {
+                    const response = await fetch(`/Billing/GetDistricts?province=${encodeURIComponent(province)}`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        result.data.forEach(district => {
+                            const option = document.createElement('option');
+                            option.value = district;
+                            option.textContent = district;
+                            if (district === currentDistrict) {
+                                option.selected = true;
+                            }
+                            select.appendChild(option);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error loading districts:', error);
+                }
+            }
+            
+            async function loadCategories() {
+                try {
+                    const response = await fetch('/Billing/GetCategories');
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const select = document.getElementById('companyCategory');
+                        result.data.forEach(category => {
+                            const option = document.createElement('option');
+                            option.value = category;
+                            option.textContent = category;
+                            if (category === currentCategory) {
+                                option.selected = true;
+                            }
+                            select.appendChild(option);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error loading categories:', error);
+                }
+            }
+            
+        });
+    </script>
+}

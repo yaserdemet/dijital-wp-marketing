@@ -1,0 +1,787 @@
+@{
+    ViewData["Title"] = "Video Yükle";
+    var settings = ViewBag.Settings as PushDashboard.DTOs.VideoSettingsDto;
+}
+
+<style>
+    .vhu-page { padding: 0; }
+
+    /* --- Header --- */
+    .vhu-header {
+        background: linear-gradient(135deg, var(--theme-600) 0%, var(--theme-800) 100%);
+        border-radius: 1.25rem;
+        padding: 2rem 2.25rem;
+        margin-bottom: 1.75rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .vhu-header::before {
+        content: '';
+        position: absolute;
+        top: -40%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+    .vhu-header::after {
+        content: '';
+        position: absolute;
+        bottom: -60%;
+        left: 10%;
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+    .vhu-header-content { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+    .vhu-header-left { display: flex; align-items: center; gap: 1rem; }
+    .vhu-header-icon {
+        width: 52px; height: 52px;
+        background: rgba(255,255,255,0.15);
+        backdrop-filter: blur(10px);
+        border-radius: 1rem;
+        display: flex; align-items: center; justify-content: center;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    .vhu-header-icon svg { width: 26px; height: 26px; color: white; }
+    .vhu-header h1 { font-size: 1.5rem; font-weight: 800; color: white; margin:0; line-height:1.2; }
+    .vhu-header p { color: rgba(255,255,255,0.75); font-size: 0.875rem; margin-top:0.25rem; }
+    .vhu-back-btn {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        background: rgba(255,255,255,0.15);
+        backdrop-filter: blur(10px);
+        color: white;
+        padding: 0.625rem 1.25rem;
+        border-radius: 0.75rem;
+        font-size: 0.875rem; font-weight: 600;
+        border: 1px solid rgba(255,255,255,0.2);
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .vhu-back-btn:hover { background: rgba(255,255,255,0.25); color: white; text-decoration: none; }
+
+    /* --- Limits Strip --- */
+    .vhu-limits {
+        background: white;
+        border-radius: 1rem;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        display: flex; flex-wrap: wrap; gap: 1.75rem; align-items: center;
+        border: 1px solid rgba(0,0,0,0.06);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .vhu-limit-item { display: flex; align-items: center; gap: 0.625rem; }
+    .vhu-limit-icon {
+        width: 36px; height: 36px;
+        border-radius: 0.625rem;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .vhu-limit-icon svg { width: 18px; height: 18px; }
+    .vhu-limit-label { font-size: 0.7rem; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+    .vhu-limit-value { font-size: 0.875rem; font-weight: 700; color: #111827; }
+
+    /* --- Card --- */
+    .vhu-card {
+        background: white;
+        border-radius: 1.25rem;
+        border: 1px solid rgba(0,0,0,0.06);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        overflow: hidden;
+        transition: all 0.3s;
+    }
+    .vhu-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .vhu-card-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        display: flex; align-items: center; gap: 0.75rem;
+    }
+    .vhu-card-header-icon {
+        width: 36px; height: 36px;
+        border-radius: 0.625rem;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .vhu-card-header-icon svg { width: 18px; height: 18px; }
+    .vhu-card-header h3 { font-size: 0.95rem; font-weight: 700; color: #111827; margin:0; }
+    .vhu-card-body { padding: 1.5rem; }
+
+    /* --- Form Elements --- */
+    .vhu-label { display: block; font-size: 0.8125rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem; }
+    .vhu-label .required { color: #ef4444; margin-left: 2px; }
+    .vhu-input {
+        width: 100%;
+        padding: 0.6875rem 1rem;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 0.75rem;
+        font-size: 0.875rem;
+        color: #111827;
+        background: white;
+        transition: all 0.2s;
+        outline: none;
+    }
+    .vhu-input:focus {
+        border-color: var(--theme-400);
+        box-shadow: 0 0 0 3px rgba(var(--theme-color-rgb), 0.1);
+    }
+    .vhu-input::placeholder { color: #9ca3af; }
+    textarea.vhu-input { resize: vertical; min-height: 100px; }
+
+    /* --- Drag & Drop Zone --- */
+    .vhu-dropzone {
+        border: 2px dashed #d1d5db;
+        border-radius: 1rem;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: linear-gradient(135deg, #fafbfc 0%, #f3f4f6 100%);
+        position: relative;
+    }
+    .vhu-dropzone:hover, .vhu-dropzone.drag-over {
+        border-color: var(--theme-400);
+        background: linear-gradient(135deg, rgba(var(--theme-color-rgb),0.03) 0%, rgba(var(--theme-color-rgb),0.06) 100%);
+    }
+    .vhu-dropzone.drag-over {
+        transform: scale(1.01);
+        box-shadow: 0 0 0 4px rgba(var(--theme-color-rgb), 0.1);
+    }
+    .vhu-dropzone-icon {
+        width: 64px; height: 64px;
+        margin: 0 auto 1rem;
+        background: linear-gradient(135deg, rgba(var(--theme-color-rgb),0.08) 0%, rgba(var(--theme-color-rgb),0.15) 100%);
+        border-radius: 1.25rem;
+        display: flex; align-items: center; justify-content: center;
+        transition: transform 0.3s;
+    }
+    .vhu-dropzone:hover .vhu-dropzone-icon { transform: translateY(-4px); }
+    .vhu-dropzone-icon svg { width: 28px; height: 28px; color: var(--theme-600); }
+    .vhu-dropzone-text { font-size: 0.9375rem; color: #374151; font-weight: 600; margin-bottom: 0.25rem; }
+    .vhu-dropzone-text a { color: var(--theme-600); text-decoration: underline; cursor: pointer; }
+    .vhu-dropzone-hint { font-size: 0.75rem; color: #9ca3af; }
+    .vhu-dropzone-file-selected {
+        display: flex; align-items: center; gap: 0.75rem;
+        background: linear-gradient(135deg, rgba(16,185,129,0.05) 0%, rgba(16,185,129,0.1) 100%);
+        border: 1px solid rgba(16,185,129,0.2);
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        margin-top: 1rem;
+    }
+    .vhu-dropzone-file-selected .file-icon {
+        width: 36px; height: 36px;
+        background: rgba(16,185,129,0.15);
+        border-radius: 0.5rem;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .vhu-dropzone-file-selected .file-icon svg { width: 18px; height: 18px; color: #059669; }
+    .vhu-dropzone-file-selected .file-name { font-size: 0.8125rem; font-weight: 600; color: #065f46; }
+    .vhu-dropzone-file-selected .file-size { font-size: 0.7rem; color: #6ee7b7; }
+
+    /* --- Toggle --- */
+    .vhu-toggle { display: flex; align-items: flex-start; cursor: pointer; position: relative; }
+    .vhu-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .vhu-toggle-track {
+        width: 44px; height: 24px;
+        background: #d1d5db;
+        border-radius: 12px;
+        flex-shrink: 0;
+        transition: background 0.25s;
+        position: relative;
+    }
+    .vhu-toggle input:checked ~ .vhu-toggle-track { background: var(--theme-600); }
+    .vhu-toggle-thumb {
+        width: 18px; height: 18px;
+        background: white;
+        border-radius: 50%;
+        position: absolute;
+        top: 3px; left: 3px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        transition: transform 0.25s;
+        pointer-events: none;
+    }
+    .vhu-toggle input:checked ~ .vhu-toggle-thumb { transform: translateX(20px); }
+
+    /* --- Buttons --- */
+    .vhu-btn {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.5rem 1.125rem;
+        border-radius: 0.75rem;
+        font-size: 0.875rem; font-weight: 600;
+        border: none; cursor: pointer;
+        transition: all 0.2s;
+    }
+    .vhu-btn-primary {
+        background: linear-gradient(135deg, var(--theme-600) 0%, var(--theme-700) 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(var(--theme-color-rgb), 0.3);
+    }
+    .vhu-btn-primary:hover { box-shadow: 0 4px 16px rgba(var(--theme-color-rgb), 0.4); transform: translateY(-1px); }
+    .vhu-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+    .vhu-btn-ghost {
+        background: #f3f4f6; color: #374151;
+        border: 1px solid rgba(0,0,0,0.08);
+    }
+    .vhu-btn-ghost:hover { background: #e5e7eb; }
+
+    /* --- Progress Card --- */
+    .vhu-progress-track {
+        width: 100%; height: 8px;
+        background: #e5e7eb;
+        border-radius: 999px;
+        overflow: hidden;
+        position: relative;
+    }
+    .vhu-progress-bar {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--theme-500), var(--theme-600));
+        transition: width 0.4s ease;
+        position: relative;
+    }
+    .vhu-progress-bar.uploading::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: vhu-shimmer 1.5s infinite;
+    }
+    .vhu-progress-bar.success { background: linear-gradient(90deg, #059669, #10b981); }
+    .vhu-progress-bar.error { background: linear-gradient(90deg, #dc2626, #ef4444); }
+    @@keyframes vhu-shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+
+    /* --- Cost Card --- */
+    .vhu-cost-item {
+        text-align: center;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+    .vhu-cost-value { font-size: 1.5rem; font-weight: 800; line-height: 1.2; }
+    .vhu-cost-label { font-size: 0.7rem; color: #6b7280; font-weight: 500; margin-top: 0.25rem; text-transform: uppercase; letter-spacing: 0.03em; }
+
+    /* --- Responsive --- */
+    @@media (max-width: 768px) {
+        .vhu-header { padding: 1.5rem; border-radius: 1rem; }
+        .vhu-header h1 { font-size: 1.25rem; }
+        .vhu-limits { flex-direction: column; gap: 1rem; padding: 1rem; }
+        .vhu-card-body { padding: 1.25rem; }
+        .vhu-dropzone { padding: 1.5rem 1rem; }
+    }
+</style>
+
+<div class="vhu-page">
+    <!-- ===== GRADIENT HEADER ===== -->
+    <div class="vhu-header">
+        <div class="vhu-header-content">
+            <div class="vhu-header-left">
+                <div class="vhu-header-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                </div>
+                <div>
+                    <h1>Video Yükle</h1>
+                    <p>Yeni video yükleyin ve paylaşın</p>
+                </div>
+            </div>
+            <a href="@Url.Action("Index")" class="vhu-back-btn">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                Videolara Dön
+            </a>
+        </div>
+    </div>
+
+    <!-- ===== LIMITS STRIP ===== -->
+    @if (settings != null)
+    {
+        <div class="vhu-limits">
+            <div class="vhu-limit-item">
+                <div class="vhu-limit-icon" style="background: linear-gradient(135deg, rgba(var(--theme-color-rgb),0.08) 0%, rgba(var(--theme-color-rgb),0.15) 100%);">
+                    <svg style="color: var(--theme-600);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+                </div>
+                <div>
+                    <div class="vhu-limit-label">Maks. Boyut</div>
+                    <div class="vhu-limit-value">@settings.MaxFileSizeMB MB</div>
+                </div>
+            </div>
+            <div class="vhu-limit-item">
+                <div class="vhu-limit-icon" style="background: linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(139,92,246,0.15) 100%);">
+                    <svg style="color: #7c3aed;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                    <div class="vhu-limit-label">Maks. Süre</div>
+                    <div class="vhu-limit-value">@settings.MaxDurationMinutes dk</div>
+                </div>
+            </div>
+            <div class="vhu-limit-item">
+                <div class="vhu-limit-icon" style="background: linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.15) 100%);">
+                    <svg style="color: #d97706;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                    <div class="vhu-limit-label">Dk / Maliyet</div>
+                    <div class="vhu-limit-value">₺@settings.CostPerMinute.ToString("F2")</div>
+                </div>
+            </div>
+            <div class="vhu-limit-item">
+                <div class="vhu-limit-icon" style="background: linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(16,185,129,0.15) 100%);">
+                    <svg style="color: #059669;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>
+                </div>
+                <div>
+                    <div class="vhu-limit-label">Formatlar</div>
+                    <div class="vhu-limit-value" style="font-size:0.75rem;">MP4, AVI, MOV, WMV, FLV, WebM, MKV</div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ===== MAIN CONTENT GRID ===== -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left: Upload Form -->
+        <div class="lg:col-span-2">
+            <div class="vhu-card">
+                <div class="vhu-card-header">
+                    <div class="vhu-card-header-icon" style="background: linear-gradient(135deg, rgba(var(--theme-color-rgb),0.08) 0%, rgba(var(--theme-color-rgb),0.15) 100%);">
+                        <svg style="color: var(--theme-600);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    </div>
+                    <h3>Video Bilgileri</h3>
+                </div>
+                <div class="vhu-card-body">
+                    <form id="videoUploadForm" enctype="multipart/form-data">
+                        <!-- Title -->
+                        <div class="mb-5">
+                            <label for="videoTitle" class="vhu-label">Video Başlığı <span class="required">*</span></label>
+                            <input type="text" class="vhu-input" id="videoTitle" name="Title" required maxlength="200"
+                                   placeholder="Videonuz için açıklayıcı bir başlık girin">
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-5">
+                            <label for="videoDescription" class="vhu-label">Açıklama</label>
+                            <textarea class="vhu-input" id="videoDescription" name="Description" rows="4" maxlength="1000"
+                                      placeholder="Video hakkında kısa bir açıklama yazın (isteğe bağlı)"></textarea>
+                        </div>
+
+                        <!-- File Drop Zone -->
+                        <div class="mb-5">
+                            <label class="vhu-label">Video Dosyası <span class="required">*</span></label>
+                            <div class="vhu-dropzone" id="dropZone" onclick="document.getElementById('videoFile').click();">
+                                <div class="vhu-dropzone-icon">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                                </div>
+                                <div class="vhu-dropzone-text"><a onclick="event.stopPropagation();">Video dosyası seçin</a> veya sürükleyip bırakın</div>
+                                <div class="vhu-dropzone-hint">MP4, AVI, MOV, WMV, FLV, WebM, MKV</div>
+                                <input id="videoFile" name="VideoFile" type="file" class="sr-only" accept="video/*" required>
+                                <div id="fileSelectedInfo" class="hidden"></div>
+                            </div>
+                        </div>
+
+                        <!-- Public Toggle -->
+                        <div class="mb-6">
+                            <label class="vhu-toggle gap-3">
+                                <input type="checkbox" id="isPublic" name="IsPublic">
+                                <div class="vhu-toggle-track"></div>
+                                <div class="vhu-toggle-thumb"></div>
+                                <div class="flex flex-col ml-1">
+                                    <span class="text-sm font-semibold text-gray-900">Herkese açık video</span>
+                                    <span class="text-xs text-gray-400 mt-0.5">İşaretlenirse video herkese açık olur ve paylaşılabilir. İşaretlenmezse sadece özel link ile erişilebilir.</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex gap-3 pt-2">
+                            <button type="submit" class="vhu-btn vhu-btn-primary" id="uploadBtn">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                                Video Yükle
+                            </button>
+                            <button type="button" class="vhu-btn vhu-btn-ghost" onclick="resetForm()">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                Sıfırla
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="space-y-6">
+            <!-- Upload Progress -->
+            <div class="vhu-card hidden" id="progressCard">
+                <div class="vhu-card-header">
+                    <div class="vhu-card-header-icon" style="background: linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0.15) 100%);">
+                        <svg style="color: #3b82f6;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    </div>
+                    <h3>Yükleme Durumu</h3>
+                </div>
+                <div class="vhu-card-body">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-gray-700" id="progressText">Hazırlanıyor...</span>
+                        <span class="text-sm font-bold" style="color: var(--theme-600);" id="progressPercent">0%</span>
+                    </div>
+                    <div class="vhu-progress-track">
+                        <div class="vhu-progress-bar uploading" id="progressBar" style="width: 0%"></div>
+                    </div>
+                    <div id="progressDetails" class="text-xs text-gray-400 mt-2.5"></div>
+                </div>
+            </div>
+
+            <!-- Video Preview -->
+            <div class="vhu-card hidden" id="previewCard">
+                <div class="vhu-card-header">
+                    <div class="vhu-card-header-icon" style="background: linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(139,92,246,0.15) 100%);">
+                        <svg style="color: #7c3aed;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    </div>
+                    <h3>Video Önizleme</h3>
+                </div>
+                <div class="vhu-card-body p-0">
+                    <video id="videoPreview" controls class="w-full" style="max-height: 220px; border-radius: 0 0 0 0; display:block;">
+                        Tarayıcınız video önizlemeyi desteklemiyor.
+                    </video>
+                    <div id="videoInfo" class="p-4 text-sm text-gray-600 border-t border-gray-100"></div>
+                </div>
+            </div>
+
+            <!-- Cost Estimation -->
+            <div class="vhu-card hidden" id="costCard">
+                <div class="vhu-card-header">
+                    <div class="vhu-card-header-icon" style="background: linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.15) 100%);">
+                        <svg style="color: #d97706;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    </div>
+                    <h3>Maliyet Tahmini</h3>
+                </div>
+                <div class="vhu-card-body">
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div class="vhu-cost-item">
+                            <div class="vhu-cost-value" style="color: var(--theme-600);" id="estimatedCost">₺0.00</div>
+                            <div class="vhu-cost-label">Yükleme Maliyeti</div>
+                        </div>
+                        <div class="vhu-cost-item">
+                            <div class="vhu-cost-value" style="color: #7c3aed;" id="storageCost">₺0.00</div>
+                            <div class="vhu-cost-label">Aylık Depolama</div>
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-gray-100 space-y-2">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-500 flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Süre
+                            </span>
+                            <span class="font-semibold text-gray-900" id="videoDuration">-</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-500 flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+                                Boyut
+                            </span>
+                            <span class="font-semibold text-gray-900" id="videoSize">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let selectedFile = null;
+        let uploadInProgress = false;
+        const dropZone = document.getElementById('dropZone');
+
+        $(document).ready(function() {
+            // File input change handler
+            $('#videoFile').on('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    selectedFile = file;
+                    handleFileSelection(file);
+                }
+            });
+
+            // Form submit handler
+            $('#videoUploadForm').on('submit', function(e) {
+                e.preventDefault();
+                if (!uploadInProgress) {
+                    uploadVideo();
+                }
+            });
+
+            // Drag & drop support
+            if (dropZone) {
+                ['dragenter', 'dragover'].forEach(ev => {
+                    dropZone.addEventListener(ev, function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropZone.classList.add('drag-over');
+                    });
+                });
+                ['dragleave', 'drop'].forEach(ev => {
+                    dropZone.addEventListener(ev, function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropZone.classList.remove('drag-over');
+                    });
+                });
+                dropZone.addEventListener('drop', function(e) {
+                    const file = e.dataTransfer.files[0];
+                    if (file) {
+                        selectedFile = file;
+                        const dt = new DataTransfer();
+                        dt.items.add(file);
+                        document.getElementById('videoFile').files = dt.files;
+                        handleFileSelection(file);
+                    }
+                });
+            }
+        });
+
+        function handleFileSelection(file) {
+            // Validate file type
+            const allowedTypes = ['video/mp4', 'video/avi', 'video/quicktime', 'video/x-msvideo', 'video/x-flv', 'video/webm', 'video/x-matroska'];
+            if (!allowedTypes.includes(file.type) && !file.name.match(/\.(mp4|avi|mov|wmv|flv|webm|mkv)$/i)) {
+                showNotification('Desteklenmeyen dosya formatı. Lütfen video dosyası seçin.', 'error');
+                resetFileInput();
+                return;
+            }
+
+            // Validate file size
+            @if (settings != null)
+            {
+                <text>
+                const maxSize = @settings.MaxFileSizeMB * 1024 * 1024;
+                if (file.size > maxSize) {
+                    showNotification(`Dosya boyutu çok büyük. Maksimum @settings.MaxFileSizeMB MB olabilir.`, 'error');
+                    resetFileInput();
+                    return;
+                }
+                </text>
+            }
+
+            // Show file selected indicator
+            showFileSelected(file);
+
+            // Show preview
+            showVideoPreview(file);
+
+            // Validate with server
+            validateFileWithServer(file);
+        }
+
+        function showFileSelected(file) {
+            const infoEl = document.getElementById('fileSelectedInfo');
+            infoEl.className = 'vhu-dropzone-file-selected';
+            infoEl.innerHTML = `
+                <div class="file-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div>
+                <div>
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-size">${formatFileSize(file.size)}</div>
+                </div>
+            `;
+        }
+
+        function showVideoPreview(file) {
+            const video = document.getElementById('videoPreview');
+            const url = URL.createObjectURL(file);
+
+            video.src = url;
+            video.onloadedmetadata = function() {
+                const duration = video.duration;
+                const size = file.size;
+
+                // Update video info
+                $('#videoInfo').html(`
+                    <div class="grid grid-cols-3 gap-3 text-center">
+                        <div><div class="text-xs text-gray-400">Süre</div><div class="font-semibold text-gray-900 text-sm">${formatDuration(duration)}</div></div>
+                        <div><div class="text-xs text-gray-400">Boyut</div><div class="font-semibold text-gray-900 text-sm">${formatFileSize(size)}</div></div>
+                        <div><div class="text-xs text-gray-400">Format</div><div class="font-semibold text-gray-900 text-sm">${file.type.split('/')[1] || 'video'}</div></div>
+                    </div>
+                `);
+
+                // Calculate costs
+                calculateCosts(duration, size);
+
+                // Show cards
+                $('#previewCard').removeClass('hidden');
+                $('#costCard').removeClass('hidden');
+
+                URL.revokeObjectURL(url);
+            };
+        }
+
+        function calculateCosts(durationSeconds, fileSizeBytes) {
+            @if (settings != null)
+            {
+                <text>
+                const durationMinutes = Math.ceil(durationSeconds / 60);
+                const uploadCost = durationMinutes * @settings.CostPerMinute;
+                const fileSizeGB = fileSizeBytes / (1024 * 1024 * 1024);
+                const storageCost = fileSizeGB * @settings.StorageCostPerGBPerMonth;
+
+                $('#estimatedCost').text('₺' + uploadCost.toFixed(2));
+                $('#storageCost').text('₺' + storageCost.toFixed(2));
+                $('#videoDuration').text(formatDuration(durationSeconds));
+                $('#videoSize').text(formatFileSize(fileSizeBytes));
+                </text>
+            }
+        }
+
+        function validateFileWithServer(file) {
+            const formData = new FormData();
+            formData.append('videoFile', file);
+
+            $.ajax({
+                url: '@Url.Action("ValidateUpload")',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (!response.success) {
+                        showNotification(response.message, 'error');
+                        resetFileInput();
+                    } else {
+                        showNotification('Video dosyası geçerli. Yüklemeye hazır.', 'success');
+                    }
+                },
+                error: function() {
+                    showNotification('Dosya doğrulama yapılamadı, ancak yüklemeyi deneyebilirsiniz.', 'warning');
+                }
+            });
+        }
+
+        function uploadVideo() {
+            if (!selectedFile) {
+                showNotification('Lütfen bir video dosyası seçin.', 'error');
+                return;
+            }
+
+            const title = $('#videoTitle').val().trim();
+            if (!title) {
+                showNotification('Lütfen video başlığı girin.', 'error');
+                return;
+            }
+
+            uploadInProgress = true;
+            const btn = document.getElementById('uploadBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Yükleniyor...';
+            $('#progressCard').removeClass('hidden');
+
+            const formData = new FormData();
+            formData.append('Title', title);
+            formData.append('Description', $('#videoDescription').val());
+            formData.append('VideoFile', selectedFile);
+            formData.append('IsPublic', $('#isPublic').is(':checked'));
+
+            $.ajax({
+                url: '@Url.Action("UploadVideo")',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                xhr: function() {
+                    const xhr = new window.XMLHttpRequest();
+                    xhr.upload.addEventListener('progress', function(evt) {
+                        if (evt.lengthComputable) {
+                            const percentComplete = Math.round((evt.loaded / evt.total) * 100);
+                            updateProgress(percentComplete, 'Yükleniyor...');
+                        }
+                    }, false);
+                    return xhr;
+                },
+                success: function(response) {
+                    if (response.success) {
+                        updateProgress(100, 'Tamamlandı!');
+                        showNotification(response.message, 'success');
+                        setTimeout(() => { window.location.href = '@Url.Action("Index")'; }, 2000);
+                    } else {
+                        uploadInProgress = false;
+                        resetUploadBtn();
+                        showNotification(response.message, 'error');
+                        updateProgress(0, 'Hata oluştu');
+                    }
+                },
+                error: function() {
+                    uploadInProgress = false;
+                    resetUploadBtn();
+                    showNotification('Video yükleme sırasında hata oluştu.', 'error');
+                    updateProgress(0, 'Hata oluştu');
+                }
+            });
+        }
+
+        function resetUploadBtn() {
+            const btn = document.getElementById('uploadBtn');
+            btn.disabled = false;
+            btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg> Video Yükle';
+        }
+
+        function updateProgress(percent, text) {
+            const bar = document.getElementById('progressBar');
+            bar.style.width = percent + '%';
+            $('#progressPercent').text(percent + '%');
+            $('#progressText').text(text);
+
+            if (percent === 100) {
+                bar.className = 'vhu-progress-bar success';
+                $('#progressDetails').html('<span class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg> Video başarıyla yüklendi ve işleniyor...</span>');
+            } else if (percent === 0 && text === 'Hata oluştu') {
+                bar.className = 'vhu-progress-bar error';
+                $('#progressDetails').html('<span class="text-red-500 flex items-center gap-1.5"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg> Yükleme başarısız oldu.</span>');
+            } else {
+                bar.className = 'vhu-progress-bar uploading';
+                $('#progressDetails').text(`${percent}% tamamlandı`);
+            }
+        }
+
+        function resetForm() {
+            const executeReset = () => {
+                $('#videoUploadForm')[0].reset();
+                document.getElementById('fileSelectedInfo').className = 'hidden';
+                document.getElementById('fileSelectedInfo').innerHTML = '';
+                $('#previewCard').addClass('hidden');
+                $('#costCard').addClass('hidden');
+                $('#progressCard').addClass('hidden');
+                selectedFile = null;
+                uploadInProgress = false;
+                resetUploadBtn();
+            };
+
+            if (uploadInProgress) {
+                showConfirmationDialog('İşlemi Durdur', 'Yükleme devam ediyor. İptal etmek istediğinizden emin misiniz?', 'Evet', 'Hayır', executeReset);
+            } else {
+                executeReset();
+            }
+        }
+
+        function resetFileInput() {
+            $('#videoFile').val('');
+            document.getElementById('fileSelectedInfo').className = 'hidden';
+            document.getElementById('fileSelectedInfo').innerHTML = '';
+            $('#previewCard').addClass('hidden');
+            $('#costCard').addClass('hidden');
+            selectedFile = null;
+        }
+
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function formatFileSize(bytes) {
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            if (bytes === 0) return '0 B';
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+        }
+    </script>
+}

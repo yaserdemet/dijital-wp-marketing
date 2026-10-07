@@ -1,0 +1,361 @@
+@model PushDashboard.ViewModels.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Kayıt Ol";
+    Layout = "_BlankLayout";
+}
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+    
+    <script>
+        // --- UI Etkileşimleri ve Yardımcı Fonksiyonlar ---
+
+        // Şifre Göster/Gizle
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        document.querySelectorAll('.toggle-password-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                togglePassword(this.dataset.target, this);
+            });
+        });
+
+        // Telefon Maskeleme (05XX formatı)
+        const phoneInput = document.getElementById('PhoneNumber');
+        if(phoneInput) {
+            phoneInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 0 && value[0] !== '0') value = '0' + value;
+                if (value.length > 11) value = value.substring(0, 11);
+                
+                let formatted = '';
+                if (value.length > 0) formatted = value.substring(0, 1);
+                if (value.length > 1) formatted += ' ' + value.substring(1, 4);
+                if (value.length > 4) formatted += ' ' + value.substring(4, 7);
+                if (value.length > 7) formatted += ' ' + value.substring(7, 9);
+                if (value.length > 9) formatted += ' ' + value.substring(9, 11);
+                
+                e.target.value = formatted;
+            });
+        }
+
+        // Referans Kodu (Sadece Sayı)
+        const refInput = document.getElementById('ReferralCode');
+        if(refInput) {
+            refInput.addEventListener('input', function(e) {
+                e.target.value = e.target.value.replace(/\D/g, '').substring(0, 6);
+            });
+        }
+
+        // Şifre Gücü ve Eşleşme Kontrolü
+        const passInput = document.getElementById('Password');
+        const confirmInput = document.getElementById('ConfirmPassword');
+        const strengthBar = document.getElementById('strength-bar-fill');
+        const strengthText = document.getElementById('strength-text');
+        const matchText = document.getElementById('match-text');
+
+        function checkStrength(password) {
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[a-z]/.test(password)) strength++;
+            if (/\d/.test(password)) strength++;
+            if (/[^A-Za-z0-9]/.test(password)) strength++;
+            return strength;
+        }
+
+        function updateStrengthUI() {
+            const val = passInput.value;
+            const score = checkStrength(val);
+            
+            // Renk ve Genişlik
+            let width = '0%';
+            let color = 'bg-gray-200';
+            let label = 'Şifre gücü';
+
+            if (val.length > 0) {
+                if (score <= 2) { width = '33%'; color = 'bg-red-500'; label = 'Zayıf'; }
+                else if (score === 3 || score === 4) { width = '66%'; color = 'bg-yellow-500'; label = 'Orta'; }
+                else { width = '100%'; color = 'bg-green-500'; label = 'Güçlü'; }
+            }
+
+            strengthBar.className = `h-1 rounded-full transition-all duration-300 ${color}`;
+            strengthBar.style.width = width;
+            strengthText.innerText = label;
+            strengthText.className = `text-xs mt-1 text-right transition-colors ${color.replace('bg-', 'text-')}`;
+        }
+
+        function checkMatch() {
+            if (confirmInput.value.length === 0) {
+                matchText.classList.add('opacity-0');
+                return;
+            }
+            
+            matchText.classList.remove('opacity-0');
+            if (passInput.value === confirmInput.value) {
+                matchText.innerHTML = '<i class="fas fa-check mr-1"></i> Eşleşiyor';
+                matchText.className = 'text-xs text-green-600 font-medium absolute right-0 -bottom-5 transition-opacity duration-300';
+            } else {
+                matchText.innerHTML = '<i class="fas fa-times mr-1"></i> Eşleşmiyor';
+                matchText.className = 'text-xs text-red-500 font-medium absolute right-0 -bottom-5 transition-opacity duration-300';
+            }
+        }
+
+        if(passInput) passInput.addEventListener('input', () => { updateStrengthUI(); checkMatch(); });
+        if(confirmInput) confirmInput.addEventListener('input', checkMatch);
+
+    </script>
+}
+
+<div class="relative h-screen flex items-center justify-center overflow-hidden font-sans px-4 py-6 bg-gradient-to-br from-slate-50 via-indigo-50/60 to-emerald-50/50">
+
+    <div class="pointer-events-none absolute -top-40 -left-32 w-[32rem] h-[32rem] rounded-full bg-indigo-200/40 blur-3xl"></div>
+    <div class="pointer-events-none absolute top-10 left-48 w-[26rem] h-[26rem] rounded-full bg-emerald-200/40 blur-3xl"></div>
+
+    <div class="relative z-10 w-full max-w-6xl bg-white rounded-3xl border border-gray-200/80 shadow-[0_8px_40px_rgba(15,23,42,0.08)] p-3 grid grid-cols-1 lg:grid-cols-12 gap-3 h-[min(44rem,calc(100vh-3rem))] grid-rows-[minmax(0,1fr)]">
+
+        <div class="flex flex-col overflow-y-auto min-h-0 px-6 py-10 sm:px-10 lg:px-12 lg:py-12 lg:col-span-7">
+
+            <div class="w-full my-auto">
+                <img src="https://dijitaldesin.com/wp-content/uploads/2023/02/dijitaldesin.svg" alt="Dijitaldesin" class="lg:hidden h-9 w-auto mb-8" />
+            <div class="text-left mb-6">
+                <h2 class="text-3xl font-bold text-gray-900 tracking-tight">Hesap Oluşturun</h2>
+                <p class="text-gray-500 mt-2">Bilgilerinizi girerek hemen başlayın.</p>
+            </div>
+
+            <form asp-controller="Account" asp-action="Register" method="post" class="space-y-3">
+                <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+                <div asp-validation-summary="ModelOnly" class="text-red-500 text-sm p-3 bg-red-50 rounded-lg border border-red-100 mb-4"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="group">
+                        <label asp-for="FirstName" class="block text-sm font-medium text-gray-700 mb-1 ml-1">Ad</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <input asp-for="FirstName" placeholder="Adınız" class="block w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-gray-900 bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" />
+                        </div>
+                        <span asp-validation-for="FirstName" class="text-red-500 text-xs mt-1 ml-1"></span>
+                    </div>
+
+                    <div class="group">
+                        <label asp-for="LastName" class="block text-sm font-medium text-gray-700 mb-1 ml-1">Soyad</label>
+                        <div class="relative">
+                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i class="far fa-user"></i>
+                            </div>
+                            <input asp-for="LastName" placeholder="Soyadınız" class="block w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-gray-900 bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" />
+                        </div>
+                        <span asp-validation-for="LastName" class="text-red-500 text-xs mt-1 ml-1"></span>
+                    </div>
+                </div>
+
+                <div class="group">
+                    <label asp-for="Email" class="block text-sm font-medium text-gray-700 mb-1 ml-1">E-posta Adresi</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <input asp-for="Email" type="email" placeholder="ornek@sirket.com" class="block w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-gray-900 bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" />
+                    </div>
+                    <span asp-validation-for="Email" class="text-red-500 text-xs mt-1 ml-1"></span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="group">
+                        <label asp-for="CompanyName" class="block text-sm font-medium text-gray-700 mb-1 ml-1">Şirket Adı</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <input asp-for="CompanyName" placeholder="Şirketiniz" class="block w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-gray-900 bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" />
+                        </div>
+                        <span asp-validation-for="CompanyName" class="text-red-500 text-xs mt-1 ml-1"></span>
+                    </div>
+
+                    <div class="group">
+                        <label asp-for="Website" class="block text-sm font-medium text-gray-700 mb-1 ml-1">Web Sitesi</label>
+                         <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i class="fas fa-globe"></i>
+                            </div>
+                            <input asp-for="Website" type="url" placeholder="https://" class="block w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-gray-900 bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" />
+                        </div>
+                        <span asp-validation-for="Website" class="text-red-500 text-xs mt-1 ml-1"></span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                     <div class="group">
+                        <label asp-for="PhoneNumber" class="block text-sm font-medium text-gray-700 mb-1 ml-1">Telefon</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <input asp-for="PhoneNumber" id="PhoneNumber" type="tel" placeholder="0555 555 55 55" class="block w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-gray-900 bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" />
+                        </div>
+                        <span asp-validation-for="PhoneNumber" class="text-red-500 text-xs mt-1 ml-1"></span>
+                    </div>
+
+                     <div class="group">
+                        <label asp-for="ReferralCode" class="block text-sm font-medium text-gray-700 mb-1 ml-1">Ref. Kodu <span class="text-gray-400 font-normal text-xs">(Opsiyonel)</span></label>
+                        <div class="relative flex">
+                            <div class="flex items-center justify-center bg-gray-100 border border-gray-200 border-r-0 rounded-l-xl px-3 text-gray-500 text-sm font-medium select-none">
+                                PRef-
+                            </div>
+                            <input asp-for="ReferralCode" id="ReferralCode" type="text" placeholder="123456" maxlength="6" class="block w-full pl-3 pr-4 py-2.5 border border-gray-200 rounded-r-xl text-gray-900 bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" />
+                        </div>
+                        <span asp-validation-for="ReferralCode" class="text-red-500 text-xs mt-1 ml-1"></span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                     <div class="group relative">
+                        <label asp-for="Password" class="block text-sm font-medium text-gray-700 mb-1 ml-1">Şifre</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <input asp-for="Password" id="Password" type="password" placeholder="••••••••" class="block w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg text-gray-900 bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" />
+                            <button type="button" class="toggle-password-btn absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer" data-target="Password">
+                                <i class="far fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2 h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+                            <div id="strength-bar-fill" class="h-full w-0 bg-gray-200 transition-all duration-500"></div>
+                        </div>
+                        <div id="strength-text" class="text-xs text-right mt-1 text-gray-400">Şifre gücü</div>
+                        <span asp-validation-for="Password" class="text-red-500 text-xs mt-1 ml-1 block"></span>
+                    </div>
+
+                     <div class="group relative">
+                        <label asp-for="ConfirmPassword" class="block text-sm font-medium text-gray-700 mb-1 ml-1">Şifre Tekrar</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <input asp-for="ConfirmPassword" id="ConfirmPassword" type="password" placeholder="••••••••" class="block w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg text-gray-900 bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" />
+                             <button type="button" class="toggle-password-btn absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer" data-target="ConfirmPassword">
+                                <i class="far fa-eye"></i>
+                            </button>
+                        </div>
+                        <div id="match-text" class="text-xs absolute right-0 -bottom-5 opacity-0"></div>
+                        <span asp-validation-for="ConfirmPassword" class="text-red-500 text-xs mt-1 ml-1 block"></span>
+                    </div>
+                </div>
+
+                <div class="space-y-3 pt-2">
+                    <label class="flex items-start cursor-pointer group">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" id="terms" name="terms" required class="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2 cursor-pointer" />
+                        </div>
+                        <div class="ml-3 text-sm text-gray-700">
+                          <a asp-controller="Home" asp-action="Terms" target="_blank" class="text-primary hover:text-primary-dark">Kullanım Şartları</a> ve
+                          <a asp-controller="Home" asp-action="Privacy" target="_blank" class="text-primary hover:text-primary-dark">Gizlilik Politikası</a>'nı okudum ve kabul ediyorum
+                        </div>
+                    </label>
+
+                    <label class="flex items-start cursor-pointer group">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" id="marketing" name="marketing" class="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2 cursor-pointer" />
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <span class="text-gray-500 group-hover:text-gray-700 transition-colors">
+                                Kampanya ve duyurulardan haberdar olmak istiyorum.
+                            </span>
+                        </div>
+                    </label>
+                </div>
+
+                <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors mt-4">
+                    Hesap Oluştur <i class="fas fa-arrow-right ml-2 mt-1"></i>
+                </button>
+
+                <div class="text-center pt-4">
+                    <p class="text-gray-600">
+                        Zaten bir hesabınız var mı? 
+                        <a asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" class="font-bold text-primary hover:text-primary-800 transition-colors">
+                            Giriş Yapın
+                        </a>
+                    </p>
+                </div>
+            </form>
+            
+            <div class="text-center mt-4 pb-8 lg:pb-0">
+              <div class="flex justify-center space-x-4 text-sm text-gray-500">
+                <a asp-controller="Home" asp-action="Help" class="hover:text-gray-700">Yardım</a>
+                <a asp-controller="Home" asp-action="Privacy" class="hover:text-gray-700">Gizlilik Politikası</a>
+                <a asp-controller="Home" asp-action="Terms" class="hover:text-gray-700">Kullanım Şartları</a>
+              </div>
+            </div>
+            </div>
+        </div>
+
+        <div class="hidden lg:flex relative rounded-2xl overflow-hidden flex-col justify-start p-10 text-white bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 lg:col-span-5">
+
+            <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-indigo-500/20 blur-3xl"></div>
+            <div class="absolute -bottom-32 -left-24 w-96 h-96 rounded-full bg-emerald-400/10 blur-3xl"></div>
+
+            <img src="https://dijitaldesin.com/wp-content/uploads/2023/02/dijitaldesin.svg" alt="Dijitaldesin" class="relative z-10 h-9 w-auto self-start mb-10 brightness-0 invert" />
+
+            <div class="relative z-10 flex-1 flex flex-col justify-between gap-10">
+
+            <div class="space-y-6">
+                <div class="inline-flex items-center px-3 py-1 rounded-md border border-white/10 bg-white/5 text-slate-200 text-xs font-medium mb-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-300 mr-2"></span> Hızlı Kurulum
+                </div>
+                <h1 class="text-4xl  font-extrabold leading-tight tracking-tight">
+                    İşletmenizi <br />
+                    <span class="text-emerald-300">
+                        geleceğe taşıyın.
+                    </span>
+                </h1>
+                <p class="text-slate-200 text-lg leading-relaxed max-w-md opacity-80">
+                    Dijitaldesin paneline hesabınızı oluşturarak hemen başlayın. Kredi kartı gerekmez, kurulum sadece 2 dakika.
+                </p>
+
+                <div class="mt-8 space-y-4">
+                    <div class="flex items-center space-x-3 text-sm text-slate-200">
+                        <i class="fas fa-check text-xs text-emerald-300"></i>
+                        <span>Hazır modüllerle anında kurulum</span>
+                    </div>
+                    <div class="flex items-center space-x-3 text-sm text-slate-200">
+                        <i class="fas fa-check text-xs text-emerald-300"></i>
+                        <span>Tek Tıkla Entegrasyon</span>
+                    </div>
+                    <div class="flex items-center space-x-3 text-sm text-slate-200">
+                        <i class="fas fa-check text-xs text-emerald-300"></i>
+                        <span>KVKK Uyumlu Altyapı</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <p class="text-xs text-slate-300 uppercase tracking-widest font-semibold opacity-70">Sektör Liderleriyle Entegre</p>
+                <div class="flex flex-wrap items-center gap-3">
+                  <span class="inline-flex items-center bg-white rounded-md px-3 py-1.5 opacity-90 hover:opacity-100 transition-opacity">
+                    <img alt="ikas" class="h-4 w-auto object-contain" src="~/images/ikas.png">
+                  </span>
+                  <span class="inline-flex items-center bg-white rounded-md px-3 py-1.5 opacity-90 hover:opacity-100 transition-opacity">
+                    <img alt="Ticimax" class="h-4 w-auto object-contain" src="~/images/ticimax.png">
+                  </span>
+                </div>
+            </div>
+            </div>
+        </div>
+
+    </div>
+</div>

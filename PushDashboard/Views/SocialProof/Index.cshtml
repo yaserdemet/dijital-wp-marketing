@@ -1,0 +1,401 @@
+﻿@model PushDashboard.ViewModels.SocialProof.SocialProofIndexViewModel
+@{
+    ViewData["Title"] = "Social Proof Modülü";
+}
+
+<main class="min-h-screen bg-gray-50/50 pb-20">
+    <!-- Sticky Header -->
+    <div class="sticky top-2 lg:top-4 z-20 px-2 lg:px-6 mb-4 lg:mb-6">
+        <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm px-4 py-3 lg:px-6 lg:py-4">
+            <div class="flex items-center gap-3 lg:gap-4 w-full md:w-auto">
+                <div class="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl text-white shadow-sm shadow-blue-500/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </div>
+                <div class="min-w-0">
+                    <h2 class="text-lg lg:text-xl font-bold text-gray-900 truncate">Social Proof Modülü</h2>
+                    <div class="flex items-center gap-2 text-xs lg:text-sm text-gray-500 truncate">
+                        <span class="truncate">Anlık ziyaretçi ve satın alma aktiviteleri</span>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:flex md:items-center gap-2 lg:gap-3 w-full md:w-auto mt-2 md:mt-0 justify-end">
+                <!-- Status Toggle -->
+                <button type="button"
+                        class="@(Model.Settings.IsActive 
+                            ? "bg-green-50 text-green-700 border-green-200" 
+                            : "bg-gray-50 text-gray-600 border-gray-200") px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium rounded-lg flex items-center justify-center md:justify-start gap-2 border shadow-sm whitespace-nowrap transition-all w-full md:w-auto"
+                        onclick="toggleStatus()" 
+                        id="statusToggleBtn">
+                    <span class="w-2.5 h-2.5 rounded-full @(Model.Settings.IsActive ? "bg-green-500 animate-pulse" : "bg-gray-400")"></span>
+                    @(Model.Settings.IsActive ? "Aktif" : "Pasif")
+                </button>
+                <!-- Preview Button -->
+                <button type="button" onclick="previewWidget()" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    <span class="hidden sm:inline">Canlı Önizleme</span><span class="inline sm:hidden">Önizle</span>
+                </button>
+                <!-- Export Button -->
+                <button type="button" onclick="exportToSite()" id="exportBtn" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg hover:from-green-700 hover:to-emerald-700 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <i class="fas fa-upload"></i> <span class="hidden sm:inline">Siteye Aktar</span><span class="inline sm:hidden">Aktar</span>
+                </button>
+                <!-- Save Button -->
+                <button type="button" onclick="updateSettings()" id="submitBtn" class="px-4 lg:px-6 py-2 text-xs lg:text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm hover:shadow transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <i class="fas fa-save"></i> Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-[1600px] mx-auto px-2 lg:px-6 space-y-6">
+            @await Html.PartialAsync("_SettingsForm", Model.Settings)
+    </div>
+</main>
+
+<!-- Preview Modal -->
+@await Html.PartialAsync("_PreviewModal")
+
+
+@section Scripts {
+    <script src="~/js/modules/social-proof-module.js"></script>
+    <script>
+        // Global değişkenler
+        let isUpdating = false;
+
+        // Toggle switch fonksiyonu
+        function toggleSwitch(button, inputId) {
+            const input = document.getElementById(inputId);
+            const isActive = input.value === 'true';
+            const newValue = !isActive;
+
+            // Hidden input değerini güncelle
+            input.value = newValue.toString();
+
+            // Button görünümünü güncelle
+            if (newValue) {
+                button.classList.remove('bg-gray-300');
+                button.classList.add('bg-blue-600');
+                button.setAttribute('aria-checked', 'true');
+                button.querySelector('span').classList.remove('translate-x-0');
+                button.querySelector('span').classList.add('translate-x-5');
+            } else {
+                button.classList.remove('bg-blue-600');
+                button.classList.add('bg-gray-300');
+                button.setAttribute('aria-checked', 'false');
+                button.querySelector('span').classList.remove('translate-x-5');
+                button.querySelector('span').classList.add('translate-x-0');
+            }
+
+            // Yanındaki metni güncelle
+            const statusLabel = document.getElementById('statusLabel');
+            if (statusLabel) {
+                statusLabel.textContent = newValue ? 'Modül şu anda çalışıyor' : 'Modül durduruldu';
+            }
+        }
+
+        // Ayarları güncelle
+        async function updateSettings() {
+            if (isUpdating) return;
+
+            const form = document.getElementById('socialProofForm');
+            const formData = new FormData(form);
+
+            // Form verilerini JSON'a çevir
+            const data = {};
+
+            // IsActive için özel işlem (hidden input)
+            const isActiveInput = form.querySelector('input[name="IsActive"]');
+            data.IsActive = isActiveInput ? isActiveInput.value === 'true' : false;
+
+            // Checkbox'lar için özel işlem
+            const checkboxes = ['EnableAnimation', 'EnableShadow', 'IsViewersActive', 'IsFollowersActive', 'IsBuyersActive'];
+            checkboxes.forEach(name => {
+                const checkbox = form.querySelector(`input[name="${name}"][type="checkbox"]`);
+                data[name] = checkbox ? checkbox.checked : false;
+            });
+
+            // Diğer alanlar için normal işlem
+            for (let [key, value] of formData.entries()) {
+                // IsActive ve checkbox'ları atla, zaten yukarıda işledik
+                if (key === 'IsActive' || checkboxes.includes(key)) continue;
+
+                if (!isNaN(value) && value !== '') {
+                    data[key] = parseInt(value);
+                } else {
+                    data[key] = value;
+                }
+            }
+
+            isUpdating = true;
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = `
+                <svg class="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Kaydediliyor...
+            `;
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('@Url.Action("UpdateSettings")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Ayarlar başarıyla güncellendi!', 'success');
+                } else {
+                    showNotification(result.message || 'Bir hata oluştu!', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Bir hata oluştu!', 'error');
+            } finally {
+                isUpdating = false;
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Durumu değiştir
+        async function toggleStatus() {
+            try {
+                const response = await fetch('@Url.Action("ToggleStatus")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    location.reload(); // Sayfayı yenile
+                } else {
+                    showNotification(result.message || 'Bir hata oluştu!', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Bir hata oluştu!', 'error');
+            }
+        }
+
+        // Önizleme
+        function previewWidget() {
+            showPreviewModal();
+        }
+
+        let previewInstance = null;
+
+        function showPreviewModal() {
+            document.getElementById('previewModal').classList.remove('hidden');
+            startPreview();
+        }
+
+        function closePreviewModal() {
+            document.getElementById('previewModal').classList.add('hidden');
+            stopPreview();
+        }
+
+        function startPreview() {
+            stopPreview(); // Clear existing
+
+            const config = getFormConfig();
+
+            const previewArea = document.getElementById('previewArea');
+            
+            previewInstance = new SocialProofModule({
+                config: config,
+                targetElement: previewArea,
+                manualInit: true,
+                styleId: 'preview-social-proof-styles',
+                containerId: 'preview-social-proof-widget'
+            });
+
+            previewInstance.init();
+            
+            // Trigger immediate show based on selected type
+            const typeRadio = document.querySelector('input[name="previewType"]:checked');
+            if (typeRadio) {
+                previewInstance.showNotification(typeRadio.value);
+            }
+        }
+
+        function stopPreview() {
+            if (previewInstance) {
+                previewInstance.destroy();
+                previewInstance = null;
+            }
+        }
+        
+        // Update preview when type changes
+        document.querySelectorAll('input[name="previewType"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (previewInstance) {
+                    previewInstance.showNotification(e.target.value);
+                }
+            });
+        });
+
+        // Script URL'yi kopyala
+        function copyScriptUrl() {
+            const scriptUrl = document.getElementById('scriptUrl');
+            scriptUrl.select();
+            document.execCommand('copy');
+            showNotification('Script URL kopyalandı!', 'success');
+        }
+
+        // Live Preview Logic
+        let livePreviewInstance = null;
+
+        function initLivePreview() {
+            const container = document.getElementById('livePreviewContainer');
+            if (!container) return;
+
+            const config = getFormConfig();
+            config.stayVisible = true; // Keep it visible for live preview
+
+            livePreviewInstance = new SocialProofModule({
+                config: config,
+                targetElement: container,
+                manualInit: true,
+                styleId: 'live-preview-styles',
+                containerId: 'live-preview-widget',
+                livePreview: true
+            });
+
+            livePreviewInstance.init();
+            livePreviewInstance.showRandomNotification();
+        }
+
+        function updateLivePreview() {
+            if (!livePreviewInstance) {
+                initLivePreview();
+                return;
+            }
+
+            const config = getFormConfig();
+            config.stayVisible = true;
+            
+            livePreviewInstance.updateConfig(config);
+        }
+
+        function getFormConfig() {
+            const form = document.getElementById('socialProofForm');
+            const formData = new FormData(form);
+            
+            const enableAnimation = form.querySelector('input[name="EnableAnimation"][type="checkbox"]').checked;
+            const enableShadow = form.querySelector('input[name="EnableShadow"][type="checkbox"]').checked;
+
+            return {
+                isActive: true,
+                updateInterval: parseInt(formData.get('UpdateInterval')) * 1000,
+                displayDuration: parseInt(formData.get('DisplayDuration')) * 1000,
+                viewersMin: parseInt(formData.get('ViewersMin')),
+                viewersMax: parseInt(formData.get('ViewersMax')),
+                followersMin: parseInt(formData.get('FollowersMin')),
+                followersMax: parseInt(formData.get('FollowersMax')),
+                buyersMin: parseInt(formData.get('BuyersMin')),
+                buyersMax: parseInt(formData.get('BuyersMax')),
+                textTemplates: {
+                    viewersTemplate: formData.get('ViewersTemplate'),
+                    followersTemplate: formData.get('FollowersTemplate'),
+                    buyersTemplate: formData.get('BuyersTemplate')
+                },
+                displaySettings: {
+                    position: formData.get('Position'), // Note: Position might look weird in small box if not handled
+                    primaryColor: formData.get('PrimaryColor'),
+                    textColor: formData.get('TextColor'),
+                    backgroundColor: formData.get('BackgroundColor'),
+                    borderRadius: parseInt(formData.get('BorderRadius')),
+                    fontSize: parseInt(formData.get('FontSize')),
+                    enableAnimation: enableAnimation,
+                    enableShadow: enableShadow
+                }
+            };
+        }
+
+        // Sayfa yüklendiğinde
+        document.addEventListener('DOMContentLoaded', function() {
+            initLivePreview();
+
+            const form = document.getElementById('socialProofForm');
+            const inputs = form.querySelectorAll('input, select');
+            
+            inputs.forEach(input => {
+                // Use 'input' for text/color/range for immediate feedback
+                // Use 'change' for others if needed, but 'input' covers most
+                input.addEventListener('input', updateLivePreview);
+                input.addEventListener('change', updateLivePreview);
+            });
+
+            ['PrimaryColor', 'BackgroundColor', 'TextColor'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', function() {
+                        const textInput = this.parentElement.querySelector('input[readonly]');
+                        if (textInput) {
+                            textInput.value = this.value;
+                        }
+                    });
+                }
+            });
+        });
+
+        // Siteye Aktar ve Kaydet
+        async function exportToSite() {
+            const exportBtn = document.getElementById('exportBtn');
+            const originalText = exportBtn.innerHTML;
+
+            exportBtn.innerHTML = `
+                <svg class="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Aktarılıyor...
+            `;
+            exportBtn.disabled = true;
+
+            try {
+                // Önce ayarları kaydet
+                await updateSettings();
+
+                // Sonra R2'ye export et
+                const response = await fetch('@Url.Action("ExportToR2")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Ayarlar kaydedildi ve siteye aktarıldı!', 'success');
+                } else {
+                    showNotification(result.message || 'Aktarım sırasında bir hata oluştu!', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Aktarım sırasında bir hata oluştu!', 'error');
+            } finally {
+                exportBtn.innerHTML = originalText;
+                exportBtn.disabled = false;
+            }
+        }
+    </script>
+}

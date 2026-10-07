@@ -1,0 +1,856 @@
+@model PushDashboard.Models.ViewModels.CookieManagementIndexViewModel
+@{
+    ViewData["Title"] = "Çerez Yönetimi";
+    ViewData["PageHeader"] = "Çerez Yönetimi";
+    var isActive = Model.Settings.IsActive;
+}
+
+@section Styles {
+    <style>
+        .cm-color-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .cm-color-input-wrapper input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            padding: 0;
+            background: none;
+            flex-shrink: 0;
+        }
+        .cm-color-input-wrapper input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        .cm-color-input-wrapper input[type="color"]::-webkit-color-swatch {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+        }
+        /* Toggle Switch */
+        .cm-toggle {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .cm-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .cm-toggle .cm-slider {
+            width: 36px; height: 20px;
+            background: #d1d5db;
+            border-radius: 999px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .cm-toggle .cm-slider::after {
+            content: '';
+            position: absolute;
+            top: 2px; left: 2px;
+            width: 16px; height: 16px;
+            background: white;
+            border-radius: 50%;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+        .cm-toggle input:checked + .cm-slider {
+            background: #3b82f6;
+        }
+        .cm-toggle input:checked + .cm-slider::after {
+            transform: translateX(16px);
+            border-color: transparent;
+        }
+        /* Collapsible Section */
+        .cm-section-header {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+        .cm-section-header:hover {
+            background: rgba(59, 130, 246, 0.03);
+        }
+        .cm-section-body {
+            max-height: 2000px;
+            overflow: hidden;
+            transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+            opacity: 1;
+        }
+        .cm-section-body.collapsed {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+        .cm-section-chevron {
+            transition: transform 0.25s ease;
+        }
+        .cm-section-chevron.collapsed {
+            transform: rotate(-90deg);
+        }
+        /* Range Input Styling */
+        input[type="range"].cm-range {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 999px;
+            outline: none;
+        }
+        input[type="range"].cm-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px; height: 18px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        input[type="range"].cm-range::-moz-range-thumb {
+            width: 18px; height: 18px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        /* Position selector cards */
+        .cm-position-card {
+            transition: all 0.15s ease;
+        }
+        .cm-position-card:hover {
+            border-color: #93c5fd;
+        }
+        .cm-position-card.active {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .cm-position-card.active .cm-position-dot {
+            background: #3b82f6;
+        }
+        @@keyframes cmFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+}
+
+@Html.AntiForgeryToken()
+
+<main class="min-h-screen bg-gray-50/50 pb-20">
+    <!-- Sticky Header -->
+    <div class="sticky top-2 lg:top-4 z-20 px-2 lg:px-6 mb-4 lg:mb-6">
+        <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm px-4 py-3 lg:px-6 lg:py-4">
+            <div class="flex items-center gap-3 lg:gap-4 w-full md:w-auto">
+                <div class="p-2.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl text-white shadow-sm">
+                    <i class="fas fa-cookie-bite text-lg"></i>
+                </div>
+                <div class="min-w-0">
+                    <h2 class="text-lg lg:text-xl font-bold text-gray-900 truncate">Çerez Yönetimi</h2>
+                    <div class="flex items-center gap-2 text-xs lg:text-sm text-gray-500 truncate">
+                        <span class="truncate">KVKK / GDPR Uyumlu</span>
+                        <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
+                        <span class="text-blue-600 font-medium flex-shrink-0">Yapılandırma</span>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:flex md:items-center gap-2 lg:gap-3 w-full md:w-auto mt-2 md:mt-0 justify-end">
+                <!-- Status Toggle -->
+                <input type="hidden" id="isActive" value="@(isActive ? "true" : "false")">
+                <button type="button" onclick="toggleCookieStatus()" id="statusBtn"
+                        class="@(isActive ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-600 border-gray-200") px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium rounded-lg flex items-center justify-center gap-2 border shadow-sm whitespace-nowrap transition-all w-full md:w-auto">
+                    <span id="statusIndicator" class="w-2.5 h-2.5 rounded-full @(isActive ? "bg-green-500 animate-pulse" : "bg-gray-400")"></span>
+                    <span id="statusText">@(isActive ? "Aktif" : "Pasif")</span>
+                </button>
+                <!-- Preview Button -->
+                <button type="button" id="openPreviewBtn" onclick="openCookiePreviewModal()" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    <span class="hidden sm:inline">Önizleme</span><span class="inline sm:hidden">Önizle</span>
+                </button>
+                <!-- Export Button -->
+                <button type="button" id="exportToSiteBtn" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg hover:from-green-700 hover:to-emerald-700 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <i class="fas fa-upload"></i> <span class="hidden sm:inline">Siteye Aktar</span><span class="inline sm:hidden">Aktar</span>
+                </button>
+                <!-- Save Button -->
+                <button type="button" id="saveSettingsBtn" class="px-4 lg:px-6 py-2 text-xs lg:text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm hover:shadow transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <i class="fas fa-save"></i> Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-[1600px] mx-auto px-2 lg:px-6 py-4 lg:py-8">
+
+    <!-- İstatistikler -->
+    @{
+        var totalActions = Model.Stats.TotalAcceptAll + Model.Stats.TotalRejectAll + Model.Stats.TotalSaveSettings;
+        var acceptPct = totalActions > 0 ? Math.Round((double)Model.Stats.TotalAcceptAll / totalActions * 100, 1) : 0;
+        var rejectPct = totalActions > 0 ? Math.Round((double)Model.Stats.TotalRejectAll / totalActions * 100, 1) : 0;
+        var settingsPct = totalActions > 0 ? Math.Round((double)Model.Stats.TotalSaveSettings / totalActions * 100, 1) : 0;
+    }
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
+
+        <!-- Sol: Gösterim + Alt Sayılar -->
+        <div class="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-2.5 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl text-white shadow-sm">
+                    <i class="fas fa-eye text-sm"></i>
+                </div>
+                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Toplam Gösterim</span>
+            </div>
+            <div class="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">@Model.Stats.TotalImpressions.ToString("N0")</div>
+
+            <!-- Alt Sayılar -->
+            <div class="space-y-2.5 border-t border-gray-100 pt-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                        <span class="text-sm text-gray-600">Kabul</span>
+                    </div>
+                    <span class="text-sm font-bold text-gray-900">@Model.Stats.TotalAcceptAll.ToString("N0")</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                        <span class="text-sm text-gray-600">Red</span>
+                    </div>
+                    <span class="text-sm font-bold text-gray-900">@Model.Stats.TotalRejectAll.ToString("N0")</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+                        <span class="text-sm text-gray-600">Ayarları Açtı</span>
+                    </div>
+                    <span class="text-sm font-bold text-gray-900">@Model.Stats.TotalSaveSettings.ToString("N0")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pasta Grafik -->
+        <div class="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-2.5 bg-gradient-to-br from-violet-400 to-purple-600 rounded-xl text-white shadow-sm">
+                    <i class="fas fa-chart-pie text-sm"></i>
+                </div>
+                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dağılım</span>
+            </div>
+
+            <div class="flex items-center justify-center">
+                <div class="relative w-36 h-36">
+                    @if (totalActions > 0)
+                    {
+                        <svg viewBox="0 0 36 36" class="w-full h-full -rotate-90">
+                            <!-- Accept slice -->
+                            <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#10b981" stroke-width="3.5"
+                                    stroke-dasharray="@acceptPct 100" stroke-dashoffset="0" />
+                            <!-- Reject slice -->
+                            <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#ef4444" stroke-width="3.5"
+                                    stroke-dasharray="@rejectPct 100" stroke-dashoffset="-@acceptPct" />
+                            <!-- Settings slice -->
+                            <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#f59e0b" stroke-width="3.5"
+                                    stroke-dasharray="@settingsPct 100" stroke-dashoffset="-@(acceptPct + rejectPct)" />
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span class="text-xl font-bold text-gray-900">@totalActions</span>
+                            <span class="text-[10px] text-gray-500 uppercase">Aksiyon</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <svg viewBox="0 0 36 36" class="w-full h-full">
+                            <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#e5e7eb" stroke-width="3.5" />
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span class="text-sm text-gray-400">Veri yok</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Pie legend -->
+            <div class="flex items-center justify-center gap-4 mt-3 text-xs">
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> %@acceptPct Kabul</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span> %@rejectPct Red</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> %@settingsPct Ayarlar</span>
+            </div>
+        </div>
+
+        <!-- Kategori Kabul Oranları -->
+        <div class="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-2.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl text-white shadow-sm">
+                    <i class="fas fa-layer-group text-sm"></i>
+                </div>
+                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Kategori Kabul Oranları</span>
+            </div>
+
+            @if (Model.Stats.CategoryStats.Any())
+            {
+                <div class="space-y-3">
+                    @foreach (var cat in Model.Stats.CategoryStats)
+                    {
+                        var catIcon = cat.CategoryId switch {
+                            "necessary" => "fa-shield-alt",
+                            "performance" => "fa-tachometer-alt",
+                            "functional" => "fa-puzzle-piece",
+                            "marketing" => "fa-bullhorn",
+                            _ => "fa-cookie"
+                        };
+                        var catBarColor = cat.CategoryId switch {
+                            "necessary" => "from-emerald-400 to-green-500",
+                            "performance" => "from-blue-400 to-cyan-500",
+                            "functional" => "from-purple-400 to-violet-500",
+                            "marketing" => "from-orange-400 to-amber-500",
+                            _ => "from-gray-400 to-gray-500"
+                        };
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-sm text-gray-700 flex items-center gap-1.5">
+                                    <i class="fas @catIcon text-xs text-gray-400"></i>
+                                    @cat.CategoryName
+                                </span>
+                                <span class="text-sm font-bold text-gray-900">%@cat.AcceptRate</span>
+                            </div>
+                            <div class="w-full bg-gray-100 rounded-full h-2">
+                                <div class="bg-gradient-to-r @catBarColor h-2 rounded-full transition-all" style="width: @(Math.Min(cat.AcceptRate, 100))%"></div>
+                            </div>
+                            <div class="text-[10px] text-gray-400 mt-0.5">@cat.AcceptCount / @cat.TotalEvents onay</div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="flex flex-col items-center justify-center py-6 text-gray-400">
+                    <i class="fas fa-chart-bar text-2xl mb-2"></i>
+                    <span class="text-sm">Henüz veri yok</span>
+                </div>
+            }
+        </div>
+
+        <!-- Cihaz Dağılımı -->
+        <div class="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-2.5 bg-gradient-to-br from-purple-400 to-violet-600 rounded-xl text-white shadow-sm">
+                    <i class="fas fa-mobile-alt text-sm"></i>
+                </div>
+                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Cihaz Dağılımı</span>
+            </div>
+            @{
+                var totalDevices = Model.Stats.MobileCount + Model.Stats.DesktopCount;
+                var mobilePercent = totalDevices > 0 ? Math.Round((double)Model.Stats.MobileCount / totalDevices * 100, 1) : 0;
+                var desktopPercent = totalDevices > 0 ? Math.Round((double)Model.Stats.DesktopCount / totalDevices * 100, 1) : 0;
+            }
+
+            <div class="space-y-3">
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-sm text-gray-700 flex items-center gap-1.5">
+                            <i class="fas fa-mobile-alt text-xs text-purple-500"></i>
+                            Mobil
+                        </span>
+                        <span class="text-sm font-bold text-gray-900">%@mobilePercent <span class="text-xs font-normal text-gray-400">(@Model.Stats.MobileCount)</span></span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2">
+                        <div class="bg-gradient-to-r from-purple-400 to-violet-500 h-2 rounded-full transition-all" style="width: @mobilePercent%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-sm text-gray-700 flex items-center gap-1.5">
+                            <i class="fas fa-desktop text-xs text-blue-500"></i>
+                            Masaüstü
+                        </span>
+                        <span class="text-sm font-bold text-gray-900">%@desktopPercent <span class="text-xs font-normal text-gray-400">(@Model.Stats.DesktopCount)</span></span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2">
+                        <div class="bg-gradient-to-r from-blue-400 to-cyan-500 h-2 rounded-full transition-all" style="width: @desktopPercent%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 items-start">
+
+        <!-- Sol Panel - Ayarlar -->
+        <div class="lg:col-span-6 xl:col-span-7 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-4 lg:px-6 py-3 border-b border-gray-100 bg-gray-50/50">
+                <h3 class="font-semibold text-gray-900 text-lg">Genel Ayarlar</h3>
+            </div>
+
+            <div class="p-4 lg:p-6 pt-4 space-y-6 lg:space-y-8">
+                <form id="cookieSettingsForm" class="space-y-6 lg:space-y-10">
+
+                    <!-- ═══════════════════════════════════════════ -->
+                    <!-- SECTION 1: İçerik Ayarları                 -->
+                    <!-- ═══════════════════════════════════════════ -->
+                    <div class="settings-section" data-section="content">
+                        <div class="cm-section-header flex items-center justify-between gap-3 mb-6" onclick="toggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-blue-50 text-blue-600 rounded-lg"><i class="fas fa-file-alt"></i></div>
+                                <h4 class="text-base font-bold text-gray-900">İçerik</h4>
+                            </div>
+                            <i class="fas fa-chevron-down cm-section-chevron text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="cm-section-body space-y-5">
+                            <div>
+                                <label for="bannerTitle" class="block text-sm font-semibold text-gray-800 mb-2">Banner Başlığı</label>
+                                <input type="text" id="bannerTitle" name="bannerTitle" value="@Model.Settings.BannerTitle" required
+                                       class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none">
+                            </div>
+                            <div>
+                                <label for="bannerDescription" class="block text-sm font-semibold text-gray-800 mb-2">Banner Açıklaması</label>
+                                <textarea id="bannerDescription" name="bannerDescription" rows="3" required
+                                          class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm resize-none transition-all focus:shadow-md outline-none">@Model.Settings.BannerDescription</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- ═══════════════════════════════════════════ -->
+                    <!-- SECTION 2: Butonlar                        -->
+                    <!-- ═══════════════════════════════════════════ -->
+                    <div class="settings-section" data-section="buttons">
+                        <div class="cm-section-header flex items-center justify-between gap-3 mb-6" onclick="toggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><i class="fas fa-mouse-pointer"></i></div>
+                                <h4 class="text-base font-bold text-gray-900">Butonlar</h4>
+                            </div>
+                            <i class="fas fa-chevron-down cm-section-chevron text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="cm-section-body space-y-5">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="acceptButtonText" class="block text-sm font-semibold text-gray-800 mb-2">Kabul Butonu</label>
+                                    <input type="text" id="acceptButtonText" name="acceptButtonText" value="@Model.Settings.AcceptButtonText" required
+                                           class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none">
+                                </div>
+                                <div>
+                                    <label for="rejectButtonText" class="block text-sm font-semibold text-gray-800 mb-2">Reddet Butonu</label>
+                                    <input type="text" id="rejectButtonText" name="rejectButtonText" value="@Model.Settings.RejectButtonText" required
+                                           class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="settingsButtonText" class="block text-sm font-semibold text-gray-800 mb-2">Ayarlar Butonu</label>
+                                    <input type="text" id="settingsButtonText" name="settingsButtonText" value="@Model.Settings.SettingsButtonText" required
+                                           class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none">
+                                </div>
+                                <div>
+                                    <label for="saveButtonText" class="block text-sm font-semibold text-gray-800 mb-2">Kaydet Butonu</label>
+                                    <input type="text" id="saveButtonText" name="saveButtonText" value="@Model.Settings.SaveButtonText" required
+                                           class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none">
+                                </div>
+                            </div>
+                            <!-- Button Colors -->
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">Kabul Rengi</label>
+                                    <div class="cm-color-input-wrapper flex items-center gap-2">
+                                        <input type="color" id="acceptButtonColorPicker" value="@Model.Settings.AcceptButtonColor"
+                                               class="h-10 w-10 rounded cursor-pointer border-0 p-0">
+                                        <input type="text" id="acceptButtonColor" value="@Model.Settings.AcceptButtonColor"
+                                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">Reddet Rengi</label>
+                                    <div class="cm-color-input-wrapper flex items-center gap-2">
+                                        <input type="color" id="rejectButtonColorPicker" value="@Model.Settings.RejectButtonColor"
+                                               class="h-10 w-10 rounded cursor-pointer border-0 p-0">
+                                        <input type="text" id="rejectButtonColor" value="@Model.Settings.RejectButtonColor"
+                                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">Ayarlar Rengi</label>
+                                    <div class="cm-color-input-wrapper flex items-center gap-2">
+                                        <input type="color" id="settingsButtonColorPicker" value="@Model.Settings.SettingsButtonColor"
+                                               class="h-10 w-10 rounded cursor-pointer border-0 p-0">
+                                        <input type="text" id="settingsButtonColor" value="@Model.Settings.SettingsButtonColor"
+                                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Show Settings Button Toggle -->
+                            <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-500 flex items-center justify-center"><i class="fas fa-cog"></i></div>
+                                        <span class="text-sm font-medium text-gray-700">Ayarlar Butonunu Göster</span>
+                                    </div>
+                                    <label class="cm-toggle">
+                                        <input type="checkbox" id="showSettingsButton" name="showSettingsButton" @(Model.Settings.ShowSettingsButton ? "checked" : "")>
+                                        <span class="cm-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- ═══════════════════════════════════════════ -->
+                    <!-- SECTION 3: Tasarım & Görünüm               -->
+                    <!-- ═══════════════════════════════════════════ -->
+                    <div class="settings-section" data-section="design">
+                        <div class="cm-section-header flex items-center justify-between gap-3 mb-6" onclick="toggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-purple-50 text-purple-600 rounded-lg"><i class="fas fa-palette"></i></div>
+                                <h4 class="text-base font-bold text-gray-900">Tasarım & Görünüm</h4>
+                            </div>
+                            <i class="fas fa-chevron-down cm-section-chevron text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="cm-section-body space-y-6">
+                            <!-- Colors Grid -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">Arka Plan Rengi</label>
+                                    <div class="cm-color-input-wrapper flex items-center gap-2">
+                                        <input type="color" id="bannerBackgroundColorPicker" value="@Model.Settings.BannerBackgroundColor"
+                                               class="h-10 w-10 rounded cursor-pointer border-0 p-0">
+                                        <input type="text" id="bannerBackgroundColor" value="@Model.Settings.BannerBackgroundColor"
+                                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">Metin Rengi</label>
+                                    <div class="cm-color-input-wrapper flex items-center gap-2">
+                                        <input type="color" id="bannerTextColorPicker" value="@Model.Settings.BannerTextColor"
+                                               class="h-10 w-10 rounded cursor-pointer border-0 p-0">
+                                        <input type="text" id="bannerTextColor" value="@Model.Settings.BannerTextColor"
+                                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Banner Position -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-800 mb-3">Banner Pozisyonu</label>
+                                <div class="grid grid-cols-4 gap-2" id="positionSelector">
+                                    <div class="cm-position-card border-2 border-gray-200 rounded-xl p-3 text-center cursor-pointer @(Model.Settings.BannerPosition == "bottom" ? "active" : "")" data-position="bottom">
+                                        <div class="w-full h-12 bg-gray-100 rounded-lg relative mb-1.5">
+                                            <div class="cm-position-dot absolute bottom-1 left-1 right-1 h-2.5 bg-gray-300 rounded"></div>
+                                        </div>
+                                        <span class="text-[11px] font-bold text-gray-600">Alt</span>
+                                    </div>
+                                    <div class="cm-position-card border-2 border-gray-200 rounded-xl p-3 text-center cursor-pointer @(Model.Settings.BannerPosition == "top" ? "active" : "")" data-position="top">
+                                        <div class="w-full h-12 bg-gray-100 rounded-lg relative mb-1.5">
+                                            <div class="cm-position-dot absolute top-1 left-1 right-1 h-2.5 bg-gray-300 rounded"></div>
+                                        </div>
+                                        <span class="text-[11px] font-bold text-gray-600">Üst</span>
+                                    </div>
+                                    <div class="cm-position-card border-2 border-gray-200 rounded-xl p-3 text-center cursor-pointer @(Model.Settings.BannerPosition == "left" ? "active" : "")" data-position="left">
+                                        <div class="w-full h-12 bg-gray-100 rounded-lg relative mb-1.5">
+                                            <div class="cm-position-dot absolute left-1 top-1 bottom-1 w-3 bg-gray-300 rounded"></div>
+                                        </div>
+                                        <span class="text-[11px] font-bold text-gray-600">Sol</span>
+                                    </div>
+                                    <div class="cm-position-card border-2 border-gray-200 rounded-xl p-3 text-center cursor-pointer @(Model.Settings.BannerPosition == "right" ? "active" : "")" data-position="right">
+                                        <div class="w-full h-12 bg-gray-100 rounded-lg relative mb-1.5">
+                                            <div class="cm-position-dot absolute right-1 top-1 bottom-1 w-3 bg-gray-300 rounded"></div>
+                                        </div>
+                                        <span class="text-[11px] font-bold text-gray-600">Sağ</span>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="bannerPosition" value="@Model.Settings.BannerPosition">
+                            </div>
+
+                            <!-- Border Radius Slider -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-sm font-semibold text-gray-800">Köşe Yuvarlaklığı</label>
+                                    <span id="borderRadiusValue" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">@Model.Settings.BorderRadius</span>
+                                </div>
+                                <input type="range" id="borderRadius" name="borderRadius" min="0" max="24" step="2"
+                                       value="@(int.TryParse(Model.Settings.BorderRadius?.Replace("px",""), out var br) ? br : 8)"
+                                       class="cm-range w-full"
+                                       oninput="document.getElementById('borderRadiusValue').textContent = this.value + 'px'">
+                            </div>
+
+                            <!-- Animation Toggle -->
+                            <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-500 flex items-center justify-center"><i class="fas fa-magic"></i></div>
+                                        <span class="text-sm font-medium text-gray-700">Animasyon Efektleri</span>
+                                    </div>
+                                    <label class="cm-toggle">
+                                        <input type="checkbox" id="enableAnimation" name="enableAnimation" @(Model.Settings.EnableAnimation ? "checked" : "")>
+                                        <span class="cm-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Cookie Expiry -->
+                            <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-calendar-alt text-gray-400"></i>
+                                        <span class="text-sm font-medium text-gray-700">Çerez Süresi</span>
+                                    </div>
+                                    <span class="text-xs text-gray-500 font-bold bg-white px-1.5 py-0.5 rounded border border-gray-200">gün</span>
+                                </div>
+                                <div class="flex items-center gap-2 border-t border-gray-200 pt-2 mt-2">
+                                    <input type="number" id="cookieExpiryDays" name="cookieExpiryDays"
+                                           value="@Model.Settings.CookieExpiryDays" min="0" max="3650"
+                                           class="flex-1 bg-transparent border-0 p-0 text-sm text-gray-800 focus:ring-0 font-medium placeholder-gray-300 outline-none">
+                                    <span class="text-xs text-gray-400">Onay çerezi kaç gün geçerli olsun</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- ═══════════════════════════════════════════ -->
+                    <!-- SECTION 4: Çerez Kategorileri              -->
+                    <!-- ═══════════════════════════════════════════ -->
+                    <div class="settings-section" data-section="categories">
+                        <div class="cm-section-header flex items-center justify-between gap-3 mb-6" onclick="toggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-amber-50 text-amber-600 rounded-lg"><i class="fas fa-layer-group"></i></div>
+                                <h4 class="text-base font-bold text-gray-900">Çerez Kategorileri</h4>
+                            </div>
+                            <i class="fas fa-chevron-down cm-section-chevron text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="cm-section-body space-y-3" id="cookieCategories">
+                            @foreach (var category in Model.Settings.Categories)
+                            {
+                                <div class="category-item bg-gray-50 border border-gray-200 rounded-xl p-4 hover:border-blue-200 transition-all" data-category-id="@category.Id">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center gap-2">
+                                            @{
+                                                var catIcon = category.Id switch {
+                                                    "necessary" => "fa-shield-alt",
+                                                    "performance" => "fa-tachometer-alt",
+                                                    "functional" => "fa-puzzle-piece",
+                                                    "marketing" => "fa-bullhorn",
+                                                    _ => "fa-cookie"
+                                                };
+                                                var catColor = category.Id switch {
+                                                    "necessary" => "text-red-500 bg-red-100",
+                                                    "performance" => "text-blue-500 bg-blue-100",
+                                                    "functional" => "text-purple-500 bg-purple-100",
+                                                    "marketing" => "text-orange-500 bg-orange-100",
+                                                    _ => "text-gray-500 bg-gray-100"
+                                                };
+                                            }
+                                            <div class="w-8 h-8 rounded-lg @catColor flex items-center justify-center">
+                                                <i class="fas @catIcon text-sm"></i>
+                                            </div>
+                                            <div>
+                                                <h4 class="font-semibold text-gray-900 text-sm category-name">@category.Name</h4>
+                                                @if (category.IsRequired)
+                                                {
+                                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">Zorunlu</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        <label class="cm-toggle">
+                                            @if (category.IsRequired)
+                                            {
+                                                <input type="checkbox" checked disabled class="category-enabled">
+                                            }
+                                            else
+                                            {
+                                                <input type="checkbox" @(category.IsEnabled ? "checked" : "") class="category-enabled">
+                                            }
+                                            <span class="cm-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <textarea class="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white category-description resize-none"
+                                                  rows="2" @(category.IsRequired ? "readonly" : "") placeholder="Kategori açıklaması...">@category.Description</textarea>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sağ Panel - Anlık Mini Önizleme -->
+        <div class="lg:col-span-6 xl:col-span-5 space-y-4 lg:space-y-6 lg:sticky lg:top-24">
+
+            <!-- Anlık Önizleme -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-4 lg:px-6 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                        <i class="fas fa-eye text-blue-500"></i> Önizleme
+                    </h3>
+                    <span class="text-xs text-gray-400">Anlık güncellenir</span>
+                </div>
+                <div class="p-4 lg:p-6 bg-gray-100/50">
+                    <div id="cookiePreviewContainer" class="relative bg-white rounded-xl shadow-inner min-h-[400px] overflow-hidden border border-gray-200">
+                        <!-- Simulated website background -->
+                        <div class="absolute inset-0 p-4 opacity-30">
+                            <div class="h-3 bg-gray-300 rounded w-3/4 mb-3"></div>
+                            <div class="h-2 bg-gray-200 rounded w-full mb-2"></div>
+                            <div class="h-2 bg-gray-200 rounded w-5/6 mb-2"></div>
+                            <div class="h-2 bg-gray-200 rounded w-2/3 mb-4"></div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="h-20 bg-gray-200 rounded"></div>
+                                <div class="h-20 bg-gray-200 rounded"></div>
+                            </div>
+                            <div class="h-2 bg-gray-200 rounded w-full mt-4 mb-2"></div>
+                            <div class="h-2 bg-gray-200 rounded w-4/5 mb-2"></div>
+                        </div>
+                        <!-- Cookie banner will be rendered here -->
+                        <div id="bannerPreviewTarget"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ayarlar Modalı Önizleme -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-4 lg:px-6 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                        <i class="fas fa-cog text-purple-500"></i> Ayarlar Modalı
+                    </h3>
+                    <button type="button" id="toggleSettingsPreview" class="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                        Göster / Gizle
+                    </button>
+                </div>
+                <div class="p-4 lg:p-6 bg-gray-100/50 hidden" id="settingsPreviewWrapper">
+                    <div id="settingsPreviewTarget" class="bg-white rounded-xl shadow-inner overflow-hidden border border-gray-200 p-4">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Canlı Önizleme Modal (Social Proof tarzı)          -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div id="cookiePreviewModal" class="fixed inset-0 z-[100] hidden" role="dialog" aria-modal="true">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onclick="closeCookiePreviewModal()" aria-hidden="true"></div>
+
+        <!-- Modal Panel -->
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-5xl">
+
+                    <!-- Header -->
+                    <div class="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm text-white">
+                                <i class="fas fa-cookie-bite"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-semibold leading-6 text-gray-900">Canlı Önizleme</h3>
+                                <p class="text-sm text-gray-500">Çerez banner'ının sitenizde nasıl görüneceğini simüle eder.</p>
+                            </div>
+                        </div>
+                        <button type="button" class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 transition-colors" onclick="closeCookiePreviewModal()">
+                            <span class="sr-only">Kapat</span>
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Simulation Area -->
+                    <div class="bg-gray-100/50 p-2 md:p-4 flex flex-col md:flex-row gap-6 h-auto md:h-[600px]">
+
+                        <!-- Sidebar Controls -->
+                        <div class="w-full md:w-56 shrink-0 space-y-4">
+                            <!-- Preview Variant -->
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Önizleme Tipi</label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors border border-transparent hover:border-gray-100">
+                                        <input type="radio" name="cookiePreviewType" value="banner" checked class="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-3 text-sm font-medium text-gray-700 flex items-center gap-2">
+                                            <span>🍪</span> Banner
+                                        </span>
+                                    </label>
+                                    <label class="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors border border-transparent hover:border-gray-100">
+                                        <input type="radio" name="cookiePreviewType" value="settings" class="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-3 text-sm font-medium text-gray-700 flex items-center gap-2">
+                                            <span>⚙️</span> Ayarlar Modalı
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                <div class="space-y-3">
+                                    <button type="button" id="refreshPreviewBtn"
+                                            class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                                            onclick="refreshCookiePreview()">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                        Yenile
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Info -->
+                            <div class="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                                <p class="text-xs text-blue-700 leading-relaxed">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Soldaki ayarları değiştirip <strong>Yenile</strong>'ye basarak değişiklikleri anlık görebilirsiniz.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Browser Mockup -->
+                        <div class="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col relative" id="cookiePreviewArea">
+                            <!-- Browser Bar -->
+                            <div class="bg-gray-100 border-b border-gray-200 px-4 py-2 flex items-center gap-2">
+                                <div class="flex gap-1.5">
+                                    <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                                    <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                                    <div class="w-3 h-3 rounded-full bg-green-400"></div>
+                                </div>
+                                <div class="flex-1 ml-4 bg-white border border-gray-200 rounded px-3 py-1 text-xs text-gray-500 font-mono text-center">
+                                    dijitaldesin.com/urunler/ornek-urun
+                                </div>
+                            </div>
+
+                            <!-- Simulated Website Content -->
+                            <div class="flex-1 p-4 md:p-8 overflow-y-auto relative h-[400px] md:h-auto">
+                                <div class="flex flex-col md:flex-row gap-4 md:gap-8">
+                                    <!-- Product Image Placeholder -->
+                                    <div class="w-full md:w-1/2 aspect-square bg-gray-100 rounded-lg flex items-center justify-center text-gray-300">
+                                        <svg class="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    </div>
+                                    <!-- Product Info -->
+                                    <div class="w-full md:w-1/2 space-y-4">
+                                        <div class="h-8 w-3/4 bg-gray-200 rounded"></div>
+                                        <div class="h-4 w-1/4 bg-gray-200 rounded"></div>
+                                        <div class="h-12 w-full bg-gray-100 rounded mt-8"></div>
+                                        <div class="space-y-2 pt-4">
+                                            <div class="h-4 w-full bg-gray-100 rounded"></div>
+                                            <div class="h-4 w-full bg-gray-100 rounded"></div>
+                                            <div class="h-4 w-2/3 bg-gray-100 rounded"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cookie Banner/Modal injected here -->
+                            <div id="cookiePreviewWidget" class="absolute inset-0 z-10 pointer-events-none">
+                                <div id="cookiePreviewContent" class="pointer-events-auto"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+@section Scripts {
+    <script src="~/js/modules/cookie-management-module.js"></script>
+    <script src="~/js/cookie-management.js"></script>
+}

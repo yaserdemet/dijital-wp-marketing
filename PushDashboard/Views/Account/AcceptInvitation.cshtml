@@ -1,0 +1,172 @@
+@model PushDashboard.ViewModels.AcceptInvitationRequest
+@{
+    ViewData["Title"] = "Davetiyeyi Kabul Et";
+    Layout = "_BlankLayout";
+    var companyName = ViewData["CompanyName"] as string;
+    var inviterName = ViewData["InviterName"] as string;
+    var expirationDate = ViewData["ExpirationDate"] as DateTime?;
+}
+
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <!-- Header -->
+    <div class="text-center">
+      <div class="mx-auto h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+        <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+        </svg>
+      </div>
+      <h2 class="mt-6 text-3xl font-extrabold text-gray-900">Davetiyeyi Kabul Et</h2>
+      <p class="mt-2 text-sm text-gray-600">
+        <strong>@inviterName</strong> sizi <strong>@companyName</strong> firmasına davet ediyor
+      </p>
+      @if (expirationDate.HasValue)
+      {
+        <p class="mt-1 text-xs text-orange-600">
+          ⏰ Bu davetiye @expirationDate?.ToString("dd.MM.yyyy HH:mm") tarihine kadar geçerlidir
+        </p>
+      }
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white py-8 px-6 shadow-lg rounded-lg">
+      <form asp-action="AcceptInvitation" method="post" class="space-y-6">
+        <input type="hidden" asp-for="Token" />
+
+        <!-- Error Messages -->
+        <div asp-validation-summary="All" class="text-red-600 text-sm"></div>
+
+        <!-- Name Fields -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label asp-for="FirstName" class="block text-sm font-medium text-gray-700">Ad</label>
+            <input asp-for="FirstName" type="text" required
+                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            <span asp-validation-for="FirstName" class="text-red-600 text-sm"></span>
+          </div>
+          <div>
+            <label asp-for="LastName" class="block text-sm font-medium text-gray-700">Soyad</label>
+            <input asp-for="LastName" type="text" required
+                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            <span asp-validation-for="LastName" class="text-red-600 text-sm"></span>
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div>
+          <label asp-for="Email" class="block text-sm font-medium text-gray-700">E-posta Adresi</label>
+          <input asp-for="Email" type="email" required
+                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          <span asp-validation-for="Email" class="text-red-600 text-sm"></span>
+        </div>
+
+        <!-- Phone -->
+        <div>
+          <label asp-for="PhoneNumber" class="block text-sm font-medium text-gray-700">Telefon (Opsiyonel)</label>
+          <input asp-for="PhoneNumber" type="tel"
+                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="+90 555 123 45 67">
+          <span asp-validation-for="PhoneNumber" class="text-red-600 text-sm"></span>
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label asp-for="Password" class="block text-sm font-medium text-gray-700">Şifre</label>
+          <div class="mt-1 relative">
+            <input asp-for="Password" type="password" id="password" required
+                   class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 pr-10">
+            <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+            </button>
+          </div>
+          <span asp-validation-for="Password" class="text-red-600 text-sm"></span>
+        </div>
+
+        <!-- Confirm Password -->
+        <div>
+          <label asp-for="ConfirmPassword" class="block text-sm font-medium text-gray-700">Şifre Onayı</label>
+          <div class="mt-1 relative">
+            <input asp-for="ConfirmPassword" type="password" id="confirmPassword" required
+                   class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 pr-10">
+            <button type="button" id="toggleConfirmPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+            </button>
+          </div>
+          <span asp-validation-for="ConfirmPassword" class="text-red-600 text-sm"></span>
+        </div>
+
+        <!-- Company Info -->
+        <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-blue-800">Firma Bilgileri</h3>
+              <div class="mt-2 text-sm text-blue-700">
+                <p>Hesabınız oluşturulduktan sonra <strong>@companyName</strong> firmasının bir üyesi olacaksınız.</p>
+                <p class="mt-1">Firma yöneticileri tarafından size gerekli yetkiler verilecektir.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div>
+          <button type="submit"
+                  class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+              <svg class="h-5 w-5 text-blue-500 group-hover:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+              </svg>
+            </span>
+            Hesabımı Oluştur
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center">
+      <p class="text-sm text-gray-600">
+        Zaten hesabınız var mı?
+        <a href="@Url.Action("Login", "Account")" class="font-medium text-blue-600 hover:text-blue-500">
+          Giriş yapın
+        </a>
+      </p>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+
+    <script>
+      // Password visibility toggle
+      function togglePasswordVisibility(inputId, buttonId) {
+        document.getElementById(buttonId).addEventListener('click', function() {
+          const passwordInput = document.getElementById(inputId);
+          const icon = this.querySelector('svg');
+
+          if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L8.464 8.464M9.878 9.878l-1.414-1.414M14.12 14.12l1.414 1.414M14.12 14.12L15.535 15.535M14.12 14.12l1.414 1.414"></path>';
+          } else {
+            passwordInput.type = 'password';
+            icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>';
+          }
+        });
+      }
+
+      togglePasswordVisibility('password', 'togglePassword');
+      togglePasswordVisibility('confirmPassword', 'toggleConfirmPassword');
+    </script>
+}

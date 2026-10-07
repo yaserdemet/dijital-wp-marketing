@@ -1,0 +1,48 @@
+@model PushDashboard.ViewModels.SettingsViewModel
+
+<!-- Sol Menü -->
+<div class="lg:w-1/4">
+  <style>
+  .settings-nav .tab-button { color: #4b5563; border-bottom: 0; border-radius: 0.5rem; font-weight: 500; padding: 0.75rem 1rem; }
+  .settings-nav .tab-button:hover { background: #f9fafb; color: #111827; }
+  .settings-nav .tab-button.active, .settings-nav .tab-button.active:hover { background: var(--theme-50); color: var(--theme-600); }
+</style>
+<div class="bg-white rounded-xl border border-gray-200 p-4">
+    <nav class="space-y-1 settings-nav">
+      <button class="tab-button active w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center" data-tab="profile">
+        <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 20a6 6 0 0 0-12 0"></path>
+          <circle cx="12" cy="10" r="4"></circle>
+          <circle cx="12" cy="12" r="10"></circle>
+        </svg>
+        Profil Bilgileri
+      </button>
+      <button class="tab-button w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center" data-tab="payment">
+        <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path>
+          <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path>
+        </svg>
+        Ödeme Yöntemleri
+      </button>
+      <button class="tab-button w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center" data-tab="security">
+        <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path>
+          <path d="m9 12 2 2 4-4"></path>
+        </svg>
+        Güvenlik
+      </button>
+      @if (Model.CanManageUsers)
+      {
+        <button class="tab-button w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center" data-tab="users">
+          <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          Kullanıcılar
+        </button>
+      }
+    </nav>
+  </div>
+</div>

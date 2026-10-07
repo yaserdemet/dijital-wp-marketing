@@ -1,0 +1,599 @@
+<div id="importResultModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="hideImportResultModal()"></div>
+    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+    <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full sm:p-6">
+      <div>
+        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100" id="importResultIconBg">
+          <svg class="h-6 w-6 text-green-600" id="importResultIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div class="mt-3 text-center sm:mt-5">
+          <h3 class="text-lg leading-6 font-medium text-gray-900" id="importResultTitle">İşlem Tamamlandı</h3>
+          <div class="mt-2">
+            <p class="text-sm text-gray-500" id="importResultText">
+              İçe aktarma işlemi başarıyla tamamlandı.
+            </p>
+            <div class="mt-4 text-left bg-gray-50 p-3 rounded-md text-xs space-y-1">
+                <div class="flex justify-between"><span>Başarılı:</span> <span id="resSuccessCount" class="font-bold text-green-600">0</span></div>
+                <div class="flex justify-between"><span>Hatalı:</span> <span id="resErrorCount" class="font-bold text-red-600">0</span></div>
+                <div class="flex justify-between"><span>Güncellenen:</span> <span id="resUpdatedCount" class="font-bold text-blue-600">0</span></div>
+            </div>
+            <div id="importErrorDetailsContainer" class="mt-3 hidden">
+                <p class="text-xs font-medium text-red-600 mb-1 text-left">Hata Detayları:</p>
+                <div id="importErrorDetails" class="text-left bg-red-50 p-2 rounded-md text-xs text-red-700 max-h-32 overflow-y-auto whitespace-pre-wrap border border-red-100"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-5 sm:mt-6">
+        <button type="button" onclick="hideImportResultModal()" class="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm">
+          Tamam
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="addCustomerModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+  <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+    <div class="mt-3">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b">
+        <h3 class="text-lg font-medium text-gray-900">Yeni Müşteri Ekle</h3>
+        <button onclick="closeAddCustomerModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Content -->
+      <div class="mt-4">
+        <form id="addCustomerForm" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Ad -->
+            <div>
+              <label for="firstName" class="block text-sm font-medium text-gray-700">Ad *</label>
+              <input type="text" id="firstName" name="firstName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Soyad -->
+            <div>
+              <label for="lastName" class="block text-sm font-medium text-gray-700">Soyad *</label>
+              <input type="text" id="lastName" name="lastName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- E-posta -->
+            <div>
+              <label for="email" class="block text-sm font-medium text-gray-700">E-posta *</label>
+              <input type="email" id="email" name="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Telefon -->
+            <div>
+              <label for="phone" class="block text-sm font-medium text-gray-700">Telefon</label>
+              <input type="tel" id="phone" name="phone" placeholder="0212 123 45 67" maxlength="15" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              <p class="mt-1 text-xs text-gray-500">Örnek: 0212 123 45 67 (Sabit hat)</p>
+            </div>
+
+            <!-- Cep Telefonu -->
+            <div>
+              <label for="mobilePhone" class="block text-sm font-medium text-gray-700">Cep Telefonu</label>
+              <input type="tel" id="mobilePhone" name="mobilePhone" placeholder="0555 123 45 67" maxlength="15" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              <p class="mt-1 text-xs text-gray-500">Örnek: 0555 123 45 67 (Cep telefonu)</p>
+            </div>
+
+            <!-- Doğum Tarihi -->
+            <div>
+              <label for="birthDate" class="block text-sm font-medium text-gray-700">Doğum Tarihi</label>
+              <input type="date" id="birthDate" name="birthDate" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Cinsiyet -->
+            <div>
+              <label for="genderId" class="block text-sm font-medium text-gray-700">Cinsiyet</label>
+              <select id="genderId" name="genderId" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Seçiniz</option>
+                <option value="1">Erkek</option>
+                <option value="2">Kadın</option>
+              </select>
+            </div>
+
+            <!-- Şehir -->
+            <div>
+              <label for="city" class="block text-sm font-medium text-gray-700">Şehir</label>
+              <input type="text" id="city" name="city" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- İlçe -->
+            <div>
+              <label for="district" class="block text-sm font-medium text-gray-700">İlçe</label>
+              <input type="text" id="district" name="district" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Müşteri Kodu -->
+            <div>
+              <label for="customerCode" class="block text-sm font-medium text-gray-700">Müşteri Kodu</label>
+              <input type="text" id="customerCode" name="customerCode" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Üyelik Tipi -->
+            <div>
+              <label for="membershipType" class="block text-sm font-medium text-gray-700">Üyelik Tipi</label>
+              <input type="text" id="membershipType" name="membershipType" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Puan Bakiyesi -->
+            <div>
+              <label for="pointBalance" class="block text-sm font-medium text-gray-700">Puan Bakiyesi</label>
+              <input type="number" id="pointBalance" name="pointBalance" value="0" min="0" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Kredi Limiti -->
+            <div>
+              <label for="creditLimit" class="block text-sm font-medium text-gray-700">Kredi Limiti</label>
+              <input type="number" id="creditLimit" name="creditLimit" value="0" min="0" step="0.01" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Meslek -->
+            <div>
+              <label for="profession" class="block text-sm font-medium text-gray-700">Meslek</label>
+              <input type="text" id="profession" name="profession" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Eğitim Seviyesi -->
+            <div>
+              <label for="educationLevel" class="block text-sm font-medium text-gray-700">Eğitim Seviyesi</label>
+              <input type="text" id="educationLevel" name="educationLevel" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+          </div>
+
+          <!-- Checkbox'lar -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+            <div class="flex items-center">
+              <input type="checkbox" id="isActive" name="isActive" checked class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+              <label for="isActive" class="ml-2 block text-sm text-gray-900">Aktif</label>
+            </div>
+
+            <div class="flex items-center">
+              <input type="checkbox" id="emailPermission" name="emailPermission" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+              <label for="emailPermission" class="ml-2 block text-sm text-gray-900">E-posta İzni</label>
+            </div>
+
+            <div class="flex items-center">
+              <input type="checkbox" id="smsPermission" name="smsPermission" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+              <label for="smsPermission" class="ml-2 block text-sm text-gray-900">SMS İzni</label>
+            </div>
+
+            <div class="flex items-center">
+              <input type="checkbox" id="kvkkApproval" name="kvkkApproval" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+              <label for="kvkkApproval" class="ml-2 block text-sm text-gray-900">KVKK Onayı</label>
+            </div>
+
+            <div class="flex items-center">
+              <input type="checkbox" id="membershipAgreementApproval" name="membershipAgreementApproval" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+              <label for="membershipAgreementApproval" class="ml-2 block text-sm text-gray-900">Üyelik Sözleşmesi Onayı</label>
+            </div>
+          </div>
+
+          <!-- Butonlar -->
+          <div class="flex justify-end space-x-3 pt-4 border-t">
+            <button type="button" onclick="closeAddCustomerModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+              İptal
+            </button>
+            <button type="submit" id="saveCustomerBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+              <span id="saveCustomerBtnText">Kaydet</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Excel Import Modal -->
+<div id="bulkImportModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+  <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+    <div class="mt-3">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b">
+        <h3 class="text-lg font-medium text-gray-900">Excel İle Toplu Müşteri Ekleme</h3>
+        <button onclick="closeBulkImportModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Content -->
+      <div class="mt-4">
+        <!-- Upload Section -->
+        <div id="uploadSection">
+          <div class="mb-4">
+            <div class="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="m9 12 2 2 4-4"></path>
+                  </svg>
+                </div>
+                <div class="ml-3">
+                  <h3 class="text-sm font-medium text-blue-800">Önemli Bilgiler</h3>
+                  <div class="mt-2 text-sm text-blue-700">
+                    <ul class="list-disc list-inside space-y-1">
+                      <li>Excel dosyası .xlsx formatında olmalıdır</li>
+                      <li>Maksimum dosya boyutu: 10MB</li>
+                      <li>Ad, Soyad ve E-posta alanları zorunludur</li>
+                      <li>Mevcut e-posta adresleri atlanacaktır</li>
+                      <li>İşlem arka planda çalışacak ve bildirim alacaksınız</li>
+                    </ul>
+                  </div>
+                  <div class="mt-3">
+                    <button id="downloadTemplateBtn" class="inline-flex items-center px-3 py-2 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                      <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7,10 12,15 17,10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                      Excel Şablonunu İndir
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <form id="bulkImportForm" enctype="multipart/form-data">
+            <div class="mb-4">
+              <label for="excelFile" class="block text-sm font-medium text-gray-700 mb-2">Excel Dosyası Seçin</label>
+              <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
+                <div class="space-y-1 text-center">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <div class="flex text-sm text-gray-600">
+                    <label for="excelFile" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                      <span>Dosya seçin</span>
+                      <input id="excelFile" name="excelFile" type="file" accept=".xlsx,.xls" class="sr-only" required>
+                    </label>
+                    <p class="pl-1">veya sürükleyip bırakın</p>
+                  </div>
+                  <p class="text-xs text-gray-500">Sadece .xlsx dosyaları (max 10MB)</p>
+                </div>
+              </div>
+              <div id="selectedFileName" class="mt-2 text-sm text-gray-600 hidden"></div>
+            </div>
+
+            <div class="flex justify-end space-x-3">
+              <button type="button" onclick="closeBulkImportModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                İptal
+              </button>
+              <button type="submit" id="startImportBtn" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">
+                <span id="startImportBtnText">İçe Aktarmayı Başlat</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Progress Section -->
+        <div id="progressSection" class="hidden">
+          <div class="text-center">
+            <div class="mb-4">
+              <svg class="animate-spin mx-auto h-12 w-12 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">İçe Aktarma İşlemi Devam Ediyor</h3>
+            <p class="text-gray-600 mb-4">Dosyanız işleniyor, lütfen bekleyin...</p>
+
+            <div class="bg-gray-200 rounded-full h-2 mb-4">
+              <div id="progressBar" class="bg-purple-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+
+            <div class="text-sm text-gray-600">
+              <div id="progressText">Başlatılıyor...</div>
+              <div id="progressStats" class="mt-2"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result Section -->
+        <div id="resultSection" class="hidden">
+          <div class="text-center">
+            <div id="successResult" class="hidden">
+              <div class="mb-4">
+                <svg class="mx-auto h-12 w-12 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">İçe Aktarma Tamamlandı!</h3>
+              <div id="successStats" class="text-gray-600 mb-4"></div>
+            </div>
+
+            <div id="errorResult" class="hidden">
+              <div class="mb-4">
+                <svg class="mx-auto h-12 w-12 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">İçe Aktarma Hatası</h3>
+              <div id="errorMessage" class="text-red-600 mb-4"></div>
+            </div>
+
+            <div class="flex justify-center space-x-3">
+              <button onclick="resetImportModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                Yeni İçe Aktarma
+              </button>
+              <button onclick="closeBulkImportModal(); loadCustomers();" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                Müşteri Listesini Yenile
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Import Detayları Modal -->
+<div id="importDetailsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+  <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 shadow-lg rounded-md bg-white">
+    <div class="mt-3">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b">
+        <h3 class="text-lg font-medium text-gray-900">İçe Aktarma Detayları</h3>
+        <button onclick="closeImportDetailsModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Content -->
+      <div class="mt-4">
+        <!-- Job Info Section -->
+        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+          <h4 class="text-md font-medium text-gray-900 mb-3">İşlem Bilgileri</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Dosya Adı</label>
+              <p id="detailFileName" class="mt-1 text-sm text-gray-900">-</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Durum</label>
+              <p id="detailStatus" class="mt-1">
+                <span id="detailStatusBadge" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">-</span>
+              </p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Başlangıç Zamanı</label>
+              <p id="detailStartedAt" class="mt-1 text-sm text-gray-900">-</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Bitiş Zamanı</label>
+              <p id="detailCompletedAt" class="mt-1 text-sm text-gray-900">-</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">İşlem Süresi</label>
+              <p id="detailDuration" class="mt-1 text-sm text-gray-900">-</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">İlerleme</label>
+              <div class="mt-1">
+                <div class="bg-gray-200 rounded-full h-2">
+                  <div id="detailProgressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p id="detailProgressText" class="text-xs text-gray-600 mt-1">0%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistics Section -->
+        <div class="bg-white border rounded-lg p-4 mb-4">
+          <h4 class="text-md font-medium text-gray-900 mb-3">İstatistikler</h4>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-blue-600" id="detailTotalRows">0</div>
+              <div class="text-sm text-gray-600">Toplam Satır</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-green-600" id="detailSuccessCount">0</div>
+              <div class="text-sm text-gray-600">Başarılı</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-red-600" id="detailErrorCount">0</div>
+              <div class="text-sm text-gray-600">Hata</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-gray-600" id="detailProcessedRows">0</div>
+              <div class="text-sm text-gray-600">İşlenen</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error Details Section -->
+        <div id="errorDetailsSection" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 hidden">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-md font-medium text-red-900">Hata Detayları</h4>
+            <span id="errorCountBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              0 hata
+            </span>
+          </div>
+          <div class="bg-white border border-red-200 rounded p-3 max-h-64 overflow-y-auto">
+            <div id="detailErrorDetails" class="text-sm text-red-800">
+              <div class="text-gray-500 italic">Hata bulunamadı.</div>
+            </div>
+          </div>
+          <div class="mt-3 text-xs text-red-600">
+            <svg class="w-4 h-4 inline mr-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            Bu hatalar Excel dosyasındaki veri sorunlarından kaynaklanmaktadır. Dosyayı düzenleyip tekrar yükleyebilirsiniz.
+          </div>
+        </div>
+
+        <!-- Actions Section -->
+        <div class="flex justify-end space-x-3 pt-4 border-t">
+          <button onclick="refreshImportDetails()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+            <svg class="w-4 h-4 inline mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c2.12 0 4.07.74 5.61 1.98"></path>
+              <path d="M17 3l4 4-4 4"></path>
+            </svg>
+            Yenile
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Job Details Modal - MODERN DESIGN #02379c -->
+<div id="jobDetailsModal" class="fixed inset-0 z-[60] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-gray-900/75 bg-opacity-75 transition-opacity backdrop-blur-sm" aria-hidden="true" onclick="closeJobDetailsModal()"></div>
+
+        <!-- Center trick -->
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <!-- Modal Panel -->
+        <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full ring-1 ring-black/5">
+            
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-[#02379c] to-[#012a7a] px-6 py-5 flex justify-between items-start">
+                <div>
+                     <h3 class="text-xl font-bold text-white flex items-center" id="modalJobTitle">
+                        <span id="jobTitleText">Job Başlığı</span>
+                    </h3>
+                    <p class="mt-1 text-blue-100 text-sm opacity-90" id="modalJobId">ID: #0</p>
+                </div>
+                <button type="button" onclick="closeJobDetailsModal()" class="bg-white/10 rounded-lg p-2 text-white hover:bg-white/20 transition-colors focus:outline-none">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="px-6 py-6 bg-gray-50/50">
+                <!-- Status & Date Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+                    <!-- Status Card -->
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                         <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Durum</p>
+                            <span id="modalJobStatus" class="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">Loading...</span>
+                        </div>
+                        <div id="modalStatusIcon" class="p-2 bg-gray-50 rounded-lg"></div>
+                    </div>
+
+                    <!-- Create Date -->
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Oluşturulma Tarihi</p>
+                        <p id="modalJobCreated" class="mt-1 text-sm font-semibold text-gray-900">-</p>
+                    </div>
+
+                    <!-- Complete Date -->
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tamamlanma Tarihi</p>
+                        <p id="modalJobCompleted" class="mt-1 text-sm font-semibold text-gray-900">-</p>
+                    </div>
+                </div>
+
+                <!-- Main Metrics -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 overflow-hidden">
+                     <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/30">
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-normal">Gönderim İstatistikleri</h4>
+                    </div>
+                    <div class="grid grid-cols-2 lg:grid-cols-4 divide-x divide-gray-100">
+                        <div class="p-6 text-center group hover:bg-[#02379c]/5 transition-colors">
+                            <dt class="text-xs font-medium text-gray-500 uppercase">Toplam Hedef</dt>
+                            <dd id="modalJobTarget" class="mt-2 text-3xl font-extrabold text-[#02379c]">0</dd>
+                        </div>
+                        <div class="p-6 text-center group hover:bg-[#02379c]/5 transition-colors">
+                            <dt class="text-xs font-medium text-gray-500 uppercase">İşlenen</dt>
+                            <dd id="modalJobProcessed" class="mt-2 text-3xl font-extrabold text-gray-700">0</dd>
+                        </div>
+                         <div class="p-6 text-center bg-gradient-to-b from-transparent to-green-50/30 group hover:to-green-50 transition-colors">
+                            <dt class="text-xs font-medium text-emerald-600 uppercase">Başarılı</dt>
+                            <dd id="modalJobSuccess" class="mt-2 text-3xl font-extrabold text-emerald-600">0</dd>
+                        </div>
+                         <div class="p-6 text-center bg-gradient-to-b from-transparent to-red-50/30 group hover:to-red-50 transition-colors">
+                            <dt class="text-xs font-medium text-red-600 uppercase">Hatalı</dt>
+                            <dd id="modalJobFailed" class="mt-2 text-3xl font-extrabold text-red-600">0</dd>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial & Batch Details -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <!-- Cost Box -->
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-3 opacity-10">
+                            <i class="fas fa-coins text-6xl text-amber-500"></i>
+                        </div>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-normal mb-4">Maliyet Özeti</h4>
+                        
+                        <div class="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
+                             <span class="text-sm text-gray-600">Tahmini Maliyet</span>
+                             <span id="modalEstCost" class="text-base font-bold text-gray-500">₺0.00</span>
+                        </div>
+                         <div class="flex items-center justify-between">
+                             <span class="text-sm font-bold text-gray-800">Gerçekleşen Maliyet</span>
+                             <span id="modalActCost" class="text-xl font-bold text-[#02379c]">₺0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Batch & Info Box -->
+                     <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-normal mb-4">İşlem Detayları</h4>
+                         <dl class="space-y-3">
+                             <div class="flex justify-between">
+                                 <dt class="text-sm text-gray-500">Paket Bilgisi (Batch)</dt>
+                                 <dd id="modalBatchInfo" class="text-sm font-medium text-gray-900">Batch 0/0</dd>
+                             </div>
+                             <div class="pt-3 border-t border-gray-100">
+                                 <dt class="text-sm text-gray-500 mb-1">Açıklama</dt>
+                                 <dd id="modalJobDesc" class="text-sm text-gray-900 bg-gray-50 p-2 rounded-lg border border-gray-100 italic">
+                                     -
+                                 </dd>
+                             </div>
+                         </dl>
+                    </div>
+                </div>
+
+                <!-- Error Section (Optional) -->
+                <div id="modalErrorSection" class="hidden bg-red-50 rounded-xl border border-red-200 p-4 animate-pulse">
+                     <div class="flex">
+                        <div class="flex-shrink-0">
+                             <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">İşlem Sırasında Hata Oluştu</h3>
+                            <div class="mt-2 text-sm text-red-700" id="modalErrorMessage"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-gray-50 px-6 py-4 flex flex-row-reverse sm:px-6 border-t border-gray-100">
+                <button type="button" onclick="closeJobDetailsModal()" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-[#02379c] text-base font-medium text-white hover:bg-[#02379c]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#02379c] sm:ml-3 sm:w-auto sm:text-sm transition-colors">
+                    Kapat
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

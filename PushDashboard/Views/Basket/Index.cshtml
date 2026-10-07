@@ -1,0 +1,3021 @@
+@model PushDashboard.ViewModels.BasketIndexViewModel
+@{
+    ViewData["Title"] = "Sepet Hatırlatma";
+}
+
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Sepet Hatırlatma</h1>
+      <p class="mt-1 text-sm text-gray-500">Sepet hatırlatma kurallarını ve gönderimlerini yönetin</p>
+      <div class="mt-2 text-sm text-gray-500">
+        <span class="font-medium">Son Senkronizasyon:</span> <span id="lastSyncDate">-</span>
+      </div>
+    </div>
+    <div class="mt-4 sm:mt-0 flex flex-wrap gap-2">
+      <button id="sendReminderBtn" onclick="openSendReminderModal()" class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+        <i class="fa-regular fa-paper-plane text-blue-600 mr-2"></i>
+        <span class="hidden xs:inline sm:inline">Hatırlatma Gönder</span>
+        <span class="xs:hidden sm:hidden">Gönder</span>
+      </button>
+      <button id="sendAllReminderBtn" onclick="openSendAllReminderModal()" class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+        <i class="fa-solid fa-paper-plane text-indigo-600 mr-2"></i>
+        <span class="hidden xs:inline sm:inline">Tümüne Gönder</span>
+        <span class="xs:hidden sm:hidden">Tümü</span>
+      </button>
+      <button id="exportExcel" class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+        <i class="fa-solid fa-file-excel text-green-600 mr-2"></i>
+        <span class="hidden sm:inline">Excel'e Aktar</span>
+        <span class="sm:hidden">Excel</span>
+      </button>
+      <button id="syncBaskets" class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+        <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        <span class="hidden sm:inline">Senkronize Et</span>
+        <span class="sm:hidden">Senkronize</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="border-b border-gray-200 overflow-x-auto">
+    <nav class="-mb-px flex space-x-4 sm:space-x-8 min-w-max" aria-label="Tabs">
+      <button onclick="switchTab('basket-list')" id="tab-btn-basket-list" class="tab-btn border-primary text-primary whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+        <i class="fa-solid fa-cart-shopping mr-1 sm:mr-2"></i>Sepet Listesi
+      </button>
+      <button onclick="switchTab('basket-reminders')" id="tab-btn-basket-reminders" class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+        <i class="fa-regular fa-paper-plane mr-1 sm:mr-2"></i>Hatırlatma Geçmişi
+      </button>
+    </nav>
+  </div>
+
+  <div id="tab-basket-list" class="basket-page-tab space-y-6">
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6" id="statsContainer">
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="h-6 w-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="8" cy="21" r="1"></circle>
+              <circle cx="19" cy="21" r="1"></circle>
+              <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+            </svg>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">Toplam Sepet</dt>
+              <dd class="text-lg font-medium text-gray-900" id="totalBaskets">-</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="h-6 w-6 text-green-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22,4 12,14.01 9,11.01"></polyline>
+            </svg>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">Aktif Sepet</dt>
+              <dd class="text-lg font-medium text-gray-900" id="activeBaskets">-</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white shadow rounded-lg relative z-20">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="h-6 w-6 text-yellow-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">Terk Edilmiş</dt>
+              <dd class="text-lg font-medium text-gray-900" id="abandonedBaskets">-</dd>
+            </dl>
+          </div>
+          <div class="relative">
+              <button id="alarmBtn"
+                      class="text-gray-400 hover:text-blue-600 focus:outline-none">
+                  <i class="fa-regular fa-clock text-lg"></i>
+              </button>
+
+              <!-- Saat Seçici -->
+              <div id="timeBox"
+                   class="hidden absolute right-0 top-9 w-48 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50 overflow-hidden origin-top-right focus:outline-none">
+                  <div class="px-3 py-2 border-b border-gray-100 bg-gray-50">
+                      <p class="text-xs font-semibold text-gray-500 tracking-wider">Terk Süresi (Saat)</p>
+                  </div>
+                  <div class="p-2 grid grid-cols-3 gap-1">
+                      <button class="time-option border flex items-center justify-center py-2 text-sm font-medium text-gray-700 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors" data-value="4">4</button>
+                      <button class="time-option border flex items-center justify-center py-2 text-sm font-medium text-gray-700 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors" data-value="6">6</button>
+                      <button class="time-option border flex items-center justify-center py-2 text-sm font-medium text-gray-700 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors" data-value="8">8</button>
+                      <button class="time-option border flex items-center justify-center py-2 text-sm font-medium text-gray-700 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors" data-value="12">12</button>
+                      <button class="time-option border flex items-center justify-center py-2 text-sm font-medium text-gray-700 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors" data-value="24">24</button>
+                      <button class="time-option border flex items-center justify-center py-2 text-sm font-medium text-gray-700 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors" data-value="48">48</button>
+                  </div>
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toplam Değer Kartı (TL cinsinden - TCMB kurları ile) -->
+    <div id="totalValueCard" class="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-all duration-300" onclick="toggleCurrencyPanel()">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fa-solid fa-turkish-lira-sign text-blue-400 text-2xl"></i>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate flex items-center gap-2">
+                Toplam Değer (TL)
+                <span id="tcmbBadge" class="hidden inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                  <i class="fa-solid fa-sync-alt mr-1 text-[10px]"></i>TCMB
+                </span>
+              </dt>
+              <dd class="text-lg font-medium text-gray-900" id="totalValueTry">-</dd>
+            </dl>
+          </div>
+          <div class="flex-shrink-0">
+            <i id="currencyPanelIcon" class="fa-solid fa-chevron-down text-gray-400 text-sm transition-transform duration-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Para Birimi Bazlı Toplamlar - Açılır/Kapanır Panel -->
+  <div id="currencyPanel" class="hidden overflow-hidden transition-all duration-300">
+    <div class="bg-white shadow rounded-lg">
+      <div class="px-4 py-4 sm:px-6 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-semibold text-gray-900 flex items-center gap-2">
+            <i class="fa-solid fa-coins text-yellow-500"></i>
+            Para Birimi Bazlı Toplamlar
+          </h3>
+          <div id="rateUpdateTime" class="text-xs text-gray-500">
+            <i class="fa-regular fa-clock mr-1"></i>
+            <span id="rateTimeText">Kur bilgisi yükleniyor...</span>
+          </div>
+        </div>
+      </div>
+      <div class="p-4">
+        <div id="currencyCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <!-- Loading -->
+          <div class="col-span-full text-center py-8">
+            <div class="inline-flex items-center">
+              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Para birimi toplamları yükleniyor...
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reminder Rules Section -->
+  <div class="bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl overflow-visible mb-10 mt-8 border border-gray-100">
+    <div class="px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white gap-4">
+        <div class="flex items-center gap-3 sm:gap-5">
+            <div class="h-10 w-10 sm:h-14 sm:w-14 rounded-2xl bg-[#02379c]/5 flex items-center justify-center text-[#02379c] shadow-sm ring-1 ring-[#02379c]/10 flex-shrink-0">
+                <i class="fa-solid fa-wand-magic-sparkles text-lg sm:text-2xl"></i>
+            </div>
+            <div>
+                <h3 class="text-base sm:text-xl font-bold text-gray-900 tracking-tight">Otomatik Hatırlatma Kuralları</h3>
+                <p class="text-xs sm:text-sm text-gray-500 font-medium mt-0.5 sm:mt-1">Sepet terk senaryolarını ve iletişim kanallarını yönetin</p>
+            </div>
+        </div>
+        <button onclick="openRuleDialog()" 
+                class="w-full sm:w-auto group relative inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white transition-all duration-200 bg-[#02379c] rounded-xl hover:bg-[#02379c]/90 hover:shadow-lg hover:shadow-blue-900/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#02379c]">
+            <i class="fa-solid fa-plus mr-2 transition-transform duration-200 group-hover:rotate-90"></i>
+            Yeni Kural Oluştur
+        </button>
+    </div>
+    <div class="overflow-x-auto min-h-[150px]">
+        <table class="min-w-full divide-y divide-gray-100">
+            <thead>
+                <tr class="bg-gray-50/80">
+                    <th class="px-8 py-5 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Kural Adı</th>
+                    <th class="px-6 py-5 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Gönderim Zamanı</th>
+                    <th class="px-6 py-5 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Aktif Kanallar</th>
+                    <th class="px-6 py-5 text-center text-xs font-bold text-gray-400 uppercase tracking-wider">Durum</th>
+                    <th class="px-8 py-5 text-right text-xs font-bold text-gray-400 uppercase tracking-wider">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody id="reminderRulesTableBody" class="bg-white divide-y divide-gray-100">
+                <tr><td colspan="5" class="px-8 py-10 text-center text-gray-500">
+                    <div class="flex flex-col items-center justify-center">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl text-[#02379c] mb-3"></i>
+                        <span class="font-medium">Kurallar yükleniyor...</span>
+                    </div>
+                </td></tr>
+            </tbody>
+        </table>
+    </div>
+  </div>
+
+  <!-- Filters - Collapsible Panel -->
+  <div class="bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl border border-gray-100 overflow-visible mb-6">
+    <!-- Filter Header - Always Visible -->
+    <div class="px-6 py-5 border-b border-gray-100 cursor-pointer hover:bg-gray-50/50 transition-colors rounded-t-2xl" id="filterHeader" onclick="toggleFilterPanel()">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="h-10 w-10 bg-[#02379c]/5 rounded-xl flex items-center justify-center text-[#02379c]">
+            <i class="fa-solid fa-filter"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-gray-900">Filtreler</h3>
+            <p class="text-xs text-gray-500 font-medium" id="activeFilterCount">Tüm sepetler gösteriliyor</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="filterBadge" class="hidden inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-[#02379c] text-white shadow-sm shadow-blue-900/20">
+            <span id="filterBadgeCount">0</span> filtre aktif
+          </span>
+          <div class="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
+            <i id="filterPanelIcon" class="fa-solid fa-chevron-down text-xs transition-transform duration-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Content - Collapsible -->
+    <div id="filterContent" class="hidden">
+      <div class="px-6 py-6 space-y-6">
+        <!-- Hızlı Arama -->
+        <div class="bg-gray-50 rounded-xl p-5 border border-gray-100">
+          <h4 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-magnifying-glass text-[#02379c]"></i>
+            Hızlı Arama
+          </h4>
+          <input type="text" id="searchTerm" placeholder="Müşteri adı, e-posta veya sepet ID ile ara..."
+                 class="block w-full border-gray-200 rounded-xl py-2.5 shadow-sm focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] sm:text-sm transition-all focus:bg-white bg-white">
+        </div>
+
+        <!-- Müşteri Bilgileri Accordion -->
+        <div class="border border-gray-200 rounded-xl overflow-hidden">
+          <button type="button" class="w-full px-5 py-3.5 bg-white flex items-center justify-between text-left hover:bg-gray-50 transition-colors" onclick="toggleAccordion('customerFilters')">
+            <span class="font-bold text-gray-700 text-sm flex items-center gap-2.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+              Müşteri Bilgileri
+            </span>
+            <i id="customerFiltersIcon" class="fa-solid fa-chevron-down text-gray-400 text-xs transition-transform duration-300"></i>
+          </button>
+          <div id="customerFilters" class="hidden p-5 space-y-4 border-t border-gray-100 bg-gray-50/30">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label for="customerName" class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">İsim - Soyisim</label>
+                <input type="text" id="customerName" placeholder="Müşteri adı..."
+                       class="block w-full border-gray-200 rounded-xl py-2.5 shadow-sm focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] sm:text-sm transition-all">
+              </div>
+              <div>
+                <label for="customerEmail" class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">E-posta Adresi</label>
+                <input type="email" id="customerEmail" placeholder="E-posta adresi..."
+                       class="block w-full border-gray-200 rounded-xl py-2.5 shadow-sm focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] sm:text-sm transition-all">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarih Filtresi Accordion -->
+        <div class="border border-gray-200 rounded-xl overflow-hidden">
+          <button type="button" class="w-full px-5 py-3.5 bg-white flex items-center justify-between text-left hover:bg-gray-50 transition-colors" onclick="toggleAccordion('dateFilters')">
+            <span class="font-bold text-gray-700 text-sm flex items-center gap-2.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+              Tarih Filtresi
+            </span>
+            <i id="dateFiltersIcon" class="fa-solid fa-chevron-down text-gray-400 text-xs transition-transform duration-300"></i>
+          </button>
+          <div id="dateFilters" class="hidden p-5 space-y-4 border-t border-gray-100 bg-gray-50/30">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label for="dateFrom" class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Başlangıç Tarihi</label>
+                <input type="date" id="dateFrom"
+                       class="block w-full border-gray-200 rounded-xl py-2.5 shadow-sm focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] sm:text-sm transition-all text-gray-600">
+              </div>
+              <div>
+                <label for="dateTo" class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Bitiş Tarihi</label>
+                <input type="date" id="dateTo"
+                       class="block w-full border-gray-200 rounded-xl py-2.5 shadow-sm focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] sm:text-sm transition-all text-gray-600">
+              </div>
+            </div>
+            <!-- Hızlı Tarih Seçimleri -->
+            <div class="flex flex-wrap gap-2 pt-2">
+              <button type="button" onclick="setDateRange('today')" class="px-4 py-2 text-xs font-semibold rounded-lg border border-gray-200 text-gray-600 hover:bg-[#02379c]/5 hover:text-[#02379c] hover:border-[#02379c]/30 transition-all">
+                Bugün
+              </button>
+              <button type="button" onclick="setDateRange('yesterday')" class="px-4 py-2 text-xs font-semibold rounded-lg border border-gray-200 text-gray-600 hover:bg-[#02379c]/5 hover:text-[#02379c] hover:border-[#02379c]/30 transition-all">
+                Dün
+              </button>
+              <button type="button" onclick="setDateRange('week')" class="px-4 py-2 text-xs font-semibold rounded-lg border border-gray-200 text-gray-600 hover:bg-[#02379c]/5 hover:text-[#02379c] hover:border-[#02379c]/30 transition-all">
+                Son 7 Gün
+              </button>
+              <button type="button" onclick="setDateRange('month')" class="px-4 py-2 text-xs font-semibold rounded-lg border border-gray-200 text-gray-600 hover:bg-[#02379c]/5 hover:text-[#02379c] hover:border-[#02379c]/30 transition-all">
+                Son 30 Gün
+              </button>
+              <button type="button" onclick="setDateRange('quarter')" class="px-4 py-2 text-xs font-semibold rounded-lg border border-gray-200 text-gray-600 hover:bg-[#02379c]/5 hover:text-[#02379c] hover:border-[#02379c]/30 transition-all">
+                Son 3 Ay
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sepet Detayları Accordion -->
+        <div class="border border-gray-200 rounded-xl overflow-hidden">
+          <button type="button" class="w-full px-5 py-3.5 bg-white flex items-center justify-between text-left hover:bg-gray-50 transition-colors" onclick="toggleAccordion('basketFilters')">
+            <span class="font-bold text-gray-700 text-sm flex items-center gap-2.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+              Sepet Detayları
+            </span>
+            <i id="basketFiltersIcon" class="fa-solid fa-chevron-down text-gray-400 text-xs transition-transform duration-300"></i>
+          </button>
+          <div id="basketFilters" class="hidden p-5 space-y-4 border-t border-gray-100 bg-gray-50/30">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+              <div>
+                <label for="minProductCount" class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Min Ürün</label>
+                <input type="number" id="minProductCount" min="0" placeholder="0"
+                       class="block w-full border-gray-200 rounded-xl py-2.5 shadow-sm focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] sm:text-sm transition-all">
+              </div>
+              <div>
+                <label for="maxProductCount" class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Max Ürün</label>
+                <input type="number" id="maxProductCount" min="0" placeholder="∞"
+                       class="block w-full border-gray-200 rounded-xl py-2.5 shadow-sm focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] sm:text-sm transition-all">
+              </div>
+              <div>
+                <label for="minAmount" class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Min Tutar</label>
+                <input type="number" id="minAmount" min="0" step="0.01" placeholder="0.00"
+                       class="block w-full border-gray-200 rounded-xl py-2.5 shadow-sm focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] sm:text-sm transition-all">
+              </div>
+              <div>
+                <label for="maxAmount" class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Max Tutar</label>
+                <input type="number" id="maxAmount" min="0" step="0.01" placeholder="∞"
+                       class="block w-full border-gray-200 rounded-xl py-2.5 shadow-sm focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] sm:text-sm transition-all">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Durum ve Sıralama -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div>
+            <label for="statusFilter" class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Durum</label>
+            <div class="relative">
+                <select id="statusFilter" class="block w-full border-gray-200 rounded-xl py-2.5 pl-3 pr-10 shadow-sm focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] sm:text-sm transition-all appearance-none bg-white">
+                  <option value="">Tümü</option>
+                  <option value="active">Aktif</option>
+                  <option value="abandoned">Terk Edilmiş</option>
+                  <option value="inactive">Pasif</option>
+                  <option value="member">Üyelikli</option>
+                  <option value="guest">Üyeliksiz</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                </div>
+            </div>
+          </div>
+          <div>
+            <label for="sortBy" class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Sıralama Kriteri</label>
+            <div class="relative">
+                <select id="sortBy" class="block w-full border-gray-200 rounded-xl py-2.5 pl-3 pr-10 shadow-sm focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] sm:text-sm transition-all appearance-none bg-white">
+                  <option value="basketdate">Sepet Tarihi</option>
+                  <option value="customername">Müşteri Adı</option>
+                  <option value="email">E-posta</option>
+                  <option value="totalamount">Toplam Tutar</option>
+                  <option value="productcount">Ürün Sayısı</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                </div>
+            </div>
+          </div>
+          <div>
+            <label for="sortDirection" class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Sıralama Yönü</label>
+             <div class="relative">
+                <select id="sortDirection" class="block w-full border-gray-200 rounded-xl py-2.5 pl-3 pr-10 shadow-sm focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] sm:text-sm transition-all appearance-none bg-white">
+                  <option value="desc">Azalan (Yeniden Eskiye)</option>
+                  <option value="asc">Artan (Eskiden Yeniye)</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aksiyon Butonları -->
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-5 border-t border-gray-100">
+          <div class="text-xs text-gray-500 flex items-center">
+            <i class="fa-solid fa-circle-info text-[#02379c] mr-2"></i>
+            Birden fazla filtre kriterini aynı anda kullanabilirsiniz.
+          </div>
+          <div class="flex gap-3 w-full sm:w-auto">
+            <button id="clearFilters" class="flex-1 sm:flex-none inline-flex items-center justify-center px-5 py-2.5 border border-gray-300 shadow-sm text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 hover:text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#02379c] transition-all">
+              <i class="fa-solid fa-xmark mr-2"></i>
+              Temizle
+            </button>
+            <button id="applyFilters" class="flex-1 sm:flex-none inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-bold rounded-xl text-white bg-[#02379c] hover:bg-[#02379c]/90 shadow-[0_4px_14px_0_rgba(2,55,156,0.39)] hover:shadow-[0_6px_20px_rgba(2,55,156,0.23)] hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#02379c] transition-all">
+              <i class="fa-solid fa-filter mr-2"></i>
+              Filtrele
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Baskets Table -->
+  <div class="bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl border border-gray-100 mb-6 overflow-hidden">
+    <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 bg-white">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+            <span class="bg-[#02379c]/10 text-[#02379c] p-1.5 rounded-lg"><i class="fa-solid fa-list-ul"></i></span>
+            Sepet Listesi
+        </h3>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-medium text-gray-400 bg-gray-50 px-2 py-1 rounded" id="recordInfo">Kayıt yükleniyor...</span>
+          <div class="flex items-center space-x-1.5">
+            <select id="pageSizeSelect" class="block border-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] text-xs py-1.5 px-2 bg-white text-gray-600 font-medium">
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="200">200</option>
+            </select>
+            <span class="text-xs text-gray-400 font-medium">/ sayfa</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <button id="prevPage" class="p-1.5 rounded-lg text-gray-400 hover:text-[#02379c] hover:bg-[#02379c]/5 disabled:opacity-50 transition-colors" disabled>
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15,18 9,12 15,6"></polyline>
+              </svg>
+            </button>
+            <span class="text-xs font-bold text-gray-700 w-14 text-center" id="pageInfo">-</span>
+            <button id="nextPage" class="p-1.5 rounded-lg text-gray-400 hover:text-[#02379c] hover:bg-[#02379c]/5 disabled:opacity-50 transition-colors" disabled>
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9,18 15,12 9,6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="basketsTableContainer" class="hidden">
+      <div class="overflow-x-auto min-h-[300px]">
+        <table class="min-w-full divide-y divide-gray-100">
+          <thead class="bg-gray-50/80">
+            <tr>
+              <th scope="col" class="px-6 py-4 text-left">
+                <input type="checkbox" id="selectAllBaskets" class="rounded border-gray-300 text-[#02379c] focus:ring-[#02379c] h-4 w-4">
+              </th>
+              <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Müşteri
+              </th>
+              <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Durum
+              </th>
+              <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Geçen Süre
+              </th>
+              <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Para Birimi
+              </th>
+              <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Ürün Sayısı
+              </th>
+              <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Toplam Tutar
+              </th>
+              <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Sepet Tarihi
+              </th>
+              <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                İşlemler
+              </th>
+            </tr>
+          </thead>
+          <tbody id="basketsTableBody" class="bg-white divide-y divide-gray-50">
+            <!-- Sepetler buraya yüklenecek -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="emptyState" class="hidden p-12 text-center">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 mb-4 text-gray-300">
+        <i class="fa-solid fa-basket-shopping text-3xl"></i>
+      </div>
+      <h3 class="text-sm font-bold text-gray-900">Sepet bulunamadı</h3>
+      <p class="mt-1 text-sm text-gray-500">Arama kriterlerinize uygun sepet listelenemedi.</p>
+    </div>
+  </div>
+
+  </div> <!-- End of tab-basket-list -->
+
+  <!-- Tab 2: Basket Reminders -->
+  <div id="tab-basket-reminders" class="basket-page-tab hidden space-y-6">
+
+
+      
+      <!-- Reminder Log Filters -->
+      <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-4 py-4 sm:px-6 border-b border-gray-200">
+            <h3 class="text-base font-semibold text-gray-900">
+                <i class="fa-solid fa-filter text-primary mr-2"></i>Filtreler
+            </h3>
+        </div>
+        <div class="p-4 bg-gray-50 flex flex-wrap gap-4">
+            <div class="w-full sm:w-auto">
+                <label class="block text-sm font-medium text-gray-700">Şablon</label>
+                <select id="reminderFilterSchedule" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                    <option value="">Tümü</option>
+                </select>
+            </div>
+            <div class="w-full sm:w-auto">
+                <label class="block text-sm font-medium text-gray-700">Durum</label>
+                <select id="reminderFilterStatus" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                    <option value="">Tümü</option>
+                    <option value="success">Başarılı</option>
+                    <option value="failed">Başarısız</option>
+                </select>
+            </div>
+            <div class="w-full sm:w-auto flex items-end">
+                <button onclick="loadReminderLogs()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm">
+                    Filtrele
+                </button>
+            </div>
+        </div>
+      </div>
+
+      <!-- Reminder Logs Table -->
+      <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+             <h3 class="text-lg leading-6 font-medium text-gray-900">Gönderim Geçmişi</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Müşteri</th>
+                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Şablon</th>
+                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kanal</th>
+                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th>
+                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
+                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesaj</th>
+                    </tr>
+                </thead>
+                <tbody id="reminderLogsTableBody" class="bg-white divide-y divide-gray-200">
+                    
+                </tbody>
+            </table>
+        </div>
+        <div id="reminderLogsPagination" class="px-4 py-3 border-t border-gray-200 sm:px-6">
+             <div class="flex justify-between items-center">
+                 <button id="reminderLogsPrev" class="text-primary disabled:text-gray-400" disabled onclick="changeReminderLogsPage(-1)">Önceki</button>
+                 <span id="reminderLogsPageInfo" class="text-sm text-gray-700">Sayfa 1</span>
+                 <button id="reminderLogsNext" class="text-primary disabled:text-gray-400" disabled onclick="changeReminderLogsPage(1)">Sonraki</button>
+             </div>
+        </div>
+      </div>
+
+  </div>
+
+</div>
+
+
+<!-- Create/Edit Modal Removed - Replaced by PushDialog Logic -->
+
+
+<!-- Send Reminder Modal -->
+<div id="sendReminderModal" class="hidden fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeSendReminderModal()"></div>
+    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+    <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+        <div>
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
+                <i class="fa-regular fa-paper-plane text-blue-600"></i>
+            </div>
+            <div class="mt-3 text-center sm:mt-5">
+                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Hatırlatma Gönder</h3>
+                <div class="mt-2">
+                    <p class="text-sm text-gray-500">Seçili <span id="selectedBasketCount" class="font-bold">0</span> sepet için hatırlatma gönderilecek.</p>
+                </div>
+                <div class="mt-4 text-left">
+                    <label class="block text-sm font-medium text-gray-700">Hatırlatma Şablonu</label>
+                    <select id="modalScheduleSelect" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                        <option value="">Şablon Seçiniz...</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+            <button id="confirmSendReminderBtn" type="button" onclick="confirmSendReminder()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:col-start-2 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                Gönder
+            </button>
+            <button id="cancelSendReminderBtn" type="button" onclick="closeSendReminderModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:mt-0 sm:col-start-1 sm:text-sm">
+                İptal
+            </button>
+        </div>
+    </div>
+  </div>
+</div>
+
+<!-- Send All Reminder Modal with Progress -->
+<div id="sendAllReminderModal" class="hidden fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title-all" role="dialog" aria-modal="true">
+  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+    <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+        <div>
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100">
+                <i class="fa-solid fa-paper-plane text-indigo-600"></i>
+            </div>
+            <div class="mt-3 text-center sm:mt-5">
+                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title-all">Tümüne Hatırlatma Gönder</h3>
+                <!-- Step 1: Schedule selection -->
+                <div id="sendAllStep1">
+                    <div class="mt-3">
+                        <div id="sendAllCountBadge" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-full">
+                            <i class="fa-solid fa-users text-indigo-500"></i>
+                            <span class="text-sm text-gray-600"><strong id="sendAllBasketCount" class="text-indigo-700 text-base">...</strong> sepete hatırlatma gönderilecek</span>
+                        </div>
+                    </div>
+                    <div id="sendAllFilterSummary" class="mt-3 text-left">
+                    </div>
+                    <div class="mt-4 text-left">
+                        <label class="block text-sm font-medium text-gray-700">Hatırlatma Şablonu</label>
+                        <select id="modalAllScheduleSelect" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                            <option value="">Şablon Seçiniz...</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- Step 2: Progress -->
+                <div id="sendAllStep2" class="hidden">
+                    <div class="mt-6 space-y-6">
+                        <!-- Circular progress -->
+                        <div class="flex justify-center">
+                            <div class="relative w-32 h-32">
+                                <svg class="w-32 h-32 -rotate-90" viewBox="0 0 120 120">
+                                    <circle cx="60" cy="60" r="52" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+                                    <circle id="sendAllCircle" cx="60" cy="60" r="52" fill="none" stroke="url(#progressGradient)" stroke-width="8" stroke-linecap="round" stroke-dasharray="326.73" stroke-dashoffset="326.73" class="transition-all duration-500 ease-out"/>
+                                    <defs>
+                                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="#4f46e5"/>
+                                            <stop offset="100%" stop-color="#818cf8"/>
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span id="sendAllPercentText" class="text-2xl font-bold text-indigo-600">0%</span>
+                                    <span id="sendAllStatusLabel" class="text-xs text-gray-400 mt-0.5">Gönderiliyor</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Stats row -->
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="bg-gray-50 rounded-xl p-3 text-center">
+                                <div id="sendAllTotal" class="text-lg font-bold text-gray-800">0</div>
+                                <div class="text-xs text-gray-500 mt-0.5">Toplam</div>
+                            </div>
+                            <div class="bg-green-50 rounded-xl p-3 text-center">
+                                <div id="sendAllSent" class="text-lg font-bold text-green-600">0</div>
+                                <div class="text-xs text-gray-500 mt-0.5">Başarılı</div>
+                            </div>
+                            <div class="bg-red-50 rounded-xl p-3 text-center">
+                                <div id="sendAllFailed" class="text-lg font-bold text-red-500">0</div>
+                                <div class="text-xs text-gray-500 mt-0.5">Başarısız</div>
+                            </div>
+                        </div>
+                        <!-- Subtle status text -->
+                        <p id="sendAllLiveText" class="text-sm text-gray-400 animate-pulse">Hatırlatmalar gönderiliyor...</p>
+                    </div>
+                    <!-- Hidden log area (kept for data tracking) -->
+                    <div id="sendAllLogArea" class="hidden"></div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+            <button id="confirmSendAllBtn" type="button" onclick="startSendAll()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-2 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                Gönderimi Başlat
+            </button>
+            <button id="cancelSendAllBtn" type="button" onclick="closeSendAllReminderModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm">
+                İptal
+            </button>
+        </div>
+    </div>
+  </div>
+</div>
+
+
+@section Scripts {
+<script>
+let basketDetailDialog = null; // Dialog instance
+let currentPage = 1;
+let currentPageSize = 50;
+let currentFilters = {};
+let isLoading = false;
+let isFilterPanelOpen = false;
+let selectedBaskets = new Set();
+let currentReminderLogsPage = 1;
+let currentReminderLogsPageSize = 50;
+let hasMoreReminderLogs = false;
+
+// Filtre Panel Yönetimi
+function toggleFilterPanel() {
+    const content = document.getElementById('filterContent');
+    const icon = document.getElementById('filterPanelIcon');
+
+    isFilterPanelOpen = !isFilterPanelOpen;
+
+    if (isFilterPanelOpen) {
+        content.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+    } else {
+        content.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+    }
+}
+
+// Accordion Yönetimi
+function toggleAccordion(id) {
+    const content = document.getElementById(id);
+    const icon = document.getElementById(id + 'Icon');
+
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+    } else {
+        content.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+    }
+}
+
+// Hızlı Tarih Seçimi
+function setDateRange(range) {
+    const dateFrom = document.getElementById('dateFrom');
+    const dateTo = document.getElementById('dateTo');
+    const today = new Date();
+
+    // Bugünü formatla
+    const formatDate = (date) => {
+        return date.toISOString().split('T')[0];
+    };
+
+    switch(range) {
+        case 'today':
+            dateFrom.value = formatDate(today);
+            dateTo.value = formatDate(today);
+            break;
+        case 'yesterday':
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            dateFrom.value = formatDate(yesterday);
+            dateTo.value = formatDate(yesterday);
+            break;
+        case 'week':
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            dateFrom.value = formatDate(weekAgo);
+            dateTo.value = formatDate(today);
+            break;
+        case 'month':
+            const monthAgo = new Date(today);
+            monthAgo.setDate(monthAgo.getDate() - 30);
+            dateFrom.value = formatDate(monthAgo);
+            dateTo.value = formatDate(today);
+            break;
+        case 'quarter':
+            const quarterAgo = new Date(today);
+            quarterAgo.setDate(quarterAgo.getDate() - 90);
+            dateFrom.value = formatDate(quarterAgo);
+            dateTo.value = formatDate(today);
+            break;
+    }
+
+    // Hızlı uygulama için filtrele
+    applyFilters();
+}
+
+// Aktif Filtre Sayısını Güncelle
+function updateActiveFilterCount() {
+    let count = 0;
+    const filters = [
+        'searchTerm', 'customerName', 'customerEmail',
+        'dateFrom', 'dateTo', 'minProductCount', 'maxProductCount',
+        'minAmount', 'maxAmount', 'statusFilter'
+    ];
+
+    filters.forEach(id => {
+        const element = document.getElementById(id);
+        if (element && element.value && element.value.trim() !== '') {
+            count++;
+        }
+    });
+
+    const badge = document.getElementById('filterBadge');
+    const badgeCount = document.getElementById('filterBadgeCount');
+    const activeFilterText = document.getElementById('activeFilterCount');
+
+    if (count > 0) {
+        badge.classList.remove('hidden');
+        badgeCount.textContent = count;
+        activeFilterText.textContent = `${count} filtre aktif`;
+    } else {
+        badge.classList.add('hidden');
+        activeFilterText.textContent = 'Tüm sepetler gösteriliyor';
+    }
+}
+
+// Sayfa yüklendiğinde sepetleri yükle
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Basket Index Loaded');
+    
+    // Ensure default tab is visible
+    const defaultTab = document.getElementById('tab-basket-list');
+    if (defaultTab && defaultTab.classList.contains('hidden')) {
+        defaultTab.classList.remove('hidden');
+    }
+
+    loadBaskets();
+    loadReminderRules(); // Load rules initially since they are on the main page now
+    loadCurrencyTotals();
+    loadAbandonedTime();
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    // Sync button
+    document.getElementById('syncBaskets').addEventListener('click', syncBaskets);
+
+    // Excel export button
+    document.getElementById('exportExcel').addEventListener('click', exportToExcel);
+
+    // Filter buttons
+    document.getElementById('applyFilters').addEventListener('click', applyFilters);
+    document.getElementById('clearFilters').addEventListener('click', clearFilters);
+
+    // Pagination buttons
+    document.getElementById('prevPage').addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            loadBaskets();
+        }
+    });
+
+    document.getElementById('nextPage').addEventListener('click', () => {
+        currentPage++;
+        loadBaskets();
+    });
+
+    // Page size selector
+    document.getElementById('pageSizeSelect').addEventListener('change', function() {
+        currentPageSize = parseInt(this.value);
+        currentPage = 1;
+        loadBaskets();
+    });
+
+    // Enter key support for all text inputs
+    const textInputs = ['searchTerm', 'customerName', 'customerEmail'];
+    textInputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    applyFilters();
+                }
+            });
+        }
+    });
+
+    // Debounce helper
+    let debounceTimer;
+    const debounce = (callback, delay = 500) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(callback, delay);
+    };
+
+    // Debounced input for text fields (anlık filtreleme)
+    textInputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', function() {
+                debounce(applyFilters, 500);
+            });
+        }
+    });
+
+    // Number inputs için debounced filtreleme
+    const numberInputs = ['minProductCount', 'maxProductCount', 'minAmount', 'maxAmount'];
+    numberInputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', function() {
+                debounce(applyFilters, 500);
+            });
+        }
+    });
+
+    // Tarih inputları için change event (seçim tamamlandığında filtrele)
+    const dateInputs = ['dateFrom', 'dateTo'];
+    dateInputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', function() {
+                applyFilters();
+            });
+        }
+    });
+
+    // Select değişikliklerinde anlık filtreleme
+    const selectInputs = ['statusFilter', 'sortBy', 'sortDirection'];
+    selectInputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', function() {
+                applyFilters();
+            });
+        }
+    });
+
+    setupAbandonedTimePanel();
+}
+// Terk edilmiş sepet süresi paneli için event listener'lar
+function setupAbandonedTimePanel() {
+    const settingsBtn = document.getElementById('alarmBtn');
+    const panel = document.getElementById('timeBox');
+    const timeButtons = document.querySelectorAll('.time-option');
+
+    if (!settingsBtn || !panel) return;
+
+    // Ayar butonuna tıklandığında paneli aç/kapat
+    settingsBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        panel.classList.toggle('hidden');
+    });
+
+    // Panel dışına tıklandığında paneli kapat
+    document.addEventListener('click', function(e) {
+        if (!panel.contains(e.target) && e.target !== settingsBtn) {
+            panel.classList.add('hidden');
+        }
+    });
+
+    // Saat butonlarına tıklandığında
+    timeButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const hours = parseInt(this.dataset.value);
+            updateAbandonedTime(hours);
+        });
+    });
+}
+
+// Mevcut terk edilmiş sepet süresini yükle
+function loadAbandonedTime() {
+    fetch('/Basket/GetAbandonedTime')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateAbandonedTimeUI(data.data);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading abandoned time:', error);
+        });
+}
+
+// Terk edilmiş sepet süresini güncelle
+function updateAbandonedTime(hours) {
+    const panel = document.getElementById('timeBox');
+
+    console.log('updateAbandonedTime called with hours:', hours);
+
+    if (!hours || isNaN(hours) || hours <= 0) {
+        console.error('Invalid hours value:', hours);
+        showNotification('Geçersiz saat değeri', 'error');
+        return;
+    }
+
+    const requestBody = JSON.stringify({ Hours: hours });
+    console.log('Request body:', requestBody);
+
+    fetch('/Basket/UpdateAbandonedTime', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+        },
+        body: requestBody
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            updateAbandonedTimeUI(hours);
+            panel.classList.add('hidden');
+            showNotification(data.message, 'success');
+            loadBaskets();
+        } else {
+            showNotification('Hata: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating abandoned time:', error);
+        showNotification('Terk edilmiş sepet süresi güncellenirken hata oluştu.', 'error');
+    });
+}
+
+// UI'ı güncelle
+function updateAbandonedTimeUI(hours) {
+    // Saat değerini göster (eğer element varsa)
+    const abandonedTimeValue = document.getElementById('abandonedTimeValue');
+    if (abandonedTimeValue) {
+        abandonedTimeValue.textContent = hours;
+    }
+
+    const timeButtons = document.querySelectorAll('.abandoned-time-btn');
+    timeButtons.forEach(btn => {
+        if (parseInt(btn.dataset.hours) === hours) {
+            btn.classList.remove('border-gray-300', 'text-gray-700');
+            btn.classList.add('border-primary', 'bg-primary', 'text-white');
+        } else {
+            btn.classList.remove('border-primary', 'bg-primary', 'text-white');
+            btn.classList.add('border-gray-300', 'text-gray-700');
+        }
+    });
+
+    const timeOptions = document.querySelectorAll('.time-option');
+    timeOptions.forEach(opt => {
+        const isSelected = parseInt(opt.dataset.value) === hours;
+
+        if (isSelected) {
+            opt.classList.remove('text-gray-700', 'hover:bg-gray-100');
+            opt.classList.add('bg-primary', 'text-white');
+        } else {
+            opt.classList.add('text-gray-700', 'hover:bg-gray-100');
+            opt.classList.remove('bg-primary', 'text-white');
+        }
+    });
+}
+
+function loadBaskets() {
+    if (isLoading) return;
+
+    isLoading = true;
+    showLoading();
+
+    const params = new URLSearchParams({
+        page: currentPage,
+        pageSize: currentPageSize,
+        ...currentFilters
+    });
+
+    fetch(`/Basket/GetBaskets?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateStats(data.data.stats);
+                updateBasketsTable(data.data.baskets);
+                updatePagination(data.data.pagination);
+            } else {
+                showNotification('Hata: ' + data.message, 'error');
+                showEmptyState();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Sepetler yüklenirken hata oluştu.', 'error');
+            showEmptyState();
+        })
+        .finally(() => {
+            isLoading = false;
+            hideLoading();
+        });
+}
+
+function updateStats(stats) {
+    document.getElementById('totalBaskets').textContent = stats.totalBaskets.toLocaleString();
+    document.getElementById('activeBaskets').textContent = stats.activeBaskets.toLocaleString();
+    document.getElementById('abandonedBaskets').textContent = stats.abandonedBaskets.toLocaleString();
+
+
+    // Son senkronizasyon tarihini göster
+    const lastSyncDateElement = document.getElementById('lastSyncDate');
+    if (lastSyncDateElement) {
+        const syncDate = stats.lastSyncDate || stats.LastSyncDate;
+
+        if (syncDate) {
+            try {
+                const date = new Date(syncDate);
+                if (!isNaN(date.getTime())) {
+                    const formattedDate = date.toLocaleDateString('tr-TR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    lastSyncDateElement.textContent = formattedDate;
+                } else {
+                    lastSyncDateElement.textContent = 'Henüz senkronize edilmemiş';
+                }
+            } catch (error) {
+                console.error('Date parsing error:', error);
+                lastSyncDateElement.textContent = 'Henüz senkronize edilmemiş';
+            }
+        } else {
+            lastSyncDateElement.textContent = 'Henüz senkronize edilmemiş';
+        }
+    }
+}
+
+// Global değişkenler - para birimi toplamları
+let currencyTotalsData = [];
+let isPanelOpen = false;
+
+// Para birimi panelini aç/kapat
+function toggleCurrencyPanel() {
+    const panel = document.getElementById('currencyPanel');
+    const icon = document.getElementById('currencyPanelIcon');
+
+    isPanelOpen = !isPanelOpen;
+
+    if (isPanelOpen) {
+        panel.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+    } else {
+        panel.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+    }
+}
+
+// Para birimi toplamlarını ve TCMB kurlarını yükle
+function loadCurrencyTotals() {
+    // Önce para birimi toplamlarını çek
+    fetch('/Basket/GetCurrencyTotals')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currencyTotalsData = data.data;
+                updateCurrencyCards(data.data);
+
+                loadTcmbTotals();
+            } else {
+                console.error('Currency totals error:', data.message);
+                document.getElementById('totalValueTry').textContent = '-';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading currency totals:', error);
+            document.getElementById('totalValueTry').textContent = '-';
+        });
+}
+
+// TCMB kurları ile TL toplamını yükle
+function loadTcmbTotals() {
+    fetch('/Basket/GetCurrencyTotalsInTry')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data) {
+                updateTotalValueTry(data.data);
+            } else {
+                console.error('TCMB totals error:', data.message);
+                // Fallback: normal toplam değeri göster
+                document.getElementById('tcmbBadge').classList.add('hidden');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading TCMB totals:', error);
+            document.getElementById('tcmbBadge').classList.add('hidden');
+        });
+}
+
+// TL toplamını güncelle
+function updateTotalValueTry(tcmbData) {
+    const totalValueElement = document.getElementById('totalValueTry');
+    const tcmbBadge = document.getElementById('tcmbBadge');
+    const rateTimeText = document.getElementById('rateTimeText');
+
+    if (tcmbData.formattedTotalInTry) {
+        totalValueElement.textContent = tcmbData.formattedTotalInTry;
+        tcmbBadge.classList.remove('hidden');
+    }
+
+    if (tcmbData.rateDate) {
+        const date = new Date(tcmbData.rateDate);
+        rateTimeText.textContent = `Güncellenme: ${date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    // Para birimi kartlarını TCMB verileriyle güncelle
+    if (tcmbData.conversions && tcmbData.conversions.length > 0) {
+        updateCurrencyCardsWithRates(tcmbData.conversions);
+    }
+}
+
+// Para birimi kartlarını güncelle
+function updateCurrencyCards(currencyTotals) {
+    const grid = document.getElementById('currencyCardsGrid');
+
+    // Para birimi simge ve renk eşleştirmeleri
+    const currencyConfig = {
+        'TRY': { icon: 'fa-turkish-lira-sign', color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-200', name: 'Türk Lirası' },
+        'USD': { icon: 'fa-dollar-sign', color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-200', name: 'Amerikan Doları' },
+        'EUR': { icon: 'fa-euro-sign', color: 'text-purple-500', bg: 'bg-purple-50', border: 'border-purple-200', name: 'Euro' },
+        'GBP': { icon: 'fa-sterling-sign', color: 'text-orange-500', bg: 'bg-orange-50', border: 'border-orange-200', name: 'İngiliz Sterlini' },
+        'JPY': { icon: 'fa-yen-sign', color: 'text-pink-500', bg: 'bg-pink-50', border: 'border-pink-200', name: 'Japon Yeni' },
+        'CHF': { icon: 'fa-franc-sign', color: 'text-cyan-500', bg: 'bg-cyan-50', border: 'border-cyan-200', name: 'İsviçre Frangı' },
+        'RUB': { icon: 'fa-ruble-sign', color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-200', name: 'Rus Rublesi' },
+        'CNY': { icon: 'fa-yen-sign', color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200', name: 'Çin Yuanı' },
+        'SAR': { icon: 'fa-coins', color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-200', name: 'Suudi Riyali' },
+        'AED': { icon: 'fa-coins', color: 'text-indigo-500', bg: 'bg-indigo-50', border: 'border-indigo-200', name: 'BAE Dirhemi' }
+    };
+
+    // Her zaman gösterilecek para birimleri
+    const requiredCurrencies = ['TRY', 'USD', 'EUR', 'GBP'];
+
+    // API'den gelen verileri bir map'e dönüştür
+    const currencyDataMap = {};
+    if (currencyTotals && currencyTotals.length > 0) {
+        currencyTotals.forEach(c => {
+            currencyDataMap[c.currency] = c;
+        });
+    }
+
+    // Tüm para birimlerini birleştir (önce zorunlu olanlar, sonra API'den gelen diğerleri)
+    const allCurrencies = [...requiredCurrencies];
+    if (currencyTotals) {
+        currencyTotals.forEach(c => {
+            if (!allCurrencies.includes(c.currency)) {
+                allCurrencies.push(c.currency);
+            }
+        });
+    }
+
+    const defaultConfig = { icon: 'fa-coins', color: 'text-gray-500', bg: 'bg-gray-50', border: 'border-gray-200', name: 'Diğer' };
+
+    grid.innerHTML = allCurrencies.map((currencyCode) => {
+        const config = currencyConfig[currencyCode] || defaultConfig;
+        const data = currencyDataMap[currencyCode] || {
+            currency: currencyCode,
+            totalAmount: 0,
+            basketCount: 0,
+            formattedTotalAmount: '0,00'
+        };
+
+        const hasData = data.basketCount > 0;
+        const opacityClass = hasData ? '' : 'opacity-60';
+
+        return `
+            <div class="${config.bg} ${config.border} border rounded-lg p-4 hover:shadow-md transition-all duration-200 ${opacityClass}" data-currency="${currencyCode}">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+                            <i class="fa-solid ${config.icon} ${config.color} text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-900">${currencyCode}</p>
+                            <p class="text-xs text-gray-500">${data.basketCount || 0} sepet</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-base font-bold text-gray-900">${data.formattedTotalAmount || '0,00'}</p>
+                        <p class="text-xs text-gray-400 currency-try-value" data-currency="${currencyCode}">${hasData ? '-' : ''}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Para birimi kartlarını TCMB kurları ile güncelle
+function updateCurrencyCardsWithRates(conversions) {
+    conversions.forEach(conversion => {
+        const tryValueElement = document.querySelector(`.currency-try-value[data-currency="${conversion.currency}"]`);
+        if (tryValueElement && conversion.currency !== 'TRY' && conversion.currency !== 'TL') {
+            tryValueElement.textContent = `≈ ${conversion.formattedConvertedAmount}`;
+            tryValueElement.classList.remove('text-gray-400');
+            tryValueElement.classList.add('text-green-600');
+        } else if (tryValueElement) {
+            tryValueElement.textContent = '';
+        }
+    });
+}
+
+function updateBasketsTable(baskets) {
+    const tbody = document.getElementById('basketsTableBody');
+
+    if (baskets.length === 0) {
+        showEmptyState();
+        return;
+    }
+
+    tbody.innerHTML = baskets.map(basket => {
+        // Geçen süreyi hesapla
+        // Handle UTC date from server (which is actually sending LOCAL TIME as UTC!)
+        let dateStr = basket.basketDate;
+        if (dateStr && dateStr.endsWith('Z')) {
+            // Remove 'Z' to treat as LOCAL time, matching user expectation
+            dateStr = dateStr.slice(0, -1);
+        }
+        
+        const basketDate = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now - basketDate;
+        
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffHours / 24);
+
+        let elapsedTimeText = '';
+        let elapsedTimeClass = 'text-gray-600';
+
+        if (diffDays > 0) {
+            elapsedTimeText = `${diffDays} gün ${diffHours % 24} saat`;
+            elapsedTimeClass = diffDays >= 7 ? 'text-red-600 font-medium' : 'text-orange-600';
+        } else if (diffHours > 0) {
+            elapsedTimeText = `${diffHours} saat`;
+            elapsedTimeClass = diffHours >= 24 ? 'text-orange-600' : 'text-gray-600';
+        } else {
+            const diffMinutes = Math.floor(diffMs / (1000 * 60));
+            // Ensure we don't show negative minutes due to slight clock diffs
+            const displayMinutes = Math.max(0, diffMinutes);
+            elapsedTimeText = `${displayMinutes} dakika`;
+            elapsedTimeClass = 'text-green-600';
+        }
+
+        // Terk edilmiş durumu
+        const abandonedBadge = basket.isAbandoned
+            ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 shadow-sm"><i class="fa-solid fa-clock-rotate-left mr-1"></i>Terk Edilmiş</span>'
+            : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 shadow-sm"><i class="fa-solid fa-cart-shopping mr-1"></i>Aktif</span>';
+
+        const isSelected = selectedBaskets.has(basket.id);
+        
+        // Profil ikonu
+        const profileIcon = `<div class="h-10 w-10 rounded-full bg-[#02379c]/5 text-[#02379c] flex items-center justify-center">
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+        </div>`
+
+        return `
+        <tr class="hover:bg-gray-50 transition-colors ${basket.isAbandoned ? 'bg-red-50/20' : ''}">
+            <td class="px-6 py-4 whitespace-nowrap">
+                <input type="checkbox" class="basket-checkbox rounded border-gray-300 text-[#02379c] focus:ring-[#02379c] h-4 w-4" value="${basket.id}" onchange="toggleBasketSelection('${basket.id}', this)" ${isSelected ? 'checked' : ''}>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10">
+                        ${profileIcon}
+                    </div>
+                    <div class="ml-4">
+                        <div class="text-sm font-bold text-gray-900">${basket.displayCustomerName}</div>
+                        <div class="text-sm text-gray-500">${basket.displayCustomerEmail}</div>
+                        <div class="mt-1">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border border-gray-200 text-gray-600 bg-gray-50 ${basket.membershipStatusBadgeClass}">
+                                ${basket.membershipStatusText}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                ${abandonedBadge}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <i class="fa-regular fa-clock mr-2 text-gray-400"></i>
+                    <span class="text-sm font-medium ${elapsedTimeClass}">${elapsedTimeText}</span>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#02379c]/10 text-[#02379c] border border-[#02379c]/20">
+                        ${basket.currency}
+                    </span>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                ${basket.productCount} Adet
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                ${basket.formattedTotalAmount}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${basket.formattedBasketDate}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <div class="flex space-x-2">
+                    <button onclick="viewBasket('${basket.externalId}')" class="group p-2 rounded-lg bg-gray-50 hover:bg-[#02379c]/10 text-gray-400 hover:text-[#02379c] transition-colors" title="Detay Görüntüle">
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `}).join('');
+
+    showBasketsTable();
+    updateSelectAllCheckbox();
+}
+
+function updatePagination(pagination) {
+    document.getElementById('recordInfo').textContent =
+        `${pagination.startRecord}-${pagination.endRecord} / ${pagination.totalCount} kayıt`;
+    document.getElementById('pageInfo').textContent =
+        `${pagination.currentPage} / ${pagination.totalPages}`;
+
+    document.getElementById('prevPage').disabled = !pagination.hasPrevious;
+    document.getElementById('nextPage').disabled = !pagination.hasNext;
+}
+
+function applyFilters() {
+    // Tüm filtre değerlerini topla
+    currentFilters = {
+        searchTerm: document.getElementById('searchTerm').value || '',
+        status: document.getElementById('statusFilter').value || '',
+        sortBy: document.getElementById('sortBy').value || 'basketdate',
+        sortDirection: document.getElementById('sortDirection').value || 'desc',
+        // Gelişmiş filtreler
+        customerName: document.getElementById('customerName').value || '',
+        customerEmail: document.getElementById('customerEmail').value || '',
+        dateFrom: document.getElementById('dateFrom').value || '',
+        dateTo: document.getElementById('dateTo').value || '',
+        minProductCount: document.getElementById('minProductCount').value || '',
+        maxProductCount: document.getElementById('maxProductCount').value || '',
+        minAmount: document.getElementById('minAmount').value || '',
+        maxAmount: document.getElementById('maxAmount').value || ''
+    };
+
+    // Boş değerleri temizle
+    Object.keys(currentFilters).forEach(key => {
+        if (!currentFilters[key]) {
+            delete currentFilters[key];
+        }
+    });
+
+    currentPage = 1;
+    updateActiveFilterCount();
+    loadBaskets();
+}
+
+function clearFilters() {
+    // Tüm filtreleri temizle
+    document.getElementById('searchTerm').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('sortBy').value = 'basketdate';
+    document.getElementById('sortDirection').value = 'desc';
+    document.getElementById('customerName').value = '';
+    document.getElementById('customerEmail').value = '';
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    document.getElementById('minProductCount').value = '';
+    document.getElementById('maxProductCount').value = '';
+    document.getElementById('minAmount').value = '';
+    document.getElementById('maxAmount').value = '';
+
+    currentFilters = {};
+    currentPage = 1;
+    updateActiveFilterCount();
+    loadBaskets();
+}
+
+function syncBaskets() {
+    const button = document.getElementById('syncBaskets');
+
+    button.disabled = true;
+    BusyIndicator.show(button, { variant: 'overlay', color: 'white', size: 'sm' });
+
+    fetch('/Basket/SyncBaskets', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            loadBaskets(); // Verileri yenile
+            loadCurrencyTotals(); // Para birimi toplamlarını yenile
+        } else {
+            showNotification('Hata: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Senkronizasyon sırasında hata oluştu.', 'error');
+    })
+    .finally(() => {
+        button.disabled = false;
+        BusyIndicator.hide(button);
+    });
+}
+
+// Excel'e aktar fonksiyonu
+function exportToExcel() {
+    const button = document.getElementById('exportExcel');
+
+    button.disabled = true;
+    BusyIndicator.show(button, { variant: 'overlay', size: 'sm' });
+
+    // Anlık filtre değerlerini al (form elemanlarından)
+    const filters = {
+        searchTerm: document.getElementById('searchTerm').value || '',
+        status: document.getElementById('statusFilter').value || '',
+        sortBy: document.getElementById('sortBy').value || 'basketdate',
+        sortDirection: document.getElementById('sortDirection').value || 'desc',
+        customerName: document.getElementById('customerName').value || '',
+        customerEmail: document.getElementById('customerEmail').value || '',
+        dateFrom: document.getElementById('dateFrom').value || '',
+        dateTo: document.getElementById('dateTo').value || '',
+        minProductCount: document.getElementById('minProductCount').value || '',
+        maxProductCount: document.getElementById('maxProductCount').value || '',
+        minAmount: document.getElementById('minAmount').value || '',
+        maxAmount: document.getElementById('maxAmount').value || ''
+    };
+
+    // Boş değerleri temizle
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+    });
+
+    fetch(`/Basket/ExportToExcel?${params}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Export failed');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // Dosyayı indir
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const date = new Date().toISOString().split('T')[0];
+            a.download = `Sepetler_${date}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+            showNotification('Excel dosyası başarıyla indirildi', 'success');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Excel dosyası oluşturulurken hata oluştu.', 'error');
+        })
+        .finally(() => {
+            button.disabled = false;
+            BusyIndicator.hide(button);
+        });
+}
+
+function showLoading() {
+    BusyIndicator.show(null, { text: 'Sepetler yükleniyor...' });
+    // document.getElementById('basketsTableContainer').classList.add('hidden'); // Optional: Keep content visible behind loader
+    document.getElementById('emptyState').classList.add('hidden');
+}
+
+function hideLoading() {
+    BusyIndicator.hide(null);
+}
+
+function showBasketsTable() {
+    document.getElementById('basketsTableContainer').classList.remove('hidden');
+    document.getElementById('emptyState').classList.add('hidden');
+}
+
+function showEmptyState() {
+    document.getElementById('basketsTableContainer').classList.add('hidden');
+    document.getElementById('emptyState').classList.remove('hidden');
+}
+
+// Global değişkenler
+let currentBasketId = null;
+let currentBasketItemsPage = 1;
+const basketItemsPageSize = 10;
+
+// Sepet detaylarını görüntüle
+function viewBasket(guidBasketId) {
+    currentBasketId = guidBasketId;
+    currentBasketItemsPage = 1;
+
+    // PushDialog kullanımı
+    if (!basketDetailDialog) {
+        basketDetailDialog = new PushDialog({
+            title: 'Sepet Detayları',
+            size: '3xl',
+            content: '<div id="basketModalContent"><div class="p-8 text-center text-gray-500">Yükleniyor...</div></div>',
+            onClose: () => {
+            }
+        });
+    }
+
+    // Reset content and open
+    basketDetailDialog.setContent('<div id="basketModalContent"><div class="p-8 text-center text-gray-500">Yükleniyor...</div></div>');
+    basketDetailDialog.open();
+
+    // Önce sepet bilgilerini yükle
+    fetch(`/Basket/GetBasketDetails?guidBasketId=${encodeURIComponent(guidBasketId)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populateBasketModal(data.data);
+                // Sonra ürünleri sayfalama ile yükle
+                loadBasketItems(guidBasketId, 1);   
+            } else {
+                showNotification('Hata: ' + data.message, 'error');
+                closeBasketModal();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Bir hata oluştu.', 'error');
+            closeBasketModal();
+        });
+}
+
+// Sepet ürünlerini sayfalama ile yükle
+function loadBasketItems(guidBasketId, page = 1) {
+    const itemsContainer = document.getElementById('basketItemsContainer');
+    if (!itemsContainer) return;
+
+    // Loading göster - Center spinner
+    itemsContainer.innerHTML = '';
+    
+    // Konteyner'a stil ekleyerek spinner'ı ortala
+    itemsContainer.classList.add('flex', 'justify-center', 'items-center', 'min-h-[200px]');
+    
+    BusyIndicator.show(itemsContainer, { variant: 'inline', text: 'Ürünler yükleniyor...', size: 'md' });
+
+    fetch(`/Basket/GetBasketItemsPaged?guidBasketId=${encodeURIComponent(guidBasketId)}&page=${page}&pageSize=${basketItemsPageSize}`)
+        .then(response => response.json())
+        .then(data => {
+            // Spinner'ı temizle ve kapsayıcı stillerini kaldır
+            BusyIndicator.hide(itemsContainer);
+            itemsContainer.classList.remove('flex', 'justify-center', 'items-center', 'min-h-[200px]');
+            
+            if (data.success) {
+                populateBasketItems(data.data);
+                currentBasketItemsPage = page;
+            } else {
+                itemsContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-sm text-red-600">Ürünler yüklenirken hata oluştu: ${data.message}</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading basket items:', error);
+            // Spinner'ı temizle (hata durumunda da)
+            BusyIndicator.hide(itemsContainer);
+            itemsContainer.classList.remove('flex', 'justify-center', 'items-center', 'min-h-[200px]');
+
+            itemsContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <p class="text-sm text-red-600">Ürünler yüklenirken bir hata oluştu.</p>
+                </div>
+            `;
+        });
+}
+
+function openBasketModal() {
+    if (basketDetailDialog) basketDetailDialog.open();
+}
+
+function closeBasketModal() {
+    if (basketDetailDialog) basketDetailDialog.close();
+}
+
+function populateBasketModal(basket) {
+    const content = document.getElementById('basketModalContent');
+    if (!content) return;
+
+    content.innerHTML = `
+        <div class="space-y-6">
+            <!-- Sepet Bilgileri -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="text-lg font-medium text-gray-900 mb-3">Sepet Bilgileri</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Müşteri</label>
+                        <div class="mt-1 flex items-center space-x-2">
+                            <p class="text-sm text-gray-900">${basket.displayCustomerName || basket.customerName}</p>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${basket.membershipStatusBadgeClass || 'bg-gray-100 text-gray-800'}">
+                                ${basket.membershipStatusText || (basket.customerName ? 'Üyelikli' : 'Üyeliksiz')}
+                            </span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">E-posta</label>
+                        <p class="mt-1 text-sm text-gray-900">${basket.displayCustomerEmail || basket.customerEmail}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Sepet Tarihi</label>
+                        <p class="mt-1 text-sm text-gray-900">${basket.formattedBasketDate}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Son Güncelleme</label>
+                        <p class="mt-1 text-sm text-gray-900">${basket.formattedLastUpdateDate}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Toplam Tutar</label>
+                        <p class="mt-1 text-sm text-gray-900 font-semibold">${basket.formattedTotalAmount}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sepet Ürünleri -->
+            <div>
+                <h4 class="text-lg font-medium text-gray-900 mb-3">Sepet Ürünleri (${basket.productCount || 0})</h4>
+                <div id="basketItemsContainer">
+                    <!-- Ürünler buraya yüklenecek -->
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Sepet ürünlerini populate et
+function populateBasketItems(pagedData) {
+    const container = document.getElementById('basketItemsContainer');
+    if (!container) return;
+
+    if (pagedData.items && pagedData.items.length > 0) {
+        container.innerHTML = `
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ürün</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adet</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Birim Fiyat</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Toplam</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${pagedData.items.map(item => `
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            ${item.productImage ?
+                                                `<img class="h-10 w-10 rounded object-cover" src="${item.productImage}" alt="${item.productName}">` :
+                                                `<div class="h-10 w-10 rounded bg-gray-200 flex items-center justify-center">
+                                                    <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                                        <circle cx="9" cy="9" r="2"></circle>
+                                                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                                                    </svg>
+                                                </div>`
+                                            }
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">${item.productName}</div>
+                                            <div class="text-sm text-gray-500">${item.productCode}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    ${item.formattedQuantity}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    ${item.formattedUnitPrice}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">
+                                    ${item.formattedTotalPrice}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Sayfalama -->
+            ${pagedData.totalPages > 1 ? `
+                <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+                    <div class="flex flex-1 justify-between sm:hidden">
+                        <button onclick="loadBasketItems('${currentBasketId}', ${pagedData.currentPage - 1})"
+                                ${!pagedData.hasPreviousPage ? 'disabled' : ''}
+                                class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Önceki
+                        </button>
+                        <button onclick="loadBasketItems('${currentBasketId}', ${pagedData.currentPage + 1})"
+                                ${!pagedData.hasNextPage ? 'disabled' : ''}
+                                class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Sonraki
+                        </button>
+                    </div>
+                    <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                        <div>
+                            <p class="text-sm text-gray-700">
+                                Toplam <span class="font-medium">${pagedData.totalItems}</span> üründen
+                                <span class="font-medium">${((pagedData.currentPage - 1) * pagedData.pageSize) + 1}</span> -
+                                <span class="font-medium">${Math.min(pagedData.currentPage * pagedData.pageSize, pagedData.totalItems)}</span> arası gösteriliyor
+                            </p>
+                        </div>
+                        <div>
+                            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                                <button onclick="loadBasketItems('${currentBasketId}', ${pagedData.currentPage - 1})"
+                                        ${!pagedData.hasPreviousPage ? 'disabled' : ''}
+                                        class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span class="sr-only">Önceki</span>
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+
+                                ${Array.from({length: pagedData.totalPages}, (_, i) => i + 1).map(pageNum => `
+                                    <button onclick="loadBasketItems('${currentBasketId}', ${pageNum})"
+                                            class="relative inline-flex items-center px-4 py-2 text-sm font-semibold ${pageNum === pagedData.currentPage ? 'bg-primary text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary' : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'}">
+                                        ${pageNum}
+                                    </button>
+                                `).join('')}
+
+                                <button onclick="loadBasketItems('${currentBasketId}', ${pagedData.currentPage + 1})"
+                                        ${!pagedData.hasNextPage ? 'disabled' : ''}
+                                        class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span class="sr-only">Sonraki</span>
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+        `;
+    } else {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="8" cy="21" r="1"></circle>
+                    <circle cx="19" cy="21" r="1"></circle>
+                    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Sepet boş</h3>
+                <p class="mt-1 text-sm text-gray-500">Bu sepette henüz ürün bulunmuyor.</p>
+            </div>
+        `;
+    }
+}
+// --- Tab Management ---
+function switchTab(tabId) {
+    document.querySelectorAll('.basket-page-tab').forEach(el => el.classList.add('hidden'));
+    document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+    document.querySelectorAll('.tab-btn').forEach(el => {
+        el.classList.remove('border-primary', 'text-primary');
+        el.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700');
+    });
+
+    const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+    if (activeBtn) {
+        activeBtn.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700');
+        activeBtn.classList.add('border-primary', 'text-primary');
+    }
+
+    if (tabId === 'basket-reminders') {
+        loadReminderLogs();
+        loadReminderSchedules();
+    }
+}
+
+// --- Checkbox Management ---
+document.getElementById('selectAllBaskets')?.addEventListener('change', function(e) {
+    const isChecked = e.target.checked;
+    const checkboxes = document.querySelectorAll('.basket-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = isChecked;
+        toggleBasketSelection(cb.value, cb);
+    });
+});
+
+function toggleBasketSelection(basketId, checkbox) {
+    if (checkbox.checked) {
+        selectedBaskets.add(basketId);
+    } else {
+        selectedBaskets.delete(basketId);
+    }
+    updateSendReminderButton();
+}
+
+function updateSelectAllCheckbox() {
+    const checkboxes = Array.from(document.querySelectorAll('.basket-checkbox'));
+    if (checkboxes.length > 0) {
+        const allChecked = checkboxes.every(cb => cb.checked);
+        const selectAll = document.getElementById('selectAllBaskets');
+        if (selectAll) selectAll.checked = allChecked;
+    }
+    updateSendReminderButton();
+}
+
+function updateSendReminderButton() {
+    const btn = document.getElementById('sendReminderBtn');
+    const modalCount = document.getElementById('selectedBasketCount');
+    
+    if (selectedBaskets.size > 0) {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    } else {
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+    
+    if (modalCount) modalCount.textContent = selectedBaskets.size;
+}
+
+// --- Reminder Modal ---
+function openSendReminderModal() {
+    if (selectedBaskets.size === 0) return;
+    
+    // Load schedules if not loaded
+    if (document.getElementById('modalScheduleSelect').options.length <= 1) {
+        loadReminderSchedules();
+    }
+    
+    document.getElementById('sendReminderModal').classList.remove('hidden');
+}
+
+function closeSendReminderModal() {
+    document.getElementById('sendReminderModal').classList.add('hidden');
+}
+
+function confirmSendReminder() {
+    const scheduleId = document.getElementById('modalScheduleSelect').value;
+    if (!scheduleId) {
+        showNotification('Lütfen bir şablon seçiniz.', 'warning');
+        return;
+    }
+
+    const confirmBtn = document.getElementById('confirmSendReminderBtn');
+    const cancelBtn = document.getElementById('cancelSendReminderBtn');
+
+    confirmBtn.disabled = true;
+    cancelBtn.disabled = true;
+    confirmBtn.dataset.originalText = confirmBtn.textContent.trim();
+    confirmBtn.innerHTML = '<span class="flex items-center justify-center"><svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Gönderiliyor...</span>';
+
+    const basketIds = Array.from(selectedBaskets); // GUID array
+
+    fetch('/Basket/SendReminderManual', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            // 'RequestVerificationToken': ... (if needed)
+        },
+        body: JSON.stringify({ basketIds, scheduleId: parseInt(scheduleId) })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            closeSendReminderModal();
+            selectedBaskets.clear();
+            loadBaskets(); 
+        } else {
+            showNotification(data.message, 'error');
+            if (data.errors && data.errors.length > 0) {
+                 console.error(data.errors);
+            }
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showNotification('Bir hata oluştu.', 'error');
+    })
+    .finally(() => {
+        confirmBtn.disabled = false;
+        cancelBtn.disabled = false;
+        confirmBtn.textContent = confirmBtn.dataset.originalText || 'Gönder';
+    });
+}
+
+// --- Send All Reminder (Batch) ---
+let sendAllCancelled = false;
+
+function openSendAllReminderModal() {
+    // Load schedules into modal select
+    const modalAllSelect = document.getElementById('modalAllScheduleSelect');
+    if (modalAllSelect.options.length <= 1) {
+        fetch('/Basket/GetReminderSchedules')
+            .then(r => r.json())
+            .then(data => {
+                while (modalAllSelect.options.length > 1) modalAllSelect.remove(1);
+                data.forEach(s => modalAllSelect.add(new Option(s.name, s.id)));
+            });
+    }
+    // Reset UI
+    sendAllCancelled = false;
+    document.getElementById('sendAllStep1').classList.remove('hidden');
+    document.getElementById('sendAllStep2').classList.add('hidden');
+    document.getElementById('confirmSendAllBtn').disabled = false;
+    document.getElementById('confirmSendAllBtn').classList.remove('hidden');
+    document.getElementById('confirmSendAllBtn').textContent = 'Gönderimi Başlat';
+    document.getElementById('cancelSendAllBtn').textContent = 'İptal';
+    document.getElementById('sendAllCircle').style.strokeDashoffset = '326.73';
+    document.getElementById('sendAllCircle').style.stroke = '';
+    document.getElementById('sendAllPercentText').textContent = '0%';
+    document.getElementById('sendAllStatusLabel').textContent = 'Gönderiliyor';
+    document.getElementById('sendAllLiveText').textContent = 'Hatırlatmalar gönderiliyor...';
+    document.getElementById('sendAllLiveText').className = 'text-sm text-gray-400 animate-pulse';
+    buildSendAllFilterSummary();
+    // Fetch basket count
+    document.getElementById('sendAllBasketCount').textContent = '...';
+    const params = new URLSearchParams(currentFilters);
+    fetch(`/Basket/GetAllBasketIds?${params}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('sendAllBasketCount').textContent = data.totalCount.toLocaleString('tr-TR');
+            } else {
+                document.getElementById('sendAllBasketCount').textContent = '?';
+            }
+        })
+        .catch(() => {
+            document.getElementById('sendAllBasketCount').textContent = '?';
+        });
+    document.getElementById('sendAllReminderModal').classList.remove('hidden');
+}
+
+function buildSendAllFilterSummary() {
+    const container = document.getElementById('sendAllFilterSummary');
+    const statusLabels = { active: 'Aktif', abandoned: 'Terk Edilmiş', inactive: 'Pasif', member: 'Üyelikli', guest: 'Üyeliksiz' };
+    const filters = [];
+
+    if (currentFilters.searchTerm) filters.push({ label: 'Arama', value: currentFilters.searchTerm });
+    if (currentFilters.status) filters.push({ label: 'Durum', value: statusLabels[currentFilters.status] || currentFilters.status });
+    if (currentFilters.customerName) filters.push({ label: 'Müşteri Adı', value: currentFilters.customerName });
+    if (currentFilters.customerEmail) filters.push({ label: 'E-posta', value: currentFilters.customerEmail });
+    if (currentFilters.dateFrom) filters.push({ label: 'Başlangıç Tarihi', value: currentFilters.dateFrom });
+    if (currentFilters.dateTo) filters.push({ label: 'Bitiş Tarihi', value: currentFilters.dateTo });
+    if (currentFilters.minProductCount) filters.push({ label: 'Min Ürün', value: currentFilters.minProductCount });
+    if (currentFilters.maxProductCount) filters.push({ label: 'Max Ürün', value: currentFilters.maxProductCount });
+    if (currentFilters.minAmount) filters.push({ label: 'Min Tutar', value: currentFilters.minAmount });
+    if (currentFilters.maxAmount) filters.push({ label: 'Max Tutar', value: currentFilters.maxAmount });
+
+    if (filters.length === 0) {
+        container.innerHTML = '<div class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200"><i class="fa-solid fa-filter text-gray-400 text-xs"></i><span class="text-sm text-gray-500">Filtre uygulanmadı — tüm sepetler dahil edilecek.</span></div>';
+    } else {
+        container.innerHTML = '<div class="px-3 py-2 bg-indigo-50 rounded-lg border border-indigo-200 space-y-2">' +
+            '<div class="flex items-center gap-2 text-xs font-semibold text-indigo-700 uppercase tracking-wide"><i class="fa-solid fa-filter"></i>Uygulanan Filtreler</div>' +
+            '<div class="flex flex-wrap gap-1.5">' +
+            filters.map(f => `<span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-indigo-200 text-xs"><span class="font-medium text-indigo-700">${f.label}:</span><span class="text-gray-700">${f.value}</span></span>`).join('') +
+            '</div></div>';
+    }
+}
+
+function closeSendAllReminderModal() {
+    if (document.getElementById('sendAllStep2').classList.contains('hidden') === false) {
+        // Progress is showing, treat as cancel
+        sendAllCancelled = true;
+        document.getElementById('cancelSendAllBtn').textContent = 'Kapatılıyor...';
+        document.getElementById('cancelSendAllBtn').disabled = true;
+        return;
+    }
+    document.getElementById('sendAllReminderModal').classList.add('hidden');
+}
+
+function sendAllAddLog(message, type) {
+    const logArea = document.getElementById('sendAllLogArea');
+    const colorClass = type === 'success' ? 'text-green-600' : type === 'error' ? 'text-red-600' : 'text-gray-600';
+    const div = document.createElement('div');
+    div.className = colorClass;
+    div.textContent = message;
+    logArea.appendChild(div);
+    logArea.scrollTop = logArea.scrollHeight;
+}
+
+function updateSendAllProgress(sent, failed, total) {
+    const processed = sent + failed;
+    const percent = total > 0 ? Math.round((processed / total) * 100) : 0;
+    const circumference = 326.73;
+    const offset = circumference - (circumference * percent / 100);
+
+    document.getElementById('sendAllTotal').textContent = total.toLocaleString('tr-TR');
+    document.getElementById('sendAllSent').textContent = sent.toLocaleString('tr-TR');
+    document.getElementById('sendAllFailed').textContent = failed.toLocaleString('tr-TR');
+    document.getElementById('sendAllCircle').style.strokeDashoffset = offset;
+    document.getElementById('sendAllPercentText').textContent = `${percent}%`;
+}
+
+async function startSendAll() {
+    const scheduleId = document.getElementById('modalAllScheduleSelect').value;
+    if (!scheduleId) {
+        showNotification('Lütfen bir şablon seçiniz.', 'warning');
+        return;
+    }
+
+    const confirmBtn = document.getElementById('confirmSendAllBtn');
+    const cancelBtn = document.getElementById('cancelSendAllBtn');
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<span class="flex items-center justify-center"><svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sepetler alınıyor...</span>';
+
+    // Step 1: Get all basket IDs matching current filters
+    const params = new URLSearchParams(currentFilters);
+    let allBasketIds;
+    try {
+        const resp = await fetch(`/Basket/GetAllBasketIds?${params}`);
+        const data = await resp.json();
+        if (!data.success) {
+            showNotification('Sepet listesi alınamadı.', 'error');
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Gönderimi Başlat';
+            return;
+        }
+        allBasketIds = data.basketIds;
+    } catch (err) {
+        console.error(err);
+        showNotification('Sepet listesi alınırken hata oluştu.', 'error');
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Gönderimi Başlat';
+        return;
+    }
+
+    if (allBasketIds.length === 0) {
+        showNotification('Filtrelere uyan sepet bulunamadı.', 'warning');
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Gönderimi Başlat';
+        return;
+    }
+
+    // Step 2: Show progress UI
+    document.getElementById('sendAllStep1').classList.add('hidden');
+    document.getElementById('sendAllStep2').classList.remove('hidden');
+    cancelBtn.textContent = 'İptal Et';
+    cancelBtn.disabled = false;
+    cancelBtn.onclick = function() {
+        sendAllCancelled = true;
+        cancelBtn.textContent = 'İptal ediliyor...';
+        cancelBtn.disabled = true;
+    };
+
+    const BATCH_SIZE = 50;
+    const totalCount = allBasketIds.length;
+    const batches = [];
+    for (let i = 0; i < allBasketIds.length; i += BATCH_SIZE) {
+        batches.push(allBasketIds.slice(i, i + BATCH_SIZE));
+    }
+
+    let totalSent = 0;
+    let totalFailed = 0;
+    const totalBatches = batches.length;
+
+    updateSendAllProgress(0, 0, totalCount);
+
+    // Step 3: Process batches
+    for (let i = 0; i < batches.length; i++) {
+        if (sendAllCancelled) {
+            break;
+        }
+
+        const batch = batches[i];
+        const batchIndex = i + 1;
+
+        try {
+            const resp = await fetch('/Basket/SendReminderManual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ basketIds: batch, scheduleId: parseInt(scheduleId) })
+            });
+            const data = await resp.json();
+
+            if (data.success) {
+                // Parse the response message to extract counts
+                const successMatch = data.message.match(/(\d+) sepet için hatırlatma gönderildi/);
+                const failMatch = data.message.match(/(\d+) sepet için gönderim başarısız/);
+                const batchSuccess = successMatch ? parseInt(successMatch[1]) : batch.length;
+                const batchFail = failMatch ? parseInt(failMatch[1]) : 0;
+
+                totalSent += batchSuccess;
+                totalFailed += batchFail;
+            } else {
+                totalFailed += batch.length;
+            }
+        } catch (err) {
+            totalFailed += batch.length;
+        }
+
+        updateSendAllProgress(totalSent, totalFailed, totalCount);
+    }
+
+    // Done
+    const liveText = document.getElementById('sendAllLiveText');
+    const statusLabel = document.getElementById('sendAllStatusLabel');
+    liveText.classList.remove('animate-pulse');
+
+    if (sendAllCancelled) {
+        liveText.textContent = `İptal edildi — ${totalSent} gönderildi, ${totalCount - totalSent - totalFailed} gönderilemedi.`;
+        liveText.className = 'text-sm text-orange-500 font-medium';
+        statusLabel.textContent = 'İptal Edildi';
+        document.getElementById('sendAllCircle').style.stroke = '#f59e0b';
+    } else if (totalFailed > 0) {
+        liveText.textContent = `Tamamlandı — ${totalFailed} gönderim başarısız oldu.`;
+        liveText.className = 'text-sm text-orange-500 font-medium';
+        statusLabel.textContent = 'Tamamlandı';
+    } else {
+        liveText.textContent = 'Tüm hatırlatmalar başarıyla gönderildi!';
+        liveText.className = 'text-sm text-green-600 font-medium';
+        statusLabel.textContent = 'Tamamlandı';
+        document.getElementById('sendAllCircle').style.stroke = '#22c55e';
+    }
+
+    showNotification(
+        sendAllCancelled ? `Gönderim iptal edildi. ${totalSent} başarılı.` : `${totalSent} hatırlatma gönderildi.`,
+        totalFailed > 0 || sendAllCancelled ? 'warning' : 'success'
+    );
+
+    confirmBtn.classList.add('hidden');
+    cancelBtn.disabled = false;
+    cancelBtn.textContent = 'Kapat';
+    cancelBtn.onclick = function() {
+        document.getElementById('sendAllReminderModal').classList.add('hidden');
+        loadBaskets();
+    };
+}
+
+// --- Reminder Logs & Schedules ---
+function loadReminderSchedules() {
+    fetch('/Basket/GetReminderSchedules')
+        .then(r => r.json())
+        .then(data => {
+             const filterSelect = document.getElementById('reminderFilterSchedule');
+             const modalSelect = document.getElementById('modalScheduleSelect');
+             
+             // Clear existing (keep first)
+             while(filterSelect.options.length > 1) filterSelect.remove(1);
+             while(modalSelect.options.length > 1) modalSelect.remove(1);
+
+             data.forEach(s => {
+                 filterSelect.add(new Option(s.name, s.id));
+                 modalSelect.add(new Option(s.name, s.id));
+             });
+        });
+}
+
+// --- Reminder Rules Management (Premium Table Row Design) ---
+function loadReminderRules() {
+    const tbody = document.getElementById('reminderRulesTableBody');
+    tbody.innerHTML = '<tr><td colspan="5" class="px-8 py-10 text-center"><div class="flex flex-col items-center justify-center"><i class="fa-solid fa-circle-notch fa-spin text-2xl text-[#02379c] mb-3"></i><span class="font-medium text-gray-500">Kurallar yükleniyor...</span></div></td></tr>';
+
+    fetch('/BasketReminder/GetAllSchedules')
+        .then(r => r.json())
+        .then(resp => {
+            if (resp.success) {
+                currentRulesData = resp.data;
+                const rules = resp.data;
+                if (rules.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="px-8 py-12 text-center">
+                                <div class="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
+                                    <div class="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400">
+                                        <i class="fa-solid fa-robot text-2xl"></i>
+                                    </div>
+                                    <h3 class="text-lg font-bold text-gray-900 mb-1">Henüz Kural Yok</h3>
+                                    <p class="text-sm text-gray-500 mb-4 max-w-sm">Sepet hatırlatmaları için otomatik kurallar oluşturarak satışlarınızı artırın.</p>
+                                    <button onclick="openRuleDialog()" class="inline-flex items-center px-4 py-2 text-sm font-medium text-[#02379c] bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                                        <i class="fa-solid fa-plus mr-2"></i> İlk Kuralı Oluştur
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>`;
+                } else {
+                    tbody.innerHTML = rules.map(r => {
+                        let channels = [];
+                        try { channels = JSON.parse(r.communicationChannels || '[]'); } catch(e) {}
+                        
+                        // Premium Channel Icons
+                        const channelIcons = channels.map(c => {
+                             let icon = '';
+                             let bg = 'bg-gray-100';
+                             let text = 'text-gray-500';
+                             let title = c;
+                             
+                             if(c === 'WhatsApp') { icon = 'fa-brands fa-whatsapp'; bg='bg-green-100'; text='text-green-600'; }
+                             else if(c === 'SMS') { icon = 'fa-solid fa-comment-sms'; bg='bg-purple-100'; text='text-purple-600'; }
+                             else if(c === 'Email') { icon = 'fa-regular fa-envelope'; bg='bg-blue-100'; text='text-blue-600'; }
+                             
+                             return `
+                                <div class="inline-flex items-center justify-center h-8 w-8 rounded-full ${bg} ${text} mr-1 tooltip-trigger" title="${title}">
+                                    <i class="${icon} text-sm"></i>
+                                </div>`;
+                        }).join('');
+
+                        return `
+                        <tr class="group hover:bg-blue-50/30 transition-colors duration-200 border-b border-gray-50 last:border-0 relative">
+                            <td class="px-8 py-5 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="h-10 w-10 flex-shrink-0 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 group-hover:bg-[#02379c] group-hover:text-white transition-all duration-300">
+                                        <span class="font-bold text-sm">#${r.id}</span>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-bold text-gray-900 group-hover:text-[#02379c] transition-colors">${r.name}</div>
+                                        <div class="text-xs text-gray-500 mt-0.5">Otomatik</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-5 whitespace-nowrap">
+                                <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+                                    <i class="fa-regular fa-clock mr-1.5 text-gray-500"></i> ${r.hours} Saat Sonra
+                                </div>
+                            </td>
+                            <td class="px-6 py-5 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    ${channelIcons || '<span class="text-gray-400 text-xs italic">Kanal yok</span>'}
+                                </div>
+                            </td>
+                            <td class="px-6 py-5 whitespace-nowrap text-center">
+                                <button onclick="toggleRuleStatus(${r.id})" class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none ${r.isActive ? 'bg-[#02379c]' : 'bg-gray-200'}" role="switch" aria-checked="${r.isActive}">
+                                    <span class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200 ${r.isActive ? 'translate-x-5' : 'translate-x-0'}"></span>
+                                </button>
+                                <div class="text-[10px] font-medium mt-1 ${r.isActive ? 'text-[#02379c]' : 'text-gray-400'}">${r.isActive ? 'Aktif' : 'Pasif'}</div>
+                            </td>
+                            <td class="px-8 py-5 whitespace-nowrap text-right text-sm">
+                                <div class="flex justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                                    <button onclick='editReminderRuleById(${r.id})' class="h-9 w-9 rounded-full bg-white border border-gray-200 text-gray-500 hover:text-[#02379c] hover:border-[#02379c] hover:bg-blue-50 transition-all flex items-center justify-center shadow-sm" title="Düzenle">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <button onclick="deleteReminderRule(${r.id})" class="h-9 w-9 rounded-full bg-white border border-gray-200 text-gray-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all flex items-center justify-center shadow-sm" title="Sil">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        `;
+                    }).join('');
+                }
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Yüklenemedi.</td></tr>';
+            }
+        });
+}
+
+function deleteReminderRule(id) {
+    showConfirmationDialog(
+        'Kuralı Sil',
+        'Bu kuralı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
+        'Evet, Sil',
+        'Vazgeç',
+        () => {
+            fetch('/BasketReminder/Delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ Id: id })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    loadReminderRules();
+                } else {
+                    showNotification(data.message, 'error');
+                }
+            })
+            .catch(e => {
+                console.error(e);
+                showNotification('Bir hata oluştu.', 'error');
+            });
+        }
+    );
+}
+
+function toggleRuleStatus(id) {
+    fetch('/BasketReminder/ToggleStatus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ Id: id })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            loadReminderRules();
+        } else {
+            showNotification(data.message, 'error');
+        }
+    })
+    .catch(e => {
+        console.error(e);
+        showNotification('Durum güncellenirken bir hata oluştu.', 'error');
+    });
+}
+
+let availableChannels = [];
+let whatsappTemplates = [];
+let smsTemplates = [];
+let emailTemplates = [];
+let currentRulesData = []; // Store raw data for editing by ID
+let isEditMode = false;
+
+async function loadCommunicationChannels() {
+    try {
+        const response = await fetch('/Settings/GetActiveChannels');
+        const result = await response.json();
+
+        if (result.success) {
+            const channelsData = result.channels;
+            availableChannels = [];
+            
+            if (channelsData.email !== undefined) {
+                availableChannels.push({
+                    name: 'Email',
+                    displayName: 'E-posta',
+                    description: 'E-posta ile hatırlatma gönder',
+                    isActive: channelsData.email,
+                    colorClass: 'text-blue-600',
+                    iconClass: 'fa-regular fa-envelope'
+                });
+            }
+            
+            if (channelsData.whatsapp !== undefined) {
+                availableChannels.push({
+                    name: 'WhatsApp',
+                    displayName: 'WhatsApp',
+                    description: 'WhatsApp ile hatırlatma gönder',
+                    isActive: channelsData.whatsapp,
+                    colorClass: 'text-green-600',
+                    iconClass: 'fa-brands fa-whatsapp'
+                });
+            }
+            
+            if (channelsData.sms !== undefined) {
+                availableChannels.push({
+                    name: 'SMS',
+                    displayName: 'SMS',
+                    description: 'SMS ile hatırlatma gönder',
+                    isActive: channelsData.sms,
+                    colorClass: 'text-purple-600',
+                    iconClass: 'fa-solid fa-comment-sms'
+                });
+            }
+            
+            renderChannelSelection();
+        }
+    } catch (error) {
+        console.error('Error loading channels:', error);
+    }
+}
+
+async function loadWhatsAppTemplates() {
+    try {
+        const response = await fetch('/TemplateModule/GetChannelTemplates?channelType=whatsapp&moduleType=BasketReminder');
+        const result = await response.json();
+        if (result.success) {
+            whatsappTemplates = result.data.map(t => ({ id: t.id, name: t.name, category: t.category || 'Genel' }));
+            renderWhatsAppTemplateOptions();
+        }
+    } catch (e) { console.error(e); }
+}
+
+function renderWhatsAppTemplateOptions() {
+    const select = document.getElementById('whatsappTemplate');
+    if(!select) return;
+    select.innerHTML = '<option value="">Template seçiniz...</option>';
+    whatsappTemplates.forEach(t => {
+        select.add(new Option(`${t.name} (${t.category})`, t.id));
+    });
+}
+
+async function loadSmsTemplates() {
+    try {
+        const response = await fetch('/TemplateModule/GetChannelTemplates?channelType=sms&moduleType=BasketReminder');
+        const result = await response.json();
+        if (result.success) {
+            smsTemplates = result.data.map(t => ({ id: t.id, name: t.name, category: t.category || 'Genel' }));
+            renderSmsTemplateOptions();
+        }
+    } catch (e) { console.error(e); }
+}
+
+function renderSmsTemplateOptions() {
+    const select = document.getElementById('smsTemplate');
+    if(!select) return;
+    select.innerHTML = '<option value="">Template seçiniz...</option>';
+    smsTemplates.forEach(t => {
+        select.add(new Option(`${t.name} (${t.category})`, t.id));
+    });
+}
+
+async function loadEmailTemplates() {
+    try {
+        const response = await fetch('/TemplateModule/GetChannelTemplates?channelType=email&moduleType=BasketReminder');
+        const result = await response.json();
+        if (result.success) {
+            emailTemplates = result.data.map(t => ({ id: t.id, name: t.name, category: t.category || 'Genel' }));
+            renderEmailTemplateOptions();
+        }
+    } catch (e) { console.error(e); }
+}
+
+function renderEmailTemplateOptions() {
+    const select = document.getElementById('emailTemplate');
+    if(!select) return;
+    select.innerHTML = '<option value="">Template seçiniz...</option>';
+    emailTemplates.forEach(t => {
+        select.add(new Option(`${t.name} (${t.category})`, t.id));
+    });
+}
+
+function renderChannelSelection() {
+    const container = document.getElementById('communicationChannels');
+    container.innerHTML = '';
+    
+    // Grid Layout for Channel Cards
+    container.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3";
+
+    availableChannels.forEach(channel => {
+        const channelWrapper = document.createElement('label'); // Use label for full clickability
+        
+        // Base styling for card
+        const baseClasses = "relative flex flex-col p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer overflow-hidden group hover:shadow-md";
+        // Active/Inactive state styling
+        const activeClasses = channel.isActive 
+            ? "bg-blue-50/50 border-[#02379c] shadow-sm" 
+            : "bg-white border-gray-100 hover:border-gray-200";
+            
+        channelWrapper.className = `${baseClasses} ${activeClasses}`;
+        
+        // Checkbox (Hidden but functional or styled)
+        // We put checkbox inside label
+        
+        const content = `
+            <div class="flex items-start justify-between mb-3">
+                <input type="checkbox"
+                       id="channel_${channel.name}"
+                       value="${channel.name}"
+                       class="channel-checkbox peer h-5 w-5 rounded border-gray-300 text-[#02379c] focus:ring-[#02379c] transition-colors"
+                       ${!channel.isActive ? 'disabled' : ''}>
+                
+                <div class="h-10 w-10 rounded-full flex items-center justify-center ${channel.isActive ? 'bg-[#02379c]/10 text-[#02379c]' : 'bg-gray-100 text-gray-400'}">
+                    <i class="${channel.iconClass} text-xl"></i>
+                </div>
+            </div>
+            
+            <div class="mb-1">
+                <span class="font-bold text-gray-900 block">${channel.displayName}</span>
+                <span class="text-xs text-gray-500 line-clamp-2">${channel.description}</span>
+            </div>
+
+            <div id="status_badge_${channel.name}" class="mt-auto pt-2">
+                 ${channel.isActive 
+                    ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Kullanılabilir</span>' 
+                    : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">Pasif</span>'}
+            </div>
+        `;
+        
+        // Template Selector Area (Replaces old hidden div logic, or appends to bottom)
+        const templateContainer = document.createElement('div');
+        templateContainer.id = `template_container_${channel.name}`;
+        templateContainer.className = 'mt-3 pt-3 border-t border-[#02379c]/10 hidden w-full animate-fadeIn'; // Add hidden by default
+        
+        let templateSelectorHtml = '';
+        if (['WhatsApp', 'SMS', 'Email'].includes(channel.name)) {
+            templateSelectorHtml = `
+                <div class="flex flex-col gap-1.5 w-full">
+                    <label for="${channel.name.toLowerCase()}Template" class="text-[10px] uppercase font-bold tracking-wider text-gray-500">
+                        ${channel.displayName} Şablonu
+                    </label>
+                    <select id="${channel.name.toLowerCase()}Template" class="template-select block w-full pl-2 pr-8 py-1.5 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] transition-shadow">
+                        <option value="">Şablon seçiniz...</option>
+                    </select>
+                </div>
+            `;
+        } else {
+            templateSelectorHtml = `<p class="text-xs text-green-600 flex items-center"><i class="fa-solid fa-check-circle mr-1"></i>Otomatik</p>`;
+        }
+        
+        templateContainer.innerHTML = templateSelectorHtml;
+
+        channelWrapper.innerHTML = content;
+        channelWrapper.appendChild(templateContainer);
+        
+        // Event Listener for visual toggle
+        const checkbox = channelWrapper.querySelector('input[type="checkbox"]');
+        if(checkbox) {
+            checkbox.addEventListener('change', function() {
+                // Update visual state of card parent
+                if (this.checked) {
+                    channelWrapper.classList.remove('bg-white', 'border-gray-100', 'hover:border-gray-200');
+                    channelWrapper.classList.add('bg-blue-50/50', 'border-[#02379c]', 'shadow-sm');
+                } else {
+                    channelWrapper.classList.add('bg-white', 'border-gray-100', 'hover:border-gray-200');
+                    channelWrapper.classList.remove('bg-blue-50/50', 'border-[#02379c]', 'shadow-sm');
+                }
+                handleChannelSelectionChange();
+            });
+        }
+        
+        container.appendChild(channelWrapper);
+    });
+}
+
+function handleChannelSelectionChange() {
+    const selectedChannels = getSelectedChannels();
+    availableChannels.forEach(channel => {
+        const container = document.getElementById(`template_container_${channel.name}`);
+        if (container) {
+            if (selectedChannels.includes(channel.name)) {
+                container.classList.remove('hidden');
+                if (channel.name === 'WhatsApp' && whatsappTemplates.length === 0) loadWhatsAppTemplates();
+                if (channel.name === 'SMS' && smsTemplates.length === 0) loadSmsTemplates();
+                if (channel.name === 'Email' && emailTemplates.length === 0) loadEmailTemplates();
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+    });
+
+    if (selectedChannels.includes('WhatsApp')) renderWhatsAppTemplateOptions();
+    if (selectedChannels.includes('SMS')) renderSmsTemplateOptions();
+    if (selectedChannels.includes('Email')) renderEmailTemplateOptions();
+}
+
+function getSelectedChannels() {
+    return Array.from(document.querySelectorAll('.channel-checkbox:checked')).map(cb => cb.value);
+}
+
+function setSelectedChannels(channels) {
+    document.querySelectorAll('.channel-checkbox').forEach(cb => {
+        cb.checked = channels.includes(cb.value);
+    });
+    handleChannelSelectionChange();
+}
+
+let reminderDialog = null;
+
+async function openRuleDialog(ruleId = null) {
+    let rule = null;
+    let title = 'Yeni Hatırlatma Kuralı';
+    let isEditInfo = false;
+
+    if (ruleId) {
+        rule = currentRulesData.find(x => x.id === ruleId);
+        if (rule) {
+            title = 'Kuralı Düzenle';
+            isEditInfo = true;
+        }
+    }
+
+    isEditMode = isEditInfo;
+
+    // Generate Hours Options
+    const hoursValues = [1, 2, 3, 6, 12, 24, 48, 72];
+    const hoursOptions = hoursValues.map(h => 
+        `<option value="${h}" ${rule?.hours == h ? 'selected' : ''}>${h} saat sonra</option>`
+    ).join('');
+    
+    // Premium Form Content
+    const content = `
+    <div class="px-2 py-1">
+        <form id="reminderForm" onsubmit="event.preventDefault(); saveRule();" class="space-y-6">
+            <input type="hidden" id="reminderId" value="${ruleId || 0}">
+            
+            <div class="grid grid-cols-12 gap-6">
+                <!-- Section: Basic Info -->
+                <div class="col-span-12 md:col-span-8">
+                    <label for="reminderName" class="block text-sm font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Hatırlatma Adı</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-tag text-gray-400 group-focus-within:text-[#02379c] transition-colors"></i>
+                        </div>
+                        <input type="text" id="reminderName" value="${rule?.name || ''}" 
+                               class="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] focus:bg-white transition-all sm:text-sm shadow-sm" 
+                               placeholder="Örn: Sepet Terk 1. Hatırlatma" required>
+                    </div>
+                </div>
+
+                <div class="col-span-12 md:col-span-4">
+                     <label class="block text-sm font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Durum</label>
+                     <div class="bg-white border border-gray-200 rounded-xl p-2 flex items-center justify-between shadow-sm h-[42px]">
+                        <span class="text-sm text-gray-600 pl-2 font-medium">Kural Aktif</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="reminderActive" class="sr-only peer" ${rule?.isActive !== false ? 'checked' : ''}>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#02379c]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#02379c]"></div>
+                        </label>
+                     </div>
+                </div>
+
+                <!-- Section: Timing & Settings -->
+                <div class="col-span-12 md:col-span-6">
+                    <label for="reminderHours" class="block text-sm font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Gönderim Zamanı</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-regular fa-clock text-gray-400 group-focus-within:text-[#02379c] transition-colors"></i>
+                        </div>
+                        <select id="reminderHours" class="block w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl leading-5 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#02379c]/20 focus:border-[#02379c] focus:bg-white transition-all sm:text-sm appearance-none shadow-sm" required>
+                            <option value="">Seçiniz...</option>
+                            ${hoursOptions}
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                             <i class="fa-solid fa-chevron-down text-gray-400 text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-12 md:col-span-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Ayarlar</label>
+                    <label class="flex items-center p-2.5 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 cursor-pointer transition-colors shadow-sm h-[42px] group/item relative overflow-visible">
+                        <input type="checkbox" id="allowResendForSentCustomers" class="rounded border-gray-300 text-[#02379c] focus:ring-[#02379c] h-4 w-4" ${rule?.allowResendForSentCustomers ? 'checked' : ''}>
+                        <span class="ml-3 text-sm text-gray-700 font-medium group-hover/item:text-[#02379c] transition-colors">Tekrar Gönderime İzin Ver</span>
+                        
+                        <!-- Tooltip -->
+                        <div class="ml-auto relative group/tooltip p-1 -mr-1" onclick="event.preventDefault()">
+                            <i class="fa-solid fa-circle-info text-gray-300 hover:text-[#02379c] transition-colors"></i>
+                            
+                            <div class="absolute bottom-full right-0 mb-2 w-60 p-3 bg-gray-900/95 backdrop-blur-sm text-white text-xs font-medium leading-relaxed rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-[9999] pointer-events-none transform translate-y-1 group-hover/tooltip:translate-y-0 text-center border border-white/10">
+                                Aktif olduğunda, müşteri daha önce bu kuraldan mesaj almış olsa bile (yeni terk edilen sepette) tekrar gönderilir.
+                                <div class="absolute top-full right-2 -mt-[1px] border-4 border-transparent border-t-gray-900/95"></div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Section: Channels -->
+            <div class="pt-2">
+                <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
+                    <h4 class="text-sm font-bold text-[#02379c] flex items-center tracking-wide uppercase">
+                        <span class="bg-[#02379c]/10 p-1.5 rounded-lg mr-2"><i class="fa-solid fa-bullhorn"></i></span> 
+                        İletişim Kanalları
+                    </h4>
+                    <span class="text-xs text-gray-400 font-normal bg-gray-50 px-2 py-1 rounded-md border border-gray-100">En az bir kanal seçiniz</span>
+                </div>
+                
+                <div id="communicationChannels" class="min-h-[120px]">
+                    <div class="flex flex-col items-center justify-center py-10 text-gray-400 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                        <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3 text-[#02379c]/30"></i>
+                        <span class="text-sm text-gray-500 font-medium">Kanallar ve şablonlar yükleniyor...</span>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </div>
+    `;
+
+    // Recreate dialog ensuring clean state
+    reminderDialog = new PushDialog({
+        title: title,
+        content: content,
+        size: '2xl', 
+        dismissable: false,
+        stickyFooter: true,
+        footer: `
+            <button type="button" onclick="saveRule()" class="px-8 py-2.5 bg-[#02379c] text-white rounded-xl hover:bg-[#02379c]/90 font-bold text-sm shadow-[0_4px_14px_0_rgba(2,55,156,0.25)] hover:shadow-[0_6px_20px_rgba(2,55,156,0.23)] transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+                <i class="fa-solid fa-save mr-2"></i> Kaydet
+            </button>
+            <button type="button" onclick="reminderDialog.close()" class="px-5 py-2.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl font-medium text-sm transition-all border border-transparent hover:border-gray-200">
+                Vazgeç
+            </button>
+        `
+    });
+
+    reminderDialog.open();
+
+    // Initialize logic after DOM update
+    // Using setTimeout to let PushDialog render
+    setTimeout(async () => {
+        await loadCommunicationChannels();
+        
+        if (rule) {
+            // Edit Mode - Load Values
+            try {
+                const selectedChannels = JSON.parse(rule.communicationChannels || '[]');
+                setSelectedChannels(selectedChannels);
+                handleChannelSelectionChange(); // Helper to show template selects
+
+                // Load templates for selected channels
+                const promises = [];
+                if (selectedChannels.includes('WhatsApp')) promises.push(loadWhatsAppTemplates());
+                if (selectedChannels.includes('SMS')) promises.push(loadSmsTemplates());
+                if (selectedChannels.includes('Email')) promises.push(loadEmailTemplates());
+                
+                await Promise.all(promises);
+
+                // Set Template IDs
+                const channelMessagesObj = JSON.parse(rule.channelMessages || '{}');
+                
+                if (selectedChannels.includes('WhatsApp') && channelMessagesObj.WhatsApp) {
+                    const el = document.getElementById('whatsappTemplate');
+                    if(el) el.value = channelMessagesObj.WhatsApp.templateId;
+                }
+                if (selectedChannels.includes('SMS') && channelMessagesObj.SMS) {
+                    const el = document.getElementById('smsTemplate');
+                    if(el) el.value = channelMessagesObj.SMS.templateId;
+                }
+                if (selectedChannels.includes('Email') && channelMessagesObj.Email) {
+                    const el = document.getElementById('emailTemplate');
+                    if(el) el.value = channelMessagesObj.Email.templateId;
+                }
+            } catch(e) { console.error('Error populating form', e); }
+        } else {
+            // Create Mode - Defaults
+            // Select all active channels by default
+            const activeChannels = availableChannels.filter(c => c.isActive).map(c => c.name);
+            setSelectedChannels(activeChannels);
+            handleChannelSelectionChange();
+        }
+    }, 100);
+}
+
+// Alias for button onclicks
+function editReminderRuleById(id) {
+    openRuleDialog(id);
+}
+
+function saveRule() {
+    const selectedChannels = getSelectedChannels();
+    if (selectedChannels.length === 0) {
+        showNotification('En az bir iletişim kanalı seçmelisiniz.', 'warning');
+        return;
+    }
+
+    // Validation
+    const isWhatsAppSelected = selectedChannels.includes('WhatsApp');
+    const whatsappId = document.getElementById('whatsappTemplate')?.value;
+    
+    const isSmsSelected = selectedChannels.includes('SMS');
+    const smsId = document.getElementById('smsTemplate')?.value;
+    
+    const isEmailSelected = selectedChannels.includes('Email');
+    const emailId = document.getElementById('emailTemplate')?.value;
+
+    if (isWhatsAppSelected && !whatsappId) {
+        showNotification('WhatsApp şablonu seçimi zorunludur.', 'warning');
+        return;
+    }
+    if (isSmsSelected && !smsId) {
+        showNotification('SMS şablonu seçimi zorunludur.', 'warning');
+        return;
+    }
+    if (isEmailSelected && !emailId) {
+        showNotification('E-posta şablonu seçimi zorunludur.', 'warning');
+        return;
+    }
+    
+    const reminderHoursValue = document.getElementById('reminderHours').value;
+    if (!reminderHoursValue) {
+        showNotification('Lütfen gönderim zamanı seçiniz.', 'warning');
+        return;
+    }
+
+    // Build ChannelMessages
+    const channelMessages = { default: "" };
+
+    if (isWhatsAppSelected && whatsappId) {
+        const t = whatsappTemplates.find(x => x.id === whatsappId);
+        channelMessages.WhatsApp = {
+            templateId: whatsappId,
+            templateName: t ? t.name : ''
+        };
+    }
+    if (isSmsSelected && smsId) {
+        const t = smsTemplates.find(x => x.id == smsId);
+        channelMessages.SMS = {
+            templateId: smsId,
+            templateName: t ? t.name : ''
+        };
+    }
+    if (isEmailSelected && emailId) {
+        const t = emailTemplates.find(x => x.id == emailId);
+        channelMessages.Email = {
+            templateId: emailId,
+            templateName: t ? t.name : ''
+        };
+    }
+
+    const formData = {
+        id: parseInt(document.getElementById('reminderId').value),
+        name: document.getElementById('reminderName').value.trim(),
+        message: "",
+        hours: parseInt(document.getElementById('reminderHours').value),
+        isActive: document.getElementById('reminderActive').checked,
+        allowResendForSentCustomers: document.getElementById('allowResendForSentCustomers').checked,
+        communicationChannels: JSON.stringify(selectedChannels),
+        channelMessages: JSON.stringify(channelMessages)
+    };
+
+    const url = isEditMode ? '/BasketReminder/Update' : '/BasketReminder/Create';
+    const btn = document.querySelector('.push-dialog-footer button:last-child'); // Target save button if possible, or generic
+    
+    if (btn) BusyIndicator.show(btn, { size: 'sm' });
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            if (reminderDialog) reminderDialog.close();
+            loadReminderRules();
+        } else {
+            showNotification(data.message.title || data.message, 'error');
+        }
+    })
+    .catch(e => {
+        console.error(e);
+        showNotification('Bir hata oluştu.', 'error');
+    })
+    .finally(() => {
+        if (btn) BusyIndicator.hide(btn);
+    });
+}
+
+function loadReminderLogs() {
+    // Rule loading removed from here as it is now in toggleReminderRulesSection
+    
+    const scheduleId = document.getElementById('reminderFilterSchedule').value;
+    const status = document.getElementById('reminderFilterStatus').value;
+    
+    const params = new URLSearchParams({
+        page: currentReminderLogsPage,
+        pageSize: currentReminderLogsPageSize
+    });
+    
+    if (scheduleId) params.append('scheduleId', scheduleId);
+    if (status) params.append('status', status);
+
+    const tbody = document.getElementById('reminderLogsTableBody');
+    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center">Yükleniyor...</td></tr>';
+
+    fetch(`/Basket/GetReminderLogs?${params}`)
+    .then(r => r.json())
+    .then(resp => {
+        if (resp.success) {
+            const logs = resp.data;
+            hasMoreReminderLogs = resp.hasMore;
+            
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Kayıt bulunamadı.</td></tr>';
+            } else {
+                tbody.innerHTML = logs.map(l => `
+                    <tr>
+                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                             <div class="font-medium">${l.customerName || '-'}</div>
+                             <div class="text-gray-500 max-w-xs truncate">${l.customerEmail}</div>
+                         </td>
+                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${l.templateName}</td>
+                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${l.channel}</td>
+                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${l.sentAt}</td>
+                         <td class="px-6 py-4 whitespace-nowrap text-sm">
+                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${l.status === 'Başarılı' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${l.status}
+                             </span>
+                         </td>
+                         <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title="${l.errorMessage || ''}">
+                             ${l.errorMessage || '-'}
+                         </td>
+                    </tr>
+                `).join('');
+            }
+            
+            updateReminderPagination();
+        }
+    });
+}
+
+function changeReminderLogsPage(delta) {
+    currentReminderLogsPage += delta;
+    if (currentReminderLogsPage < 1) currentReminderLogsPage = 1;
+    loadReminderLogs();
+}
+
+function updateReminderPagination() {
+    document.getElementById('reminderLogsPageInfo').textContent = `Sayfa ${currentReminderLogsPage}`;
+    document.getElementById('reminderLogsPrev').disabled = currentReminderLogsPage <= 1;
+    document.getElementById('reminderLogsNext').disabled = !hasMoreReminderLogs;
+}
+</script>
+}

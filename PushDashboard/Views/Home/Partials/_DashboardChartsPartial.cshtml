@@ -1,0 +1,168 @@
+@model PushDashboard.ViewModels.DashboardChartsViewModel
+
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Usage Trend Chart -->
+    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900">Kullanım Trendi</h3>
+                <p class="text-sm text-gray-600">Son 7 günlük modül kullanımı</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button class="text-sm text-gray-500 hover:text-gray-700" onclick="toggleChartType('usage')">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="h-64 flex items-center justify-center relative" id="usageChartContainer">
+            @if (Model.UsageTrend.Any())
+            {
+                <div class="w-full h-full flex items-end justify-around">
+                    @foreach (var point in Model.UsageTrend)
+                    {
+                        var height = Model.UsageTrend.Max(p => p.Value) > 0 ? (int)((point.Value / Model.UsageTrend.Max(p => p.Value)) * 200) : 20;
+                        <div class="flex flex-col items-center relative bar-column" 
+                             data-label="@point.Label" 
+                             data-value="@point.Value" 
+                             data-date="@point.Date.ToString("yyyy-MM-dd")">
+                            <div class="w-12 bg-primary rounded-t-md transition-all duration-200 cursor-pointer hover:bg-primary-dark bar" 
+                                 style="height: @(height)px;"></div>
+                            <span class="mt-2 text-xs text-gray-600">@point.Label</span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center">
+                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <p class="text-sm text-gray-500">Henüz veri yok</p>
+                </div>
+            }
+            
+            <!-- Tooltip -->
+            <div id="usageTooltip" class="absolute bg-gray-800 text-white p-2 rounded shadow-lg opacity-0 pointer-events-none transition-opacity duration-200 z-10">
+                <div class="text-sm">
+                    <div id="usageTooltipTitle" class="font-semibold"></div>
+                    <div id="usageTooltipValue" class="text-xs"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cost Trend Chart -->
+    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900">Maliyet Trendi</h3>
+                <p class="text-sm text-gray-600">Son 7 günlük harcama analizi</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="text-sm text-gray-500">Toplam:</span>
+                <span class="text-sm font-medium text-gray-900">₺@Model.CostTrend.Sum(c => c.Value).ToString("N2")</span>
+            </div>
+        </div>
+        <div class="h-64 flex items-center justify-center relative" id="costChartContainer">
+            @if (Model.CostTrend.Any())
+            {
+                <div class="w-full h-full flex items-end justify-around">
+                    @foreach (var point in Model.CostTrend)
+                    {
+                        var height = Model.CostTrend.Max(p => p.Value) > 0 ? (int)((point.Value / Model.CostTrend.Max(p => p.Value)) * 200) : 20;
+                        <div class="flex flex-col items-center relative bar-column" 
+                             data-label="@point.Label" 
+                             data-value="₺@point.Value.ToString("N2")" 
+                             data-date="@point.Date.ToString("yyyy-MM-dd")">
+                            <div class="w-12 bg-green-500 rounded-t-md transition-all duration-200 cursor-pointer hover:bg-green-600 bar" 
+                                 style="height: @(height)px;"></div>
+                            <span class="mt-2 text-xs text-gray-600">@point.Label</span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center">
+                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg>
+                    <p class="text-sm text-gray-500">Henüz harcama yok</p>
+                </div>
+            }
+            
+            <!-- Tooltip -->
+            <div id="costTooltip" class="absolute bg-gray-800 text-white p-2 rounded shadow-lg opacity-0 pointer-events-none transition-opacity duration-200 z-10">
+                <div class="text-sm">
+                    <div id="costTooltipTitle" class="font-semibold"></div>
+                    <div id="costTooltipValue" class="text-xs"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Usage chart tooltips
+    const usageColumns = document.querySelectorAll('#usageChartContainer .bar-column');
+    const usageTooltip = document.getElementById('usageTooltip');
+    const usageTooltipTitle = document.getElementById('usageTooltipTitle');
+    const usageTooltipValue = document.getElementById('usageTooltipValue');
+
+    usageColumns.forEach(column => {
+        column.addEventListener('mouseenter', function(e) {
+            const label = this.dataset.label;
+            const value = this.dataset.value;
+            
+            usageTooltipTitle.textContent = label;
+            usageTooltipValue.textContent = `${value} kullanım`;
+            
+            usageTooltip.style.left = e.pageX + 'px';
+            usageTooltip.style.top = (e.pageY - 40) + 'px';
+            usageTooltip.classList.remove('opacity-0');
+            usageTooltip.classList.add('opacity-100');
+        });
+
+        column.addEventListener('mouseleave', function() {
+            usageTooltip.classList.remove('opacity-100');
+            usageTooltip.classList.add('opacity-0');
+        });
+    });
+
+    // Cost chart tooltips
+    const costColumns = document.querySelectorAll('#costChartContainer .bar-column');
+    const costTooltip = document.getElementById('costTooltip');
+    const costTooltipTitle = document.getElementById('costTooltipTitle');
+    const costTooltipValue = document.getElementById('costTooltipValue');
+
+    costColumns.forEach(column => {
+        column.addEventListener('mouseenter', function(e) {
+            const label = this.dataset.label;
+            const value = this.dataset.value;
+            
+            costTooltipTitle.textContent = label;
+            costTooltipValue.textContent = `Harcama: ${value}`;
+            
+            costTooltip.style.left = e.pageX + 'px';
+            costTooltip.style.top = (e.pageY - 40) + 'px';
+            costTooltip.classList.remove('opacity-0');
+            costTooltip.classList.add('opacity-100');
+        });
+
+        column.addEventListener('mouseleave', function() {
+            costTooltip.classList.remove('opacity-100');
+            costTooltip.classList.add('opacity-0');
+        });
+    });
+});
+
+function toggleChartType(chartType) {
+    // This could be expanded to switch between different chart views
+    console.log('Toggle chart type:', chartType);
+}
+</script>

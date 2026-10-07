@@ -1,0 +1,187 @@
+@{
+    ViewData["Title"] = "Kullanım Şartları";
+    Layout = "_BlankLayout";
+}
+
+<div class="min-h-screen bg-slate-50 font-sans text-slate-600">
+    <div class="bg-white border-b border-slate-200">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-12">
+            <div class="max-w-3xl">
+                <span class="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10 mb-4">
+                    Yasal Sözleşmeler
+                </span>
+                <h1 class="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl mb-4">@ViewData["Title"]</h1>
+            </div>
+        </div>
+    </div>
+
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-12">
+        <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+            
+            <div class="hidden lg:block lg:col-span-3">
+                <nav class="sticky top-6 overflow-y-auto pb-4">
+                    <h3 class="font-semibold text-slate-900 mb-4">İçindekiler</h3>
+                    <ul class="space-y-3 text-sm">
+                        <li><a href="#intro" class="js-scroll-link block text-slate-600 hover:text-indigo-600 hover:pl-1 transition-all">Genel Bakış</a></li>
+                        <li><a href="#parties" class="js-scroll-link block text-slate-600 hover:text-indigo-600 hover:pl-1 transition-all">1. Taraflar</a></li>
+                        <li><a href="#scope" class="js-scroll-link block text-slate-600 hover:text-indigo-600 hover:pl-1 transition-all">2. Hizmetin Kapsamı</a></li>
+                        <li><a href="#obligations" class="js-scroll-link block text-slate-600 hover:text-indigo-600 hover:pl-1 transition-all">3. Kullanıcı Yükümlülükleri</a></li>
+                        <li><a href="#liability" class="js-scroll-link block text-slate-600 hover:text-indigo-600 hover:pl-1 transition-all">4. Sorumluluk Sınırı</a></li>
+                        <li><a href="#suspension" class="js-scroll-link block text-slate-600 hover:text-indigo-600 hover:pl-1 transition-all">5. Askıya Alma & Fesih</a></li>
+                        <li><a href="#ip" class="js-scroll-link block text-slate-600 hover:text-indigo-600 hover:pl-1 transition-all">6. Fikri Mülkiyet</a></li>
+                        <li><a href="#law" class="js-scroll-link block text-slate-600 hover:text-indigo-600 hover:pl-1 transition-all">7. Yetkili Hukuk</a></li>
+                    </ul>
+                </nav>
+            </div>
+
+            <main class="lg:col-span-9">
+                <div class="prose prose-slate prose-lg max-w-none bg-white rounded-2xl shadow-sm border border-slate-100 p-8 md:p-12">
+                    
+                    <section id="intro" class="scroll-mt-24 mb-12">
+                        <p class="leading-relaxed text-lg border-l-4 border-indigo-500 pl-4 bg-slate-50 py-2">
+                            İşbu Kullanım Şartları, Dijitaldesin platformunu kullanan tüm kullanıcılar için geçerlidir.
+                            Platforma kayıt olan, hizmet alan veya herhangi bir şekilde Dijitaldesin altyapısını kullanan
+                            herkes bu şartları okumuş, anlamış ve kabul etmiş sayılır.
+                        </p>
+                    </section>
+
+                    <section id="parties" class="scroll-mt-24 mb-12">
+                        <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center">
+                            <span class="text-indigo-600 mr-2">1.</span> Taraflar
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-indigo-50 rounded-xl p-6 border border-indigo-100">
+                                <h3 class="font-bold text-indigo-900 text-lg mb-2">Hizmet Sağlayıcı</h3>
+                                <p class="text-sm font-semibold text-indigo-800 mb-1">Dijitaldesin</p>
+                                <div class="text-sm text-indigo-700 space-y-1">
+                                    <p>E-posta: info@dijitaldesin.com</p>
+                                    <p>Web: dijitaldesin.com</p>
+                                </div>
+                            </div>
+                            <div class="bg-slate-50 rounded-xl p-6 border border-slate-200">
+                                <h3 class="font-bold text-slate-900 text-lg mb-2">Kullanıcı / Müşteri</h3>
+                                <p class="text-sm text-slate-600">
+                                    Dijitaldesin platformuna üye olan veya hizmetlerden faydalanan gerçek veya tüzel kişidir.
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="scope" class="scroll-mt-24 mb-12">
+                        <h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center">
+                            <span class="text-indigo-600 mr-2">2.</span> Hizmetin Kapsamı
+                        </h2>
+                        <p>
+                            Dijitaldesin; dijital pazarlama otomasyonları, müşteri etkileşim modülleri, bildirim sistemleri,
+                            entegrasyon çözümleri ve analiz araçları sunan bir yazılım platformudur.
+                        </p>
+                        <div class="mt-4 p-4 bg-yellow-50 text-yellow-800 text-sm rounded-lg border border-yellow-200 flex items-start">
+                            <svg class="h-5 w-5 text-yellow-600 mr-3 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span>Dijitaldesin, hizmet içeriğini ve modülleri önceden bildirimde bulunmaksızın değiştirme, güncelleme veya sonlandırma hakkını saklı tutar.</span>
+                        </div>
+                    </section>
+
+                    <section id="obligations" class="scroll-mt-24 mb-12">
+                        <h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center">
+                            <span class="text-indigo-600 mr-2">3.</span> Kullanıcı Yükümlülükleri
+                        </h2>
+                        <p class="mb-4">Kullanıcı aşağıdaki maddeleri kabul ve taahhüt eder:</p>
+                        <ul class="space-y-3 list-none pl-0">
+                            <li class="flex items-start">
+                                <svg class="h-6 w-6 text-green-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                <span>Sisteme aktarılan tüm verilerin hukuka uygun olduğunu,</span>
+                            </li>
+                            <li class="flex items-start">
+                                <svg class="h-6 w-6 text-green-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                <span>KVKK, GDPR ve ilgili tüm mevzuata uygun hareket edildiğini,</span>
+                            </li>
+                            <li class="flex items-start">
+                                <svg class="h-6 w-6 text-green-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                <span>Müşterilerden gerekli açık rıza ve izinlerin alındığını,</span>
+                            </li>
+                            <li class="flex items-start">
+                                <svg class="h-6 w-6 text-green-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                <span>Platformun spam, izinsiz ileti veya hukuka aykırı amaçlarla kullanılmayacağını.</span>
+                            </li>
+                        </ul>
+                        <p class="mt-4 text-sm text-slate-500 italic">
+                            * Kullanıcı, bu yükümlülüklerin ihlalinden doğabilecek tüm hukuki, idari ve cezai sorumlulukların kendisine ait olduğunu kabul eder.
+                        </p>
+                    </section>
+
+                    <section id="liability" class="scroll-mt-24 mb-12">
+                        <h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center">
+                            <span class="text-indigo-600 mr-2">4.</span> Sorumluluğun Sınırlandırılması
+                        </h2>
+                        <p class="mb-4">Dijitaldesin, aşağıdaki durumlardan hiçbir şekilde sorumlu tutulamaz:</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                            <div class="bg-slate-50 p-4 rounded-lg text-sm text-slate-700">Kullanıcının sisteme girdiği verilerin doğruluğu</div>
+                            <div class="bg-slate-50 p-4 rounded-lg text-sm text-slate-700">Gönderilen bildirimlerin içeriği</div>
+                            <div class="bg-slate-50 p-4 rounded-lg text-sm text-slate-700">3. taraf servis (SMS/Email) aksaklıkları</div>
+                            <div class="bg-slate-50 p-4 rounded-lg text-sm text-slate-700">Dolaylı zararlar, gelir veya itibar kaybı</div>
+                        </div>
+                        <p class="text-slate-900 font-medium">
+                            Dijitaldesin bir <span class="text-indigo-600 underline decoration-2">altyapı ve teknoloji sağlayıcıdır</span>. İçerik ve kullanım amacı tamamen kullanıcı sorumluluğundadır.
+                        </p>
+                    </section>
+
+                    <section id="suspension" class="scroll-mt-24 mb-12">
+                        <h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center">
+                            <span class="text-indigo-600 mr-2">5.</span> Hizmetin Askıya Alınması
+                        </h2>
+                        <div class="bg-red-50 border-l-4 border-red-500 p-4">
+                            <p class="text-red-900 mb-2 font-medium">Hesabın Askıya Alınma Sebepleri:</p>
+                            <ul class="list-disc pl-5 space-y-1 text-red-800 text-sm">
+                                <li>Hukuka aykırı kullanım</li>
+                                <li>Spam veya izinsiz ileti gönderimi</li>
+                                <li>Sistem güvenliğini tehdit eden işlemler</li>
+                                <li>Ödeme yükümlülüklerinin ihlali</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <section id="ip" class="scroll-mt-24">
+                            <h2 class="text-xl font-bold text-slate-900 mb-3">6. Fikri Mülkiyet Hakları</h2>
+                            <p class="text-sm leading-relaxed">
+                                Dijitaldesin platformuna ait tüm yazılım, tasarım, arayüz, metin ve dokümantasyon Dijitaldesin’e aittir. Kullanıcı bu unsurları izinsiz olarak kopyalayamaz, çoğaltamaz veya üçüncü kişilerle paylaşamaz.
+                            </p>
+                        </section>
+                        <section id="law" class="scroll-mt-24">
+                            <h2 class="text-xl font-bold text-slate-900 mb-3">7. Uygulanacak Hukuk</h2>
+                            <p class="text-sm leading-relaxed">
+                                İşbu Kullanım Şartları Türkiye Cumhuriyeti hukukuna tabidir. Doğabilecek uyuşmazlıklarda İstanbul Anadolu Mahkemeleri ve İcra Daireleri yetkilidir.
+                            </p>
+                        </section>
+                    </div>
+
+                    <section class="mt-16 pt-8 border-t border-slate-200">
+                        <div class="bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 rounded-2xl p-8 text-white text-center">
+                            <h3 class="text-xl font-bold mb-2">Sorularınız mı var?</h3>
+                            <p class="text-slate-300 mb-6 text-sm">Bu sözleşme hakkında daha fazla bilgi almak için bizimle iletişime geçin.</p>
+                            <a href="mailto:info@dijitaldesin.com" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-slate-900 bg-white hover:bg-slate-50 transition-colors">
+                                Bizimle İletişime Geçin
+                            </a>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const links = document.querySelectorAll('.js-scroll-link');
+        links.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    });
+</script>

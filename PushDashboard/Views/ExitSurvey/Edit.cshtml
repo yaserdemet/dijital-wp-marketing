@@ -1,0 +1,701 @@
+@model PushDashboard.Models.ViewModels.ExitSurveyViewModel
+@{
+    ViewData["Title"] = "Çıkış Anketi Düzenle - " + (Model.ExitSurvey?.Name ?? Model.ExitSurvey?.Title ?? "Anket");
+    ViewData["PageHeader"] = "Çıkış Anketi Düzenle";
+    var isActive = Model.ExitSurvey?.IsActive == true;
+    var hasQuestions = Model.Questions.Any();
+    var surveyId = Model.ExitSurvey?.Id ?? 0;
+    var surveyName = Model.ExitSurvey?.Name ?? Model.ExitSurvey?.Title ?? "Anket";
+}
+
+@section Styles {
+    <style>
+        .es-color-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .es-color-input-wrapper input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            padding: 0;
+            background: none;
+            flex-shrink: 0;
+        }
+        .es-color-input-wrapper input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        .es-color-input-wrapper input[type="color"]::-webkit-color-swatch {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+        }
+        /* Toggle Switch */
+        .es-toggle {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .es-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .es-toggle .es-slider {
+            width: 36px; height: 20px;
+            background: #d1d5db;
+            border-radius: 999px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .es-toggle .es-slider::after {
+            content: '';
+            position: absolute;
+            top: 2px; left: 2px;
+            width: 16px; height: 16px;
+            background: white;
+            border-radius: 50%;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+        .es-toggle input:checked + .es-slider {
+            background: #3b82f6;
+        }
+        .es-toggle input:checked + .es-slider::after {
+            transform: translateX(16px);
+            border-color: transparent;
+        }
+        /* Collapsible Section */
+        .es-section-header {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+        .es-section-header:hover {
+            background: rgba(59, 130, 246, 0.03);
+        }
+        .es-section-body {
+            max-height: 2000px;
+            overflow: hidden;
+            transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+            opacity: 1;
+        }
+        .es-section-body.collapsed {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+        .es-section-chevron {
+            transition: transform 0.25s ease;
+        }
+        .es-section-chevron.collapsed {
+            transform: rotate(-90deg);
+        }
+        /* Range Input Styling */
+        input[type="range"].es-range {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 999px;
+            outline: none;
+        }
+        input[type="range"].es-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px; height: 18px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        input[type="range"].es-range::-moz-range-thumb {
+            width: 18px; height: 18px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+    </style>
+}
+
+<main class="min-h-screen bg-gray-50/50 pb-20">
+    <!-- Sticky Header -->
+    <div class="sticky top-2 lg:top-4 z-20 px-2 lg:px-6 mb-4 lg:mb-6">
+        <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm px-4 py-3 lg:px-6 lg:py-4">
+            <div class="flex items-center gap-3 lg:gap-4 w-full md:w-auto">
+                <a href="@Url.Action("Index")" class="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all flex-shrink-0">
+                    <i class="fas fa-arrow-left text-lg"></i>
+                </a>
+                <div class="min-w-0">
+                    <h2 class="text-lg lg:text-xl font-bold text-gray-900 truncate">Anket Düzenle</h2>
+                    <div class="flex items-center gap-2 text-xs lg:text-sm text-gray-500 truncate">
+                        <span class="truncate">@surveyName</span>
+                        <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
+                        <span class="text-blue-600 font-medium flex-shrink-0">Düzenleniyor</span>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:flex md:items-center gap-2 lg:gap-3 w-full md:w-auto mt-2 md:mt-0 justify-end">
+                <!-- Status Toggle Button -->
+                <input type="checkbox" id="isActiveHidden" @(isActive ? "checked" : "") class="hidden">
+                <button type="button" onclick="toggleExitSurveyStatus()" id="statusBtn"
+                        class="@(isActive ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-600 border-gray-200") px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium rounded-lg flex items-center justify-center gap-2 border shadow-sm whitespace-nowrap transition-all w-full md:w-auto">
+                    <span id="statusIndicator" class="w-2.5 h-2.5 rounded-full @(isActive ? "bg-green-500 animate-pulse" : "bg-gray-400")"></span>
+                    <span id="statusText">@(isActive ? "Aktif" : "Pasif")</span>
+                </button>
+                <a href="@Url.Action("AllResponses", new { id = surveyId })" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <i class="fas fa-comments"></i> <span class="hidden sm:inline">Yanıtlar</span><span class="inline sm:hidden">Yanıtlar</span>
+                </a>
+                <button type="button" id="saveSettingsBtn" class="px-4 lg:px-6 py-2 text-xs lg:text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm hover:shadow transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <i class="fas fa-save"></i> Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-[1600px] mx-auto px-2 lg:px-6 py-4 lg:py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 items-start">
+
+        <!-- Sol Panel - Ayarlar -->
+        <div class="lg:col-span-6 xl:col-span-7 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-4 lg:px-6 py-3 border-b border-gray-100 bg-gray-50/50">
+                <h3 class="font-semibold text-gray-900 text-lg">Genel Ayarlar</h3>
+            </div>
+
+            <div class="p-4 lg:p-6 pt-4 space-y-6 lg:space-y-8">
+                <form id="exitSurveySettingsForm" class="space-y-6 lg:space-y-10">
+                    <input type="hidden" id="surveyId" value="@surveyId">
+                    <input type="hidden" id="companyId" value="@(Model.ExitSurvey?.CompanyId ?? Guid.Empty)">
+                    <input type="hidden" id="isActive" value="@(isActive ? "true" : "false")">
+
+                    <!-- ═══════════════════════════════════════════ -->
+                    <!-- SECTION 1: İçerik Ayarları                 -->
+                    <!-- ═══════════════════════════════════════════ -->
+                    <div class="settings-section" data-section="content">
+                        <div class="es-section-header flex items-center justify-between gap-3 mb-6" onclick="toggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-blue-50 text-blue-600 rounded-lg"><i class="fas fa-file-alt"></i></div>
+                                <h4 class="text-base font-bold text-gray-900">İçerik</h4>
+                            </div>
+                            <i class="fas fa-chevron-down es-section-chevron text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="es-section-body space-y-5">
+                            <div>
+                                <label for="title" class="block text-sm font-semibold text-gray-800 mb-2">Anket Başlığı</label>
+                                <input type="text" id="title" name="title" value="@(Model.ExitSurvey?.Title ?? "Görüşünüz Bizim İçin Önemli")" required
+                                       class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none">
+                            </div>
+                            <div>
+                                <label for="description" class="block text-sm font-semibold text-gray-800 mb-2">Açıklama</label>
+                                <textarea id="description" name="description" rows="3" required
+                                          class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm resize-none transition-all focus:shadow-md outline-none">@(Model.ExitSurvey?.Description ?? "Sitemizi terk etmeden önce deneyiminizi bizimle paylaşır mısınız? Bu sadece birkaç saniye sürecek.")</textarea>
+                            </div>
+                            <div>
+                                <label for="thankYouMessage" class="block text-sm font-semibold text-gray-800 mb-2">Teşekkür Mesajı</label>
+                                <input type="text" id="thankYouMessage" name="thankYouMessage" value="@(Model.ExitSurvey?.ThankYouMessage ?? "Geri bildiriminiz için teşekkür ederiz!")" required
+                                       class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- ═══════════════════════════════════════════ -->
+                    <!-- SECTION 2: Butonlar                        -->
+                    <!-- ═══════════════════════════════════════════ -->
+                    <div class="settings-section" data-section="buttons">
+                        <div class="es-section-header flex items-center justify-between gap-3 mb-6" onclick="toggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><i class="fas fa-mouse-pointer"></i></div>
+                                <h4 class="text-base font-bold text-gray-900">Butonlar</h4>
+                            </div>
+                            <i class="fas fa-chevron-down es-section-chevron text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="es-section-body space-y-5">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="submitButtonText" class="block text-sm font-semibold text-gray-800 mb-2">Gönder Butonu Metni</label>
+                                    <input type="text" id="submitButtonText" name="submitButtonText" value="@(Model.ExitSurvey?.SubmitButtonText ?? "Gönder")" required
+                                           class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none">
+                                </div>
+                                <div>
+                                    <label for="cancelButtonText" class="block text-sm font-semibold text-gray-800 mb-2">İptal Butonu Metni</label>
+                                    <input type="text" id="cancelButtonText" name="cancelButtonText" value="@(Model.ExitSurvey?.CancelButtonText ?? "Kapat")" required
+                                           class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">Gönder Buton Rengi</label>
+                                    <div class="es-color-input-wrapper flex items-center gap-2">
+                                        <input type="color" id="submitButtonColorPicker" value="@(Model.ExitSurvey?.SubmitButtonColor ?? "#4CAF50")"
+                                               class="h-10 w-10 rounded cursor-pointer border-0 p-0"
+                                               onchange="document.getElementById('submitButtonColor').value = this.value; $(this).trigger('input');">
+                                        <input type="text" id="submitButtonColor" value="@(Model.ExitSurvey?.SubmitButtonColor ?? "#4CAF50")"
+                                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase"
+                                               onchange="document.getElementById('submitButtonColorPicker').value = this.value; $(this).trigger('input');">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">İptal Buton Rengi</label>
+                                    <div class="es-color-input-wrapper flex items-center gap-2">
+                                        <input type="color" id="cancelButtonColorPicker" value="@(Model.ExitSurvey?.CancelButtonColor ?? "#6c757d")"
+                                               class="h-10 w-10 rounded cursor-pointer border-0 p-0"
+                                               onchange="document.getElementById('cancelButtonColor').value = this.value; $(this).trigger('input');">
+                                        <input type="text" id="cancelButtonColor" value="@(Model.ExitSurvey?.CancelButtonColor ?? "#6c757d")"
+                                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase"
+                                               onchange="document.getElementById('cancelButtonColorPicker').value = this.value; $(this).trigger('input');">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- ═══════════════════════════════════════════ -->
+                    <!-- SECTION 3: Tasarım & Görünüm               -->
+                    <!-- ═══════════════════════════════════════════ -->
+                    <div class="settings-section" data-section="design">
+                        <div class="es-section-header flex items-center justify-between gap-3 mb-6" onclick="toggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-purple-50 text-purple-600 rounded-lg"><i class="fas fa-palette"></i></div>
+                                <h4 class="text-base font-bold text-gray-900">Tasarım & Görünüm</h4>
+                            </div>
+                            <i class="fas fa-chevron-down es-section-chevron text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="es-section-body space-y-6">
+                            <!-- Colors Grid -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">Arka Plan Rengi</label>
+                                    <div class="es-color-input-wrapper flex items-center gap-2">
+                                        <input type="color" id="backgroundColorPicker" value="@(Model.ExitSurvey?.BackgroundColor ?? "#ffffff")"
+                                               class="h-10 w-10 rounded cursor-pointer border-0 p-0"
+                                               onchange="document.getElementById('backgroundColor').value = this.value; $(this).trigger('input');">
+                                        <input type="text" id="backgroundColor" value="@(Model.ExitSurvey?.BackgroundColor ?? "#ffffff")"
+                                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase"
+                                               onchange="document.getElementById('backgroundColorPicker').value = this.value; $(this).trigger('input');">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">Metin Rengi</label>
+                                    <div class="es-color-input-wrapper flex items-center gap-2">
+                                        <input type="color" id="textColorPicker" value="@(Model.ExitSurvey?.TextColor ?? "#333333")"
+                                               class="h-10 w-10 rounded cursor-pointer border-0 p-0"
+                                               onchange="document.getElementById('textColor').value = this.value; $(this).trigger('input');">
+                                        <input type="text" id="textColor" value="@(Model.ExitSurvey?.TextColor ?? "#333333")"
+                                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase"
+                                               onchange="document.getElementById('textColorPicker').value = this.value; $(this).trigger('input');">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Border Radius Slider -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-sm font-semibold text-gray-800">Köşe Yuvarlaklığı</label>
+                                    <span id="borderRadiusValue" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">@(Model.ExitSurvey?.BorderRadius ?? "8px")</span>
+                                </div>
+                                <input type="range" id="borderRadius" name="borderRadius" min="0" max="24" step="2"
+                                       value="@(int.TryParse(Model.ExitSurvey?.BorderRadius?.Replace("px",""), out var br) ? br : 8)"
+                                       class="es-range w-full"
+                                       oninput="document.getElementById('borderRadiusValue').textContent = this.value + 'px'">
+                            </div>
+
+                            <!-- Animation Toggle -->
+                            <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-500 flex items-center justify-center"><i class="fas fa-magic"></i></div>
+                                        <span class="text-sm font-medium text-gray-700">Animasyon Efektleri</span>
+                                    </div>
+                                    <label class="es-toggle">
+                                        <input type="checkbox" id="enableAnimation" name="enableAnimation" @(Model.ExitSurvey?.EnableAnimation != false ? "checked" : "")>
+                                        <span class="es-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- ═══════════════════════════════════════════ -->
+                    <!-- SECTION 4: Hedefleme & Davranış            -->
+                    <!-- ═══════════════════════════════════════════ -->
+                    <div class="settings-section" data-section="targeting">
+                        <div class="es-section-header flex items-center justify-between gap-3 mb-6" onclick="toggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-amber-50 text-amber-600 rounded-lg"><i class="fas fa-bullseye"></i></div>
+                                <h4 class="text-base font-bold text-gray-900">Hedefleme & Davranış</h4>
+                            </div>
+                            <i class="fas fa-chevron-down es-section-chevron text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="es-section-body space-y-5">
+                            <!-- Trigger Toggles -->
+                            <div class="space-y-3">
+                                <h5 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Tetikleyiciler</h5>
+                                
+                                <label class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-white hover:shadow-sm hover:border-blue-200 transition-all">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-red-100 text-red-500 flex items-center justify-center"><i class="fas fa-sign-out-alt"></i></div>
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-700 block">Sayfa Çıkışında Göster</span>
+                                            <span class="text-xs text-gray-400">Mouse üst tarafa geldiğinde tetiklenir</span>
+                                        </div>
+                                    </div>
+                                    <label class="es-toggle">
+                                        <input type="checkbox" id="showOnPageExit" name="showOnPageExit" @(Model.ExitSurvey?.ShowOnPageExit != false ? "checked" : "")>
+                                        <span class="es-slider"></span>
+                                    </label>
+                                </label>
+
+                                <label class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-white hover:shadow-sm hover:border-blue-200 transition-all">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-orange-100 text-orange-500 flex items-center justify-center"><i class="fas fa-window-close"></i></div>
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-700 block">Sekme Kapatmada Göster</span>
+                                            <span class="text-xs text-gray-400">Tarayıcı sekmesi kapatılırken tetiklenir</span>
+                                        </div>
+                                    </div>
+                                    <label class="es-toggle">
+                                        <input type="checkbox" id="showOnTabClose" name="showOnTabClose" @(Model.ExitSurvey?.ShowOnTabClose != false ? "checked" : "")>
+                                        <span class="es-slider"></span>
+                                    </label>
+                                </label>
+                            </div>
+
+                            <!-- Device Targeting -->
+                            <div class="space-y-3">
+                                <h5 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Cihaz Hedefleme</h5>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="flex flex-col items-center justify-center p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-white hover:shadow-sm hover:border-blue-200 transition-all gap-2">
+                                        <i class="fas fa-desktop text-gray-400 text-lg"></i>
+                                        <span class="text-xs font-bold text-gray-600">Masaüstü</span>
+                                        <label class="es-toggle">
+                                            <input type="checkbox" id="showOnDesktop" name="showOnDesktop" @(Model.ExitSurvey?.ShowOnDesktop != false ? "checked" : "")>
+                                            <span class="es-slider"></span>
+                                        </label>
+                                    </label>
+                                    <label class="flex flex-col items-center justify-center p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-white hover:shadow-sm hover:border-blue-200 transition-all gap-2">
+                                        <i class="fas fa-mobile-alt text-gray-400 text-lg"></i>
+                                        <span class="text-xs font-bold text-gray-600">Mobil</span>
+                                        <label class="es-toggle">
+                                            <input type="checkbox" id="showOnMobile" name="showOnMobile" @(Model.ExitSurvey?.ShowOnMobile != false ? "checked" : "")>
+                                            <span class="es-slider"></span>
+                                        </label>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Frequency & Delay -->
+                            <div class="space-y-4">
+                                <h5 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Zamanlama</h5>
+                                
+                                <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-calendar-alt text-gray-400"></i>
+                                            <span class="text-sm font-medium text-gray-700">Gösterim Sıklığı</span>
+                                        </div>
+                                        <span class="text-xs text-gray-500 font-bold bg-white px-1.5 py-0.5 rounded border border-gray-200">gün</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 border-t border-gray-200 pt-2 mt-2">
+                                        <input type="number" id="showFrequencyDays" name="showFrequencyDays"
+                                               value="@(Model.ExitSurvey?.ShowFrequencyDays ?? 30)" min="0" max="365"
+                                               class="flex-1 bg-transparent border-0 p-0 text-sm text-gray-800 focus:ring-0 font-medium placeholder-gray-300 outline-none">
+                                        <span class="text-xs text-gray-400">Aynı kullanıcıya kaç günde bir gösterilsin</span>
+                                    </div>
+                                </div>
+
+                                <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-stopwatch text-gray-400"></i>
+                                            <span class="text-sm font-medium text-gray-700">Gösterim Gecikmesi</span>
+                                        </div>
+                                        <span class="text-xs text-gray-500 font-bold bg-white px-1.5 py-0.5 rounded border border-gray-200">ms</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 border-t border-gray-200 pt-2 mt-2">
+                                        <input type="number" id="delayBeforeShow" name="delayBeforeShow"
+                                               value="@(Model.ExitSurvey?.DelayBeforeShow ?? 0)" min="0" max="10000" step="100"
+                                               class="flex-1 bg-transparent border-0 p-0 text-sm text-gray-800 focus:ring-0 font-medium placeholder-gray-300 outline-none">
+                                        <span class="text-xs text-gray-400">Tetikleme sonrası bekleme süresi</span>
+                                    </div>
+                                </div>
+
+                                <div id="mobileDelayContainer" class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors" style="@(Model.ExitSurvey?.ShowOnMobile == false ? "display:none" : "")">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-mobile-alt text-gray-400"></i>
+                                            <span class="text-sm font-medium text-gray-700">Mobil Gösterim Süresi</span>
+                                        </div>
+                                        <span class="text-xs text-gray-500 font-bold bg-white px-1.5 py-0.5 rounded border border-gray-200">dk</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 border-t border-gray-200 pt-2 mt-2">
+                                        <input type="number" id="mobileDelayMinutes" name="mobileDelayMinutes"
+                                               value="@(Model.ExitSurvey?.MobileDelayMinutes ?? 5)" min="0" max="60" step="1"
+                                               class="flex-1 bg-transparent border-0 p-0 text-sm text-gray-800 focus:ring-0 font-medium placeholder-gray-300 outline-none">
+                                        <span class="text-xs text-gray-400">Mobilde kaç dk sonra otomatik gösterilsin</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sağ Panel - Önizleme + Sorular -->
+        <div class="lg:col-span-6 xl:col-span-5 space-y-4 lg:space-y-6 lg:sticky lg:top-24">
+
+            <!-- Anlık Önizleme -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-4 lg:px-6 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                        <i class="fas fa-eye text-blue-500"></i> Önizleme
+                    </h3>
+                    <span class="text-xs text-gray-400">Anlık güncellenir</span>
+                </div>
+                <div class="p-4 lg:p-6 bg-gray-100/50">
+                    <div id="surveyPreviewContainer" class="max-w-md mx-auto"></div>
+                </div>
+            </div>
+
+            <!-- Anket Soruları -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-4 lg:px-6 py-3 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-semibold text-gray-900 text-lg">Sorular</h3>
+                        <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full" id="questionCountBadge">@Model.Questions.Count</span>
+                    </div>
+                    <button type="button" class="bg-gray-900 hover:bg-black text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-sm hover:shadow flex items-center gap-2" id="addQuestionBtn">
+                        <i class="fas fa-plus"></i> Soru Ekle
+                    </button>
+                </div>
+                <div class="p-3 lg:p-4 bg-gray-50/30">
+                    <div id="questionsList" class="space-y-3 min-h-[60px]">
+                        @if (Model.Questions.Any())
+                        {
+                            @foreach (var question in Model.Questions.OrderBy(q => q.SortOrder))
+                            {
+                                var qStat = Model.Stats.QuestionStats.FirstOrDefault(s => s.QuestionId == question.Id);
+                                var optionsJson = question.OptionsJson ?? "[]";
+                                
+                                <div class="question-item group bg-white border border-gray-200 rounded-xl p-3 hover:shadow-md transition-all" 
+                                     data-question-id="@question.Id" 
+                                     data-question-text="@question.QuestionText" 
+                                     data-question-type="@((int)question.QuestionType)" 
+                                     data-question-options='@Html.Raw(optionsJson)'
+                                     data-question-required="@question.IsRequired">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <h4 class="font-semibold text-gray-900 text-sm truncate" title="@question.QuestionText">@question.QuestionText</h4>
+                                                @if (question.IsRequired)
+                                                {
+                                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 font-medium">Zorunlu</span>
+                                                }
+                                            </div>
+                                            <div class="flex items-center gap-2 mt-1">
+                                                <span class="text-xs text-gray-400">
+                                                    @switch (question.QuestionType)
+                                                    {
+                                                        case PushDashboard.Models.ExitSurveyQuestionType.SingleChoice:
+                                                            <text><i class="fas fa-check-circle mr-1"></i>Çoktan Seçmeli</text>
+                                                            break;
+                                                        case PushDashboard.Models.ExitSurveyQuestionType.TextArea:
+                                                            <text><i class="fas fa-align-left mr-1"></i>Serbest Metin</text>
+                                                            break;
+                                                        case PushDashboard.Models.ExitSurveyQuestionType.Boolean:
+                                                            <text><i class="fas fa-toggle-on mr-1"></i>Evet/Hayır</text>
+                                                            break;
+                                                        case PushDashboard.Models.ExitSurveyQuestionType.NpsRating:
+                                                            <text><i class="fas fa-star mr-1"></i>Puanlama (NPS/Yıldız)</text>
+                                                            break;
+                                                        case PushDashboard.Models.ExitSurveyQuestionType.MultiChoice:
+                                                            <text><i class="fas fa-check-square mr-1"></i>Çoklu Seçim</text>
+                                                            break;
+                                                        case PushDashboard.Models.ExitSurveyQuestionType.EmojiRating:
+                                                            <text><i class="fas fa-smile mr-1"></i>Emoji Puanlama</text>
+                                                            break;
+                                                    }
+                                                </span>
+                                                @if (qStat != null && qStat.ResponseCount > 0)
+                                                {
+                                                    <span class="text-xs text-gray-400">• @qStat.ResponseCount cevap</span>
+                                                }
+                                            </div>
+                                            @if (qStat != null && qStat.OptionStats.Any())
+                                            {
+                                                <div class="mt-2 flex flex-wrap gap-1">
+                                                    @foreach (var opt in qStat.OptionStats.OrderByDescending(o => o.Count).Take(3))
+                                                    {
+                                                        <span class="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium">
+                                                            @opt.OptionText <span class="ml-1 text-blue-500">%@opt.Percentage.ToString("F0")</span>
+                                                        </span>
+                                                    }
+                                                </div>
+                                            }
+                                            else if (qStat != null && qStat.QuestionType == PushDashboard.Models.ExitSurveyQuestionType.NpsRating && qStat.AverageRating.HasValue)
+                                            {
+                                                <div class="mt-2 flex items-center gap-1">
+                                                    @for (int i = 1; i <= 5; i++)
+                                                    {
+                                                        <i class="fas fa-star text-[10px] @(i <= Math.Round(qStat.AverageRating.Value) ? "text-yellow-400" : "text-gray-300")"></i>
+                                                    }
+                                                    <span class="text-[10px] font-bold text-gray-600 ml-1">@qStat.AverageRating.Value.ToString("F1")</span>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            <button type="button" class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all edit-question-btn" data-question-id="@question.Id" title="Düzenle">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all delete-question-btn" data-question-id="@question.Id" title="Sil">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div id="emptyQuestionsState" class="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
+                                <div class="w-12 h-12 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center mb-3">
+                                    <i class="fas fa-question-circle text-gray-300 text-xl"></i>
+                                </div>
+                                <h4 class="text-sm font-semibold text-gray-800">Henüz soru eklenmemiş</h4>
+                                <p class="text-xs text-gray-500 mt-1">İlk sorunuzu eklemek için yukarıdaki butonu kullanın</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    </div>
+</main>
+
+<!-- Soru Ekleme/Düzenleme Modal -->
+<div class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full hidden z-50 flex items-start justify-center" id="questionModal">
+    <div class="relative top-16 mx-auto w-11/12 md:w-1/2 lg:w-[480px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden mb-20">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-blue-50 text-blue-600 rounded-lg"><i class="fas fa-question-circle"></i></div>
+                <h3 class="text-lg font-bold text-gray-900" id="questionModalTitle">Soru Ekle</h3>
+            </div>
+            <button type="button" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all" id="closeModalBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6">
+            <form id="questionForm" class="space-y-5">
+                <input type="hidden" id="questionId" name="questionId" value="0">
+
+                <div>
+                    <label for="questionText" class="block text-sm font-semibold text-gray-800 mb-2">Soru Metni</label>
+                    <textarea class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none resize-none"
+                              id="questionText" name="questionText" rows="3" required placeholder="Sorunuzu buraya yazın..."></textarea>
+                </div>
+
+                <div>
+                    <label for="questionType" class="block text-sm font-semibold text-gray-800 mb-2">Soru Tipi</label>
+                    <div class="grid grid-cols-3 gap-2" id="questionTypeGrid">
+                        <label class="question-type-card cursor-pointer relative" data-type="0">
+                            <input type="radio" name="questionTypeRadio" value="0" class="peer sr-only" checked>
+                            <div class="rounded-xl border-2 border-gray-200 p-3 text-center peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all hover:border-gray-300">
+                                <i class="fas fa-check-circle text-gray-400 peer-checked:text-blue-600 block mb-1"></i>
+                                <span class="text-[11px] font-bold text-gray-700 block">Tek Seçim</span>
+                            </div>
+                        </label>
+                        <label class="question-type-card cursor-pointer relative" data-type="1">
+                            <input type="radio" name="questionTypeRadio" value="1" class="peer sr-only">
+                            <div class="rounded-xl border-2 border-gray-200 p-3 text-center peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all hover:border-gray-300">
+                                <i class="fas fa-align-left text-gray-400 block mb-1"></i>
+                                <span class="text-[11px] font-bold text-gray-700 block">Metin</span>
+                            </div>
+                        </label>
+                        <label class="question-type-card cursor-pointer relative" data-type="2">
+                            <input type="radio" name="questionTypeRadio" value="2" class="peer sr-only">
+                            <div class="rounded-xl border-2 border-gray-200 p-3 text-center peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all hover:border-gray-300">
+                                <i class="fas fa-toggle-on text-gray-400 block mb-1"></i>
+                                <span class="text-[11px] font-bold text-gray-700 block">Evet/Hayır</span>
+                            </div>
+                        </label>
+                        <label class="question-type-card cursor-pointer relative" data-type="3">
+                            <input type="radio" name="questionTypeRadio" value="3" class="peer sr-only">
+                            <div class="rounded-xl border-2 border-gray-200 p-3 text-center peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all hover:border-gray-300">
+                                <i class="fas fa-star text-gray-400 block mb-1"></i>
+                                <span class="text-[11px] font-bold text-gray-700 block">NPS</span>
+                            </div>
+                        </label>
+                        <label class="question-type-card cursor-pointer relative" data-type="4">
+                            <input type="radio" name="questionTypeRadio" value="4" class="peer sr-only">
+                            <div class="rounded-xl border-2 border-gray-200 p-3 text-center peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all hover:border-gray-300">
+                                <i class="fas fa-check-square text-gray-400 block mb-1"></i>
+                                <span class="text-[11px] font-bold text-gray-700 block">Çoklu Seçim</span>
+                            </div>
+                        </label>
+                        <label class="question-type-card cursor-pointer relative" data-type="5">
+                            <input type="radio" name="questionTypeRadio" value="5" class="peer sr-only">
+                            <div class="rounded-xl border-2 border-gray-200 p-3 text-center peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all hover:border-gray-300">
+                                <i class="fas fa-smile text-gray-400 block mb-1"></i>
+                                <span class="text-[11px] font-bold text-gray-700 block">Emoji</span>
+                            </div>
+                        </label>
+                    </div>
+                    <!-- Hidden select for compatibility with existing JS -->
+                    <select class="hidden" id="questionType" name="questionType" required>
+                        <option value="0">Tek Seçimli</option>
+                        <option value="1">Serbest Metin</option>
+                        <option value="2">Evet/Hayır</option>
+                        <option value="3">NPS Puanlama</option>
+                        <option value="4">Çoklu Seçim</option>
+                        <option value="5">Emoji Puanlama</option>
+                    </select>
+                </div>
+
+                <div id="optionsContainer" class="hidden">
+                    <label class="block text-sm font-semibold text-gray-800 mb-2">Seçenekler</label>
+                    <div id="optionsList" class="space-y-2"></div>
+                    <button type="button" class="inline-flex items-center px-3 py-2 border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 text-sm font-medium rounded-xl transition-colors duration-200 mt-3" id="addOptionBtn">
+                        <i class="fas fa-plus mr-2"></i>
+                        Seçenek Ekle
+                    </button>
+                </div>
+
+                <label class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-white hover:shadow-sm hover:border-blue-200 transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-yellow-100 text-yellow-600 flex items-center justify-center"><i class="fas fa-exclamation-circle"></i></div>
+                        <span class="text-sm font-medium text-gray-700">Zorunlu Soru</span>
+                    </div>
+                    <label class="es-toggle">
+                        <input type="checkbox" id="isRequired" name="isRequired">
+                        <span class="es-slider"></span>
+                    </label>
+                </label>
+            </form>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/30 flex justify-end gap-3">
+            <button type="button" class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 shadow-sm transition-all" id="cancelModalBtn">
+                İptal
+            </button>
+            <button type="button" class="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-sm hover:shadow transition-all flex items-center gap-2" id="saveQuestionBtn">
+                <i class="fas fa-check"></i> Kaydet
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/modules/exit-survey-module.js"></script>
+    <script src="~/js/exit-survey.js"></script>
+}

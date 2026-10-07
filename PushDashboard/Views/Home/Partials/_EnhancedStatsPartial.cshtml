@@ -1,0 +1,221 @@
+@model PushDashboard.ViewModels.DashboardStatsViewModel
+
+<!-- Enhanced Dashboard Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" id="statsContainer">
+    <!-- Credit Balance Card -->
+    <div class="group bg-white p-6 rounded-xl border border-gray-200  transition-shadow hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-10 h-10 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <i class="fa-solid fa-wallet text-base"></i>
+            </div>
+        </div>
+        <div>
+            <h3 class="text-emerald-600 text-sm font-medium mb-2">Mevcut Bakiye</h3>
+            <p class="text-3xl font-semibold text-gray-900 mb-1">
+                ₺<span id="creditBalance" class="counter" data-target="@Model.CreditBalance" data-duration="2000">0</span>
+            </p>
+            <p class="text-sm text-green-600">
+                Bu ay: ₺<span class="counter" data-target="@Model.MonthlySpending" data-duration="2500">0</span> harcandı
+            </p>
+        </div>
+        <div class="mt-4">
+            @{
+                var totalBalance = Model.CreditBalance + Model.MonthlySpending;
+                var balancePercentage = totalBalance > 0 ? (Model.CreditBalance / totalBalance) * 100 : 0;
+            }
+            <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                <div class="bg-gray-900 h-2 rounded-full transition-all duration-2000 ease-out" style="width: 0%" data-width="@(balancePercentage.ToString("0"))%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Modules Card -->
+    <div class="group bg-white p-6 rounded-xl border border-gray-200  transition-shadow hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-10 h-10 flex items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                <i class="fa-solid fa-cubes text-base"></i>
+            </div>
+        </div>
+        <div>
+            <h3 class="text-indigo-600 text-sm font-medium mb-2">Aktif Modüller</h3>
+            <p class="text-3xl font-semibold text-gray-900 mb-1">
+                <span id="activeModules" class="counter" data-target="@Model.FormattedActiveModules" data-duration="1500">0</span>
+            </p>
+          
+                @if (Model.ActiveModules == 0)
+                {  
+                    <p class="text-sm text-gray-500">
+                        Aktif modül bulunmamaktadır.</p>
+                }
+                else if (Model.PassiveModules == 0)
+                {  
+                    <p class="text-sm text-gray-500">
+                        Tüm modüller aktifdir.</p>
+                }
+                else
+                {  
+                    <p class="text-sm text-gray-500">
+                        <span class="counter" data-target="@Model.PassiveModules" data-duration="2000">0</span> modül pasifdir.
+                    </p>
+                }
+        </div>
+        <div class="mt-4 flex items-center space-x-2">
+            <div class="flex-1 bg-gray-100 rounded-full h-2">
+                <div class="bg-gray-900 h-2 rounded-full transition-all duration-2000 ease-out"
+                     style="width: @(Model.FormattedActiveModulesRatio.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%">
+                </div>
+            </div>
+
+            <span class="text-xs text-gray-500 font-medium">
+                @((Model.FormattedActiveModulesRatio).ToString("0"))%
+            </span>
+        </div>
+    </div>
+
+    <!-- Notifications Today Card -->
+    <div class="group bg-white p-6 rounded-xl border border-gray-200  transition-shadow hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-10 h-10 flex items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                <i class="fa-solid fa-paper-plane text-base"></i>
+            </div>
+            <div class="relative">
+                <div class="w-6 h-6 bg-gray-100 rounded-full absolute"></div>
+                <div class="w-6 h-6 bg-gray-500 rounded-full"></div>
+            </div>
+        </div>
+        <div>
+            <h3 class="text-amber-600 text-sm font-medium mb-2">Bugün Gönderilen</h3>
+            <p class="text-3xl font-semibold text-gray-900 mb-1">
+                <span id="notificationsToday" class="counter" data-target="@Model.NotificationsSentToday" data-duration="1800">0</span>
+            </p>
+            <p class="text-sm text-gray-500">
+                Bu ay: <span class="counter" data-target="@Model.NotificationsSentThisMonth" data-duration="2200">0</span> bildirim
+            </p>
+        </div>
+        <div class="mt-4">
+            <div class="flex items-center justify-between text-xs text-gray-500">
+                <span>Teslimat Oranı</span>
+                <span class="font-semibold">@Model.FormattedDeliveryRate</span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-2 mt-1">
+                <div class="bg-gray-900 h-2 rounded-full transition-all duration-2000 ease-out" style="width: 0%" data-width="@Model.AverageDeliveryRate%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customers Card -->
+    <div class="group bg-white p-6 rounded-xl border border-gray-200  transition-shadow hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-10 h-10 flex items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+                <i class="fa-solid fa-users text-base"></i>
+            </div>
+        </div>
+        <div>
+            <h3 class="text-sky-600 text-sm font-medium mb-2">Toplam Müşteri</h3>
+            <p class="text-3xl font-semibold text-gray-900 mb-1">
+                <span class="counter" data-target="@Model.TotalCustomers" data-duration="2500">0</span>
+            </p>
+            <p class="text-sm text-gray-500">
+                Aktif müşteri tabanı
+            </p>
+        </div>
+        <div class="mt-4">
+            <div class="grid grid-cols-3 gap-2">
+                <div class="text-center">
+                    <div class="w-full bg-gray-100 rounded-full h-1 mb-1">
+                        <div class="bg-gray-500 h-1 rounded-full transition-all duration-1500" style="width: 0%" data-width="@Model.ActiveCustomersRatio.ToString("0")%"></div>
+                    </div>
+                    <span class="text-xs text-gray-500">Aktif (@Model.ActiveCustomers)</span>
+                </div>
+                <div class="text-center">
+                    <div class="w-full bg-gray-100 rounded-full h-1 mb-1">
+                        <div class="bg-gray-500 h-1 rounded-full transition-all duration-1800" style="width: 0%" data-width="@Model.PassiveCustomersRatio.ToString("0")%"></div>
+                    </div>
+                    <span class="text-xs text-gray-500">Pasif (@Model.PassiveCustomers)</span>
+                </div>
+                <div class="text-center">
+                    <div class="w-full bg-gray-100 rounded-full h-1 mb-1">
+                        <div class="bg-gray-500 h-1 rounded-full transition-all duration-2100" style="width: 0%" data-width="@Model.NewCustomersRatio.ToString("0")%"></div>
+                    </div>
+                    <span class="text-xs text-gray-500">Yeni (@Model.NewCustomers)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializeEnhancedStats();
+});
+
+function initializeEnhancedStats() {
+    // Initialize animated counters
+    const counters = document.querySelectorAll('.counter');
+    
+    const observerOptions = {
+        threshold: 0.5,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateCounter(entry.target);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    counters.forEach(counter => {
+        observer.observe(counter);
+    });
+
+    // Initialize progress bars
+    setTimeout(() => {
+        const progressBars = document.querySelectorAll('[data-width]');
+        progressBars.forEach(bar => {
+            const width = bar.getAttribute('data-width');
+            bar.style.width = width;
+        });
+    }, 500);
+}
+
+function animateCounter(element) {
+    const target = parseFloat(element.getAttribute('data-target'));
+    const duration = parseInt(element.getAttribute('data-duration')) || 2000;
+    
+    if (typeof CountUp !== 'undefined') {
+        const countUp = new CountUp(element, target, {
+            duration: duration / 1000,
+            useEasing: true,
+            useGrouping: true,
+            separator: '.',
+            decimal: ',',
+            decimalPlaces: target % 1 !== 0 ? 2 : 0
+        });
+        
+        if (!countUp.error) {
+            countUp.start();
+        } else {
+            element.textContent = target.toLocaleString('tr-TR');
+        }
+    } else {
+        // Fallback animation
+        let current = 0;
+        const increment = target / (duration / 16);
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+                current = target;
+                clearInterval(timer);
+            }
+            element.textContent = Math.floor(current).toLocaleString('tr-TR');
+        }, 16);
+    }
+}
+
+// Export for global access
+window.initializeEnhancedStats = initializeEnhancedStats;
+</script>

@@ -1,0 +1,116 @@
+@model List<PushDashboard.ViewModels.RecentActivityViewModel>
+
+<!-- Recent Activities -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h3 class="text-lg font-semibold text-gray-900">Son Aktiviteler</h3>
+            <p class="text-sm text-gray-600">Sistem üzerindeki son işlemler</p>
+        </div>
+        <a href="/UsageHistory" class="text-sm text-primary hover:text-primary-dark font-medium">
+            Tümünü Görüntüle →
+        </a>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="space-y-4">
+            @foreach (var activity in Model.Take(8))
+            {
+                <div class="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 rounded-full @GetActivityColorClass(activity.ActivityType) flex items-center justify-center">
+                            @await Html.PartialAsync("Partials/_ActivityIconPartial", activity.ActivityIcon)
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm font-medium text-gray-900 truncate">
+                                @activity.Description
+                            </p>
+                            <div class="flex items-center space-x-2">
+                                @if (!string.IsNullOrEmpty(activity.FormattedCost))
+                                {
+                                    <span class="text-sm font-medium text-gray-900">@activity.FormattedCost</span>
+                                }
+                                @if (!string.IsNullOrEmpty(activity.Status))
+                                {
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full @GetStatusBadgeClass(activity.Status)">
+                                        @GetStatusText(activity.Status)
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between mt-1">
+                            <div class="flex items-center space-x-2">
+                                @if (!string.IsNullOrEmpty(activity.ModuleName))
+                                {
+                                    <span class="text-xs text-gray-500">@activity.ModuleName</span>
+                                }
+                                <span class="text-xs text-gray-500">•</span>
+                                <span class="text-xs text-gray-500">@activity.FormattedTimestamp</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (Model.Count > 8)
+        {
+            <div class="mt-4 pt-4 border-t border-gray-200 text-center">
+                <a href="/UsageHistory" class="text-sm text-primary hover:text-primary-dark font-medium">
+                    +@(Model.Count - 8) aktivite daha görüntüle
+                </a>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="text-center py-8">
+            <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h4 class="text-lg font-medium text-gray-900 mb-2">Henüz aktivite yok</h4>
+            <p class="text-gray-600">Modül kullanımları burada görünecek</p>
+        </div>
+    }
+</div>
+
+@functions {
+    private string GetActivityColorClass(string activityType)
+    {
+        return activityType switch
+        {
+            "notification" => "bg-blue-100 text-blue-600",
+            "module_purchase" => "bg-green-100 text-green-600",
+            "integration" => "bg-purple-100 text-purple-600",
+            "sync" => "bg-orange-100 text-orange-600",
+            _ => "bg-gray-100 text-gray-600"
+        };
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "completed" => "bg-green-100 text-green-800",
+            "failed" => "bg-red-100 text-red-800",
+            "pending" => "bg-yellow-100 text-yellow-800",
+            "processing" => "bg-blue-100 text-blue-800",
+            _ => "bg-gray-100 text-gray-800"
+        };
+    }
+
+    private string GetStatusText(string status)
+    {
+        return status switch
+        {
+            "completed" => "Tamamlandı",
+            "failed" => "Başarısız",
+            "pending" => "Beklemede",
+            "processing" => "İşleniyor",
+            _ => status
+        };
+    }
+}

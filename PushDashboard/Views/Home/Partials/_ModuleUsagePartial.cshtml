@@ -1,0 +1,137 @@
+@model List<PushDashboard.ViewModels.ModuleUsageOverviewViewModel>
+
+<!-- Module Usage Overview -->
+<div class="bg-white rounded-xl border border-gray-200 p-6 transition-shadow hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h3 class="text-lg font-semibold text-gray-900">Modül Kullanımı</h3>
+            <p class="text-sm text-gray-600">Bu ayki modül performansı ve kullanım istatistikleri</p>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+        @{
+            var avg = Model.Any() ? Model.Average(i => i.SuccessRate) : 0;
+        }
+
+        @if (avg > 65)
+        { 
+            <div class="p-3 bg-green-50 rounded-lg">
+                <div class="text-xl font-bold text-green-600">@avg.ToString("F1")%</div>
+                <div class="text-xs text-gray-700">Ortalama Başarı Oranı</div>
+            </div>
+        }
+        else
+        {
+            <div class="p-3 bg-red-50 rounded-lg">
+                <div class="text-xl font-bold text-red-600">@avg.ToString("F1")%</div>
+                <div class="text-xs text-gray-700">Ortalama Başarı Oranı</div>
+            </div>
+        }
+        <div class="p-3 bg-gray-50 rounded-lg">
+            <div class="text-xl font-bold text-gray-500">@(Model.Any() ? Model.Sum(i => i.UsageCountThisMonth) : 0)</div>
+            <div class="text-xs text-gray-700">Bu Ayın Kullanımı</div>
+        </div>
+        <div class="p-3 bg-gray-50 rounded-lg">
+            <div class="text-xl font-bold text-gray-500">₺@(Model.Any() ? Model.Sum(i => i.CostThisMonth).ToString("N2") : "0.00")</div>
+            <div class="text-xs text-gray-700">Kullanılan Bakiye</div>
+        </div>
+    </div>
+    <div class="mt-6 pt-4 border-t border-gray-200"></div>
+   @if (Model != null && Model.Any())
+    {
+    var sortedModules = Model.OrderByDescending(m => m.CostThisMonth).ToList();
+
+    <div class="space-y-4 overflow-y-auto pr-2 max-h-[400px]">
+        @foreach (var module in sortedModules)
+        {
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-100 rounded-lg hover:border-gray-200 transition-colors gap-4 sm:gap-0">
+
+                <div class="flex items-center w-full sm:w-auto">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center @GetModuleColorClass(module.ModuleColor) flex-shrink-0">
+                        @if (!string.IsNullOrEmpty(module.ModuleIcon))
+                        {
+                            @await Html.PartialAsync("Partials/_IconPartial", module.ModuleIcon)
+                        }
+                        else
+                        {
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                        }
+                    </div>
+
+                    <div class="ml-4 flex-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h4 class="font-medium text-gray-900">@module.ModuleName</h4>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full @module.StatusBadgeClass">
+                                @module.StatusText
+                            </span>
+                        </div>
+
+                        <div class="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                            <span class="text-sm text-gray-500 whitespace-nowrap">
+                                Kullanım: <span class="font-medium">@module.UsageCountThisMonth</span>
+                            </span>
+                            <span class="text-sm text-gray-500 whitespace-nowrap">
+                                Başarı: <span class="font-medium">@module.FormattedSuccessRate</span>
+                            </span>
+                            <span class="text-sm text-gray-500 whitespace-nowrap">
+                                Son: <span class="font-medium">@module.FormattedLastUsed</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-left sm:text-right w-full sm:w-auto pl-14 sm:pl-0">
+                    <div class="text-lg font-semibold text-gray-900">@module.FormattedCost</div>
+                    <div class="text-sm text-gray-500">Bu ay</div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (Model.Count > 5)
+    {
+        <div class="mt-4 text-center text-sm text-gray-500">
+            Toplam @Model.Count modül • Kaydırarak tümünü görüntüle
+        </div>
+    }
+}
+    else
+    {
+        <div class="text-center py-8">
+            <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <h4 class="text-lg font-medium text-gray-900 mb-2">Henüz modül yok</h4>
+            <p class="text-gray-600 mb-4">Mağazadan modül satın alarak başlayın</p>
+            <a href="/Store" class="inline-flex items-center px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors">
+                <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+                Mağazayı Ziyaret Et
+            </a>
+        </div>
+    }
+</div>
+
+@functions {
+    private string GetModuleColorClass(string? color)
+    {
+        if (string.IsNullOrEmpty(color))
+            return "bg-gray-100 text-gray-600";
+
+        return color.ToLower() switch
+        {
+            var c when c.Contains("blue") => "bg-gray-100 text-gray-500",
+            var c when c.Contains("green") => "bg-green-100 text-green-600",
+            var c when c.Contains("purple") => "bg-gray-100 text-gray-500",
+            var c when c.Contains("pink") => "bg-gray-100 text-gray-500",
+            var c when c.Contains("orange") => "bg-gray-100 text-gray-500",
+            var c when c.Contains("red") => "bg-red-100 text-red-600",
+            var c when c.Contains("yellow") => "bg-gray-100 text-gray-500",
+            _ => "bg-gray-100 text-gray-600"
+        };
+    }
+}

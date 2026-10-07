@@ -1,0 +1,716 @@
+﻿@model PushDashboard.Models.SocialProofSettings
+
+<form id="socialProofForm" onsubmit="event.preventDefault(); updateSettings();" class="space-y-6">
+
+    <!-- Content Settings -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 bg-gray-50/50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center border border-indigo-100">
+                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-semibold text-gray-900">İçerik ve Davranış Ayarları</h3>
+                    <p class="text-sm text-gray-500">Bildirimlerin ne zaman ve nasıl görüneceğini yapılandırın.</p>
+                </div>
+            </div>
+        </div>
+        
+    <div class="p-6 md:p-8 space-y-8">
+        <!-- Basic Duration Controls -->
+        <input type="hidden" name="IsActive" id="IsActive" value="@(Model.IsActive ? "true" : "false")">
+            
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label for="UpdateInterval" class="block text-sm font-medium text-gray-700 mb-2">Güncelleme</label>
+                <div class="relative rounded-lg shadow-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="text-gray-500 sm:text-sm">⏱️</span>
+                    </div>
+                    <input type="number"
+                           class="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 pr-12 sm:text-sm border-gray-300 rounded-lg py-3"
+                           name="UpdateInterval"
+                           id="UpdateInterval"
+                           value="@Model.UpdateInterval"
+                           min="30" max="300"
+                           placeholder="60">
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <span class="text-gray-500 sm:text-sm">sn</span>
+                    </div>
+                </div>
+                <p class="mt-1 text-xs text-gray-400">Veri yenileme sıklığı</p>
+            </div>
+            <div>
+                <label for="DisplayDuration" class="block text-sm font-medium text-gray-700 mb-2">Gösterim</label>
+                <div class="relative rounded-lg shadow-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="text-gray-500 sm:text-sm">👁️</span>
+                    </div>
+                    <input type="number"
+                           class="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 pr-12 sm:text-sm border-gray-300 rounded-lg py-3"
+                           name="DisplayDuration"
+                           id="DisplayDuration"
+                           value="@Model.DisplayDuration"
+                           min="3" max="15"
+                           placeholder="5">
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <span class="text-gray-500 sm:text-sm">sn</span>
+                    </div>
+                </div>
+                <p class="mt-1 text-xs text-gray-400">Ekranda kalma süresi</p>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-100"></div>
+
+        <!-- Number Ranges -->
+        <div>
+            <div class="flex items-center justify-between mb-4">
+                <h4 class="text-sm font-semibold text-gray-900 flex items-center">
+                    Sayı Aralıkları ve Metinler
+                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">Rastgele Değerler</span>
+                </h4>
+                <div class="text-xs text-gray-500 flex items-center gap-2">
+                    <span>Değişken:</span>
+                    <div class="cursor-move inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition-all shadow-sm select-none"
+                         draggable="true"
+                         ondragstart="event.dataTransfer.setData('text/plain', '{count}'); event.dataTransfer.effectAllowed = 'copy';">
+                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                        {count}
+                    </div>
+                </div>
+            </div>
+                
+            <div class="space-y-4">
+                <!-- Viewers Row -->
+                <div class="p-4 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-all shadow-sm">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-xl">👀</div>
+                                <span class="text-sm font-medium text-gray-900">İnceleyenler</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="hidden" name="IsViewersActive" value="false">
+                                <input type="checkbox" id="IsViewersActive" name="IsViewersActive" value="true" @(Model.IsViewersActive ? "checked" : "") class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                <span class="ml-3 text-sm font-medium text-gray-900">Aktif</span>
+                            </label>
+                        </div>
+                            
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                            <!-- Dual Slider -->
+                            <div class="bg-gray-50 p-4 rounded-lg flex flex-col justify-center">
+                                <div class="relative w-full h-8 flex items-center" id="ViewersSliderGroup">
+                                    <!-- Tracks -->
+                                    <div class="absolute w-full h-1.5 bg-gray-200 rounded-full"></div>
+                                    <div id="ViewersRangeBar" class="absolute h-1.5 bg-indigo-600 rounded-full z-10" style="left: 0; right: 0;"></div>
+                                        
+                                    <!-- Inputs -->
+                                    <input type="range" data-slider="ViewersMinRange" value="@Model.ViewersMin" min="1" max="500" 
+                                           class="absolute w-full h-full appearance-none bg-transparent pointer-events-none z-20 focus:outline-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-indigo-600 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-indigo-600 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
+                                           oninput="syncInput(this, 'ViewersMin')">
+                                    <input type="range" data-slider="ViewersMaxRange" value="@Model.ViewersMax" min="1" max="500" 
+                                           class="absolute w-full h-full appearance-none bg-transparent pointer-events-none z-20 focus:outline-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-indigo-600 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-indigo-600 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
+                                           oninput="syncInput(this, 'ViewersMax')">
+                                </div>
+                                <div class="flex justify-between text-xs font-medium text-gray-600 mt-1 gap-2">
+                                    <div class="flex items-center gap-1">
+                                        <span>Min:</span>
+                                        <input type="number" name="ViewersMin" id="ViewersMin" value="@Model.ViewersMin" min="1" max="500" 
+                                               class="w-16 h-6 text-xs text-center border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500 p-0 text-indigo-700 font-bold"
+                                               onchange="syncSlider(this, 'ViewersMinRange')">
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <span>Max:</span>
+                                        <input type="number" name="ViewersMax" id="ViewersMax" value="@Model.ViewersMax" min="1" max="500" 
+                                               class="w-16 h-6 text-xs text-center border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500 p-0 text-indigo-700 font-bold"
+                                               onchange="syncSlider(this, 'ViewersMaxRange')">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col justify-center">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Bildirim Metni</label>
+                                <div class="relative">
+                                    <input type="text" name="ViewersTemplate" value="@Model.TextTemplates.ViewersTemplate" 
+                                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2" 
+                                           placeholder="{count} kişi şu anda inceliyor">
+                                </div>
+                                <p class="mt-1 text-xs text-gray-400">"{count}" değişkenini kutuya sürükleyip bırakabilirsiniz.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                    
+                <!-- Followers Row -->
+                <div class="p-4 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-all shadow-sm">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-xl">❤️</div>
+                                <span class="text-sm font-medium text-gray-900">Takip Edenler</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="hidden" name="IsFollowersActive" value="false">
+                                <input type="checkbox" id="IsFollowersActive" name="IsFollowersActive" value="true" @(Model.IsFollowersActive ? "checked" : "") class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-600"></div>
+                                <span class="ml-3 text-sm font-medium text-gray-900">Aktif</span>
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                            <!-- Dual Slider -->
+                            <div class="bg-gray-50 p-4 rounded-lg flex flex-col justify-center">
+                                <div class="relative w-full h-8 flex items-center" id="FollowersSliderGroup">
+                                    <!-- Tracks -->
+                                    <div class="absolute w-full h-1.5 bg-gray-200 rounded-full"></div>
+                                    <div id="FollowersRangeBar" class="absolute h-1.5 bg-pink-600 rounded-full z-10" style="left: 0; right: 0;"></div>
+                                        
+                                    <!-- Inputs -->
+                                    <input type="range" data-slider="FollowersMinRange" value="@Model.FollowersMin" min="1" max="500" 
+                                           class="absolute w-full h-full appearance-none bg-transparent pointer-events-none z-20 focus:outline-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-pink-600 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-pink-600 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
+                                           oninput="syncInput(this, 'FollowersMin')">
+                                    <input type="range" data-slider="FollowersMaxRange" value="@Model.FollowersMax" min="1" max="500" 
+                                           class="absolute w-full h-full appearance-none bg-transparent pointer-events-none z-20 focus:outline-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-pink-600 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-pink-600 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
+                                           oninput="syncInput(this, 'FollowersMax')">
+                                </div>
+                                <div class="flex justify-between text-xs font-medium text-gray-600 mt-1 gap-2">
+                                    <div class="flex items-center gap-1">
+                                        <span>Min:</span>
+                                        <input type="number" name="FollowersMin" id="FollowersMin" value="@Model.FollowersMin" min="1" max="500" 
+                                               class="w-16 h-6 text-xs text-center border-gray-300 rounded focus:ring-pink-500 focus:border-pink-500 p-0 text-pink-700 font-bold"
+                                               onchange="syncSlider(this, 'FollowersMinRange')">
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <span>Max:</span>
+                                        <input type="number" name="FollowersMax" id="FollowersMax" value="@Model.FollowersMax" min="1" max="500" 
+                                               class="w-16 h-6 text-xs text-center border-gray-300 rounded focus:ring-pink-500 focus:border-pink-500 p-0 text-pink-700 font-bold"
+                                               onchange="syncSlider(this, 'FollowersMaxRange')">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col justify-center">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Bildirim Metni</label>
+                                <div class="relative">
+                                    <input type="text" name="FollowersTemplate" value="@Model.TextTemplates.FollowersTemplate" 
+                                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2" 
+                                           placeholder="{count} kişi ürünü takip ediyor">
+                                </div>
+                                <p class="mt-1 text-xs text-gray-400">"{count}" değişkenini kutuya sürükleyip bırakabilirsiniz.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buyers Row -->
+                <div class="p-4 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-all shadow-sm">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center text-xl">🛒</div>
+                                <span class="text-sm font-medium text-gray-900">Satın Alanlar</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="hidden" name="IsBuyersActive" value="false">
+                                <input type="checkbox" id="IsBuyersActive" name="IsBuyersActive" value="true" @(Model.IsBuyersActive ? "checked" : "") class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                                <span class="ml-3 text-sm font-medium text-gray-900">Aktif</span>
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                            <!-- Dual Slider -->
+                            <div class="bg-gray-50 p-4 rounded-lg flex flex-col justify-center">
+                                <div class="relative w-full h-8 flex items-center" id="BuyersSliderGroup">
+                                    <!-- Tracks -->
+                                    <div class="absolute w-full h-1.5 bg-gray-200 rounded-full"></div>
+                                    <div id="BuyersRangeBar" class="absolute h-1.5 bg-green-600 rounded-full z-10" style="left: 0; right: 0;"></div>
+                                        
+                                    <!-- Inputs -->
+                                    <input type="range" data-slider="BuyersMinRange" value="@Model.BuyersMin" min="1" max="500" 
+                                           class="absolute w-full h-full appearance-none bg-transparent pointer-events-none z-20 focus:outline-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-green-600 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-green-600 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
+                                           oninput="syncInput(this, 'BuyersMin')">
+                                    <input type="range" data-slider="BuyersMaxRange" value="@Model.BuyersMax" min="1" max="500" 
+                                           class="absolute w-full h-full appearance-none bg-transparent pointer-events-none z-20 focus:outline-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-green-600 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-green-600 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
+                                           oninput="syncInput(this, 'BuyersMax')">
+                                </div>
+                                <div class="flex justify-between text-xs font-medium text-gray-600 mt-1 gap-2">
+                                    <div class="flex items-center gap-1">
+                                        <span>Min:</span>
+                                        <input type="number" name="BuyersMin" id="BuyersMin" value="@Model.BuyersMin" min="1" max="500" 
+                                               class="w-16 h-6 text-xs text-center border-gray-300 rounded focus:ring-green-500 focus:border-green-500 p-0 text-green-700 font-bold"
+                                               onchange="syncSlider(this, 'BuyersMinRange')">
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <span>Max:</span>
+                                        <input type="number" name="BuyersMax" id="BuyersMax" value="@Model.BuyersMax" min="1" max="500" 
+                                               class="w-16 h-6 text-xs text-center border-gray-300 rounded focus:ring-green-500 focus:border-green-500 p-0 text-green-700 font-bold"
+                                               onchange="syncSlider(this, 'BuyersMaxRange')">
+                                    </div>
+                                </div>
+                            </div>
+                                
+                            <div class="flex flex-col justify-center">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Bildirim Metni</label>
+                                <div class="relative">
+                                    <input type="text" name="BuyersTemplate" value="@Model.TextTemplates.BuyersTemplate" 
+                                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2" 
+                                           placeholder="{count} kişi satın aldı">
+                                </div>
+                                <p class="mt-1 text-xs text-gray-400">"{count}" değişkenini kutuya sürükleyip bırakabilirsiniz.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Visual Settings -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 bg-gray-50/50">
+            <div class="flex items-center gap-3">
+                 <div class="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center border border-purple-100">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
+                    </svg>
+                </div>
+                <div>
+                     <h3 class="text-base font-semibold text-gray-900">Görünüm ve Tasarım</h3>
+                    <p class="text-sm text-gray-500">Renkler, boyutlar ve yerleşim ayarları.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6 md:p-8 space-y-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                 <!-- Left Column: Controls -->
+                 <div class="space-y-6">
+                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Konum</label>
+                        <input type="hidden" name="Position" id="Position" value="@Model.DisplaySettings.Position">
+                        
+                        <div class="grid grid-cols-2 gap-3" id="positionSelector">
+                            <!-- Top Left -->
+                            <div class="active-pos-box relative border rounded-xl p-3 cursor-pointer hover:border-purple-400 hover:bg-purple-50/50 transition-all flex flex-col items-center gap-2 group @(Model.DisplaySettings.Position == "top-left" ? "border-purple-600 ring-1 ring-purple-600 bg-purple-50" : "border-gray-200 bg-white")"
+                                 onclick="selectPosition(this, 'top-left')">
+                                <div class="w-full h-12 bg-gray-50 rounded-lg border border-gray-200 relative mb-1 overflow-hidden shadow-inner">
+                                     <div class="absolute inset-0 bg-white/50"></div>
+                                     <div class="absolute top-1.5 left-1.5 w-6 h-4 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center">
+                                         <div class="w-3 h-0.5 bg-purple-400 rounded-full"></div>
+                                     </div>
+                                </div>
+                                <span class="text-xs font-semibold text-gray-600 group-hover:text-purple-700">Sol Üst</span>
+                                @if(Model.DisplaySettings.Position == "top-left") {
+                                    <div class="absolute top-2 right-2 w-2 h-2 bg-purple-600 rounded-full check-dot"></div>
+                                }
+                            </div>
+                            
+                            <!-- Top Right -->
+                             <div class="active-pos-box relative border rounded-xl p-3 cursor-pointer hover:border-purple-400 hover:bg-purple-50/50 transition-all flex flex-col items-center gap-2 group @(Model.DisplaySettings.Position == "top-right" ? "border-purple-600 ring-1 ring-purple-600 bg-purple-50" : "border-gray-200 bg-white")"
+                                 onclick="selectPosition(this, 'top-right')">
+                                <div class="w-full h-12 bg-gray-50 rounded-lg border border-gray-200 relative mb-1 overflow-hidden shadow-inner">
+                                     <div class="absolute inset-0 bg-white/50"></div>
+                                     <div class="absolute top-1.5 right-1.5 w-6 h-4 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center">
+                                         <div class="w-3 h-0.5 bg-purple-400 rounded-full"></div>
+                                     </div>
+                                </div>
+                                <span class="text-xs font-semibold text-gray-600 group-hover:text-purple-700">Sağ Üst</span>
+                                 @if(Model.DisplaySettings.Position == "top-right") {
+                                    <div class="absolute top-2 right-2 w-2 h-2 bg-purple-600 rounded-full check-dot"></div>
+                                }
+                            </div>
+
+                            <!-- Bottom Left -->
+                             <div class="active-pos-box relative border rounded-xl p-3 cursor-pointer hover:border-purple-400 hover:bg-purple-50/50 transition-all flex flex-col items-center gap-2 group @(Model.DisplaySettings.Position == "bottom-left" ? "border-purple-600 ring-1 ring-purple-600 bg-purple-50" : "border-gray-200 bg-white")"
+                                 onclick="selectPosition(this, 'bottom-left')">
+                                <div class="w-full h-12 bg-gray-50 rounded-lg border border-gray-200 relative mb-1 overflow-hidden shadow-inner">
+                                     <div class="absolute inset-0 bg-white/50"></div>
+                                     <div class="absolute bottom-1.5 left-1.5 w-6 h-4 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center">
+                                         <div class="w-3 h-0.5 bg-purple-400 rounded-full"></div>
+                                     </div>
+                                </div>
+                                 <span class="text-xs font-semibold text-gray-600 group-hover:text-purple-700">Sol Alt</span>
+                                  @if(Model.DisplaySettings.Position == "bottom-left") {
+                                    <div class="absolute top-2 right-2 w-2 h-2 bg-purple-600 rounded-full check-dot"></div>
+                                }
+                            </div>
+
+                            <!-- Bottom Right -->
+                            <div class="active-pos-box relative border rounded-xl p-3 cursor-pointer hover:border-purple-400 hover:bg-purple-50/50 transition-all flex flex-col items-center gap-2 group @(Model.DisplaySettings.Position == "bottom-right" ? "border-purple-600 ring-1 ring-purple-600 bg-purple-50" : "border-gray-200 bg-white")"
+                                 onclick="selectPosition(this, 'bottom-right')">
+                                <div class="w-full h-12 bg-gray-50 rounded-lg border border-gray-200 relative mb-1 overflow-hidden shadow-inner">
+                                     <div class="absolute inset-0 bg-white/50"></div>
+                                     <div class="absolute bottom-1.5 right-1.5 w-6 h-4 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center">
+                                         <div class="w-3 h-0.5 bg-purple-400 rounded-full"></div>
+                                     </div>
+                                </div>
+                                 <span class="text-xs font-semibold text-gray-600 group-hover:text-purple-700">Sağ Alt</span>
+                                  @if(Model.DisplaySettings.Position == "bottom-right") {
+                                    <div class="absolute top-2 right-2 w-2 h-2 bg-purple-600 rounded-full check-dot"></div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                         <div>
+                            <label for="BorderRadius" class="block text-sm font-medium text-gray-700 mb-2">Yuvarlaklık</label>
+                            <div class="relative rounded-lg shadow-sm">
+                                <input type="number"
+                                       class="focus:ring-purple-500 focus:border-purple-500 block w-full pr-10 sm:text-sm border-gray-300 rounded-lg py-2.5"
+                                       name="BorderRadius"
+                                       id="BorderRadius"
+                                       value="@Model.DisplaySettings.BorderRadius"
+                                       min="0" max="50">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 sm:text-sm">px</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="FontSize" class="block text-sm font-medium text-gray-700 mb-2">Yazı Boyutu</label>
+                            <div class="relative rounded-lg shadow-sm">
+                                <input type="number"
+                                       class="focus:ring-purple-500 focus:border-purple-500 block w-full pr-10 sm:text-sm border-gray-300 rounded-lg py-2.5"
+                                       name="FontSize"
+                                       id="FontSize"
+                                       value="@Model.DisplaySettings.FontSize"
+                                       min="10" max="24">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 sm:text-sm">px</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                         <label class="block text-sm font-medium text-gray-700">Renk Paleti</label>
+                        <div class="grid grid-cols-3 gap-4">
+                            <!-- Background Color -->
+                            <div class="relative group">
+                                <label class="text-xs text-gray-500 mb-1 block">Arkaplan</label>
+                                <div class="h-10 w-full rounded-lg border border-gray-300 overflow-hidden relative cursor-pointer shadow-sm">
+                                   <input type="color" name="BackgroundColor" id="BackgroundColor" value="@Model.DisplaySettings.BackgroundColor" class="absolute -top-2 -left-2 w-[150%] h-[150%] p-0 border-0 cursor-pointer">
+                                </div>
+                            </div>
+                             <!-- Text Color -->
+                            <div class="relative group">
+                                <label class="text-xs text-gray-500 mb-1 block">Metin</label>
+                                <div class="h-10 w-full rounded-lg border border-gray-300 overflow-hidden relative cursor-pointer shadow-sm">
+                                   <input type="color" name="TextColor" id="TextColor" value="@Model.DisplaySettings.TextColor" class="absolute -top-2 -left-2 w-[150%] h-[150%] p-0 border-0 cursor-pointer">
+                                </div>
+                            </div>
+                            <!-- Primary Color (Icon/Accent) -->
+                            <div class="relative group">
+                                <label class="text-xs text-gray-500 mb-1 block">Vurgu/İkon</label>
+                                <div class="h-10 w-full rounded-lg border border-gray-300 overflow-hidden relative cursor-pointer shadow-sm">
+                                   <input type="color" name="PrimaryColor" id="PrimaryColor" value="@Model.DisplaySettings.PrimaryColor" class="absolute -top-2 -left-2 w-[150%] h-[150%] p-0 border-0 cursor-pointer">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                 </div>
+
+                 <!-- Right Column: Live Small Preview & Effects -->
+                 <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-900 mb-3">Canlı Önizleme</label>
+                        
+                        <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden relative group" id="componentPreviewContainer">
+                             <!-- Mockup Header -->
+                             <div class="h-8 bg-gray-50 border-b border-gray-200 flex items-center px-3 gap-1.5">
+                                 <div class="w-2.5 h-2.5 rounded-full bg-red-400"></div>
+                                 <div class="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
+                                 <div class="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+                             </div>
+
+                             <!-- Preview Mockup Area -->
+                             <div class="relative h-64 bg-gray-50/50">
+                                  <!-- Abstract Background -->
+                                  <div class="absolute inset-0 opacity-40" style="background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px;"></div>
+                                  
+                                  <!-- Position Border Guide -->
+                                  <div class="absolute inset-4 border border-dashed border-gray-300 rounded-lg pointer-events-none">
+                                      <!-- The glowing dot indicator -->
+                                      <div class="absolute w-3 h-3 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)] ring-2 ring-blue-500/30 transition-all duration-500 z-0" id="pos-indicator"></div>
+                                  </div>
+                                  
+                                  <!-- The actual widget container -->
+                                  <div class="absolute inset-0 overflow-hidden">
+                                      <div id="livePreviewContainer" class="w-full h-full relative z-10">
+                                          <!-- JS injects preview here -->
+                                      </div>
+                                  </div>
+                             </div>
+                        </div>
+                        <p class="mt-3 text-xs text-center text-gray-500">Widget, web sitenizde seçili pozisyonda görünecektir.</p>
+                    </div>
+
+                    <!-- Effects Card -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+                         <h4 class="text-sm font-semibold text-gray-900">Efekt & Animasyonlar</h4>
+                         
+                         <div class="space-y-3">
+                             <div class="flex items-center justify-between group">
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Giriş Animasyonu</span>
+                                    <span class="text-xs text-gray-500">Yumuşak geçiş efekti</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="hidden" name="EnableAnimation" value="false">
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" name="EnableAnimation" id="EnableAnimation" value="true" class="sr-only peer" @(Model.DisplaySettings.EnableAnimation ? "checked" : "")>
+                                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="border-t border-gray-100"></div>
+                            
+                            <div class="flex items-center justify-between group">
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Gölge Efekti</span>
+                                    <span class="text-xs text-gray-500">Daha belirgin görünüm</span>
+                                </div>
+                                 <div class="flex items-center">
+                                    <input type="hidden" name="EnableShadow" value="false">
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" name="EnableShadow" id="EnableShadow" value="true" class="sr-only peer" @(Model.DisplaySettings.EnableShadow ? "checked" : "")>
+                                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+                         </div>
+                    </div>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    @Html.AntiForgeryToken()
+</form>
+
+<script>
+    // Simple script to update the position indicator in the preview box
+    const posSelect = document.getElementById('Position');
+    const posIndicator = document.getElementById('pos-indicator');
+    
+    function updatePosIndicator() {
+        if(!posSelect || !posIndicator) return;
+        const val = posSelect.value;
+        
+        // Reset position classes
+        // Use regex or list to clear all margin/position classes we might have added
+        posIndicator.className = posIndicator.className.replace(/\s(top|bottom|left|right)-\[.*?\]/g, '');
+        
+        // Also remove hardcoded ones if any remain from previous logic
+        posIndicator.classList.remove('-top-1.5', '-left-1.5', '-right-1.5', '-bottom-1.5');
+        
+        // Add new position classes based on corner of the border box
+        // Using negative margins to center on the corner line
+        switch(val) {
+            case 'top-left':
+                posIndicator.classList.add('-top-1.5', '-left-1.5');
+                break;
+            case 'top-right':
+                posIndicator.classList.add('-top-1.5', '-right-1.5'); // corrected from right-1.5 to -right-1.5
+                break;
+            case 'bottom-left':
+                posIndicator.classList.add('-bottom-1.5', '-left-1.5');
+                break;
+            case 'bottom-right':
+                posIndicator.classList.add('-bottom-1.5', '-right-1.5');
+                break;
+        }
+    }
+    
+    function selectPosition(element, value) {
+        // Update Hidden Input
+        const hiddenInput = document.getElementById('Position');
+        hiddenInput.value = value;
+        
+        // Trigger change events for Live Preview listener in Index.cshtml
+        hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+        hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+        
+        // Visual Update
+        const container = document.getElementById('positionSelector');
+        const boxes = container.querySelectorAll('.active-pos-box');
+        
+        boxes.forEach(box => {
+            // Remove active classes
+            box.classList.remove('border-purple-600', 'ring-1', 'ring-purple-600', 'bg-purple-50');
+            box.classList.add('border-gray-200', 'bg-white');
+            
+            // Remove check dot if exists
+            const dot = box.querySelector('.check-dot');
+            if(dot) dot.remove();
+        });
+        
+        // Add active classes to selected
+        element.classList.remove('border-gray-200', 'bg-white');
+        element.classList.add('border-purple-600', 'ring-1', 'ring-purple-600', 'bg-purple-50');
+        
+        // Add check dot
+        const dot = document.createElement('div');
+        dot.className = 'absolute top-2 right-2 w-2 h-2 bg-purple-600 rounded-full check-dot';
+        element.appendChild(dot);
+        
+        // Trigger generic update
+        updatePosIndicator();
+    }
+    
+    // Initial Load
+    if(posSelect) {
+        updatePosIndicator(); 
+    }
+
+    // Dual Slider Logic
+    function initDualSlider(group, maxRange) {
+        // Range Sliders (using data-slider attribute instead of name)
+        const minRangeInput = document.querySelector(`input[data-slider="${group}MinRange"]`);
+        const maxRangeInput = document.querySelector(`input[data-slider="${group}MaxRange"]`);
+        // Text Inputs
+        const minNumInput = document.querySelector(`input[name="${group}Min"]`);
+        const maxNumInput = document.querySelector(`input[name="${group}Max"]`);
+        
+        const rangeBar = document.getElementById(`${group}RangeBar`);
+
+        if(!minRangeInput || !maxRangeInput || !minNumInput || !maxNumInput) return;
+
+        function updateUI() {
+            let min = parseInt(minRangeInput.value);
+            let max = parseInt(maxRangeInput.value);
+
+            // Avoid crossing visually
+             if (min > max) {
+                 const tmp = min;
+                 min = max;
+                 max = tmp;
+             }
+             
+            // Calculate percentage for bar
+            const percentMin = (min / maxRange) * 100;
+            const percentMax = (max / maxRange) * 100;
+
+            if (rangeBar) {
+                rangeBar.style.left = percentMin + "%";
+                rangeBar.style.width = (percentMax - percentMin) + "%";
+            }
+        }
+
+        // Attach listeners for text inputs to update sliders
+        minNumInput.addEventListener('change', () => syncSlider(minNumInput, `${group}MinRange`));
+        maxNumInput.addEventListener('change', () => syncSlider(maxNumInput, `${group}MaxRange`));
+
+        // Initial UI update
+        updateUI();
+    }
+    
+    // Called when range slider moves
+    function syncInput(slider, targetId) {
+        const targetInput = document.getElementById(targetId);
+        if(targetInput) {
+            targetInput.value = slider.value;
+            
+            // Check cross constraint
+            const group = targetId.replace('Min', '').replace('Max', '');
+            const isMin = targetId.includes('Min');
+            
+            const otherInputId = isMin ? group + 'Max' : group + 'Min';
+            const otherSliderName = isMin ? group + 'MaxRange' : group + 'MinRange';
+            
+            const otherInput = document.getElementById(otherInputId);
+            const otherSlider = document.querySelector(`input[data-slider="${otherSliderName}"]`);
+            
+            if(otherInput && otherSlider) {
+                let thisVal = parseInt(slider.value);
+                let otherVal = parseInt(otherInput.value);
+                
+                if(isMin && thisVal > otherVal) {
+                    targetInput.value = otherVal;
+                    slider.value = otherVal;
+                } else if(!isMin && thisVal < otherVal) {
+                    targetInput.value = otherVal;
+                    slider.value = otherVal;
+                }
+            }
+            
+            // Update the bar UI
+            const minRangeInput = document.querySelector(`input[data-slider="${group}MinRange"]`);
+            const maxRangeInput = document.querySelector(`input[data-slider="${group}MaxRange"]`);
+            const rangeBar = document.getElementById(`${group}RangeBar`);
+            
+            // Re-calc bar
+             if (minRangeInput && maxRangeInput && rangeBar) {
+                 // Hacky way to get max from attribute, or assume passed in init
+                 const maxScale = parseInt(minRangeInput.getAttribute('max')); 
+                 const min = parseInt(minRangeInput.value);
+                 const max = parseInt(maxRangeInput.value);
+                 const percentMin = (min / maxScale) * 100;
+                 const percentMax = (max / maxScale) * 100;
+                 rangeBar.style.left = percentMin + "%";
+                 rangeBar.style.width = (percentMax - percentMin) + "%";
+             }
+        }
+    }
+    
+    // Called when text input changes
+    function syncSlider(numInput, targetSliderName) {
+        const slider = document.querySelector(`input[data-slider="${targetSliderName}"]`);
+        if(slider) {
+            // Validate constrain
+            const group = numInput.id.replace('Min', '').replace('Max', '');
+            const isMin = numInput.id.includes('Min');
+             
+            const otherInputId = isMin ? group + 'Max' : group + 'Min';
+            const otherInput = document.getElementById(otherInputId);
+            
+            let val = parseInt(numInput.value);
+            // bounds check
+            const maxScale = parseInt(slider.max);
+            if(val < 1) val = 1;
+            if(val > maxScale) val = maxScale;
+            
+            if(otherInput) {
+                let otherVal = parseInt(otherInput.value);
+                if(isMin && val > otherVal) val = otherVal;
+                if(!isMin && val < otherVal) val = otherVal;
+            }
+            
+            numInput.value = val;
+            slider.value = val;
+            
+             // Update the bar UI (duplicate logic, could refactor)
+            const minRangeInput = document.querySelector(`input[data-slider="${group}MinRange"]`);
+            const maxRangeInput = document.querySelector(`input[data-slider="${group}MaxRange"]`);
+            const rangeBar = document.getElementById(`${group}RangeBar`);
+            
+             if (minRangeInput && maxRangeInput && rangeBar) {
+                 const min = parseInt(minRangeInput.value);
+                 const max = parseInt(maxRangeInput.value);
+                 const percentMin = (min / maxScale) * 100;
+                 const percentMax = (max / maxScale) * 100;
+                 rangeBar.style.left = percentMin + "%";
+                 rangeBar.style.width = (percentMax - percentMin) + "%";
+             }
+        }
+    }
+
+    // Initialize sliders
+    document.addEventListener('DOMContentLoaded', () => {
+        initDualSlider('Viewers', 500);
+        initDualSlider('Followers', 500);
+        initDualSlider('Buyers', 500);
+    });
+
+    initDualSlider('Viewers', 500);
+    initDualSlider('Followers', 500);
+    initDualSlider('Buyers', 500);
+
+</script>
+

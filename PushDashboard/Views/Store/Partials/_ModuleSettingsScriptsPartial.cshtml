@@ -1,0 +1,1819 @@
+<script>
+  let currentModuleId = null;
+  let currentModuleSettings = {};
+
+  async function toggleModuleStatus(moduleId, moduleName, checkbox) {
+    const isChecked = checkbox.checked;
+    const originalState = !isChecked;
+    // checkbox checked = modül aktif = isPassive: false
+    // checkbox unchecked = modül pasif = isPassive: true
+    const isPassive = !isChecked;
+
+    try {
+      checkbox.disabled = true;
+
+      let success = false;
+      let message = '';
+
+      // Sadece isPassive değerini gönder - enabled ayarına dokunma
+      const saveResponse = await axios.post(`/Store/SaveModuleSettings?moduleId=${moduleId}`, {
+          settings: { isPassive: isPassive }
+      }, {
+          headers: {
+              'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
+              'Content-Type': 'application/json'
+          }
+      });
+      success = saveResponse.data.success;
+      message = saveResponse.data.message;
+
+      if (success) {
+        showNotification(`${moduleName} ${isChecked ? 'etkinleştirildi' : 'pasifleştirildi'}.`, 'success');
+        checkbox.title = isChecked ? "Modülü Pasifleştir" : "Modülü Etkinleştir";
+
+        // Sol menüyü güncellemek için sayfayı yenile
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      } else {
+        checkbox.checked = originalState;
+        showNotification(message || 'Durum değiştirilemedi.', 'error');
+      }
+
+    } catch (error) {
+      console.error('Error toggling module status:', error);
+      checkbox.checked = originalState;
+      showNotification('İşlem sırasında bir hata oluştu.', 'error');
+    } finally {
+      checkbox.disabled = false;
+    }
+  }
+
+  let moduleSettingsDialog = null;
+
+  // Open module settings via PushDialog or modal
+  function openModuleSettings(moduleId, moduleName) {
+    currentModuleId = moduleId;
+
+    // Check if it's the Birthday module
+    if (moduleName.includes('Doğum Günü') || moduleName.includes('Birthday')) {
+        openModuleSettingsModal(moduleName);
+    } else {
+        const loadingHtml = `
+          <div id="module-settings-loading">
+            <div class="flex items-center justify-center py-12">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span class="ml-2 text-gray-600">Ayarlar yükleniyor...</span>
+            </div>
+          </div>
+          <div id="module-settings-content" class="space-y-6 hidden"></div>
+          <div id="module-settings-error" class="hidden"></div>
+        `;
+
+        const footerHtml = `
+          <button onclick="saveModuleSettings()" class="inline-flex justify-center items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium">
+            Kaydet
+          </button>
+          <button onclick="resetModuleSettings()" class="inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-sm font-medium">
+            Sıfırla
+          </button>
+        `;
+
+        if (!moduleSettingsDialog) {
+          moduleSettingsDialog = new PushDialog({
+            title: `${moduleName} - Ayarları`,
+            size: 'xl',
+            scrollBehavior: 'inside',
+            position: 'center',
+            closeOnOverlayClick: true,
+            closeOnEsc: true,
+            content: loadingHtml,
+            footer: footerHtml,
+            onClose: function() {
+              currentModuleId = null;
+              currentModuleSettings = {};
+              moduleSettingsDialog = null;
+            }
+          });
+        } else {
+          moduleSettingsDialog.setTitle(`${moduleName} - Ayarları`);
+          moduleSettingsDialog.setContent(loadingHtml);
+          moduleSettingsDialog.setFooter(footerHtml);
+        }
+
+        moduleSettingsDialog.open();
+    }
+
+    // Load settings
+    loadModuleSettings(moduleId, moduleName);
+  }
+
+  // Close module settings PushDialog
+  function closeModuleSettings() {
+    if (moduleSettingsDialog) {
+      moduleSettingsDialog.close();
+    }
+  }
+
+  // Load module settings
+  async function loadModuleSettings(moduleId, moduleName) {
+    // Determine context (sidebar or modal)
+    const isModal = moduleName && (moduleName.includes('Doğum Günü') || moduleName.includes('Birthday'));
+    
+    if (isModal) {
+         document.getElementById('module-settings-modal-content').innerHTML = '<div class="flex justify-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div></div>';
+    } else {
+        showLoadingState();
+    }
+
+    try {
+      const response = await axios.get(`/Store/GetModuleSettings?moduleId=${moduleId}`, {
+        headers: {
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+        }
+      });
+
+      if (response.data.success) {
+        currentModuleSettings = response.data.settings || {};
+        await renderModuleSettings(response.data.moduleInfo, currentModuleSettings, isModal);
+        
+        if (!isModal) showContentState();
+      } else {
+        if (!isModal) showErrorState();
+        else showNotification('Ayarlar yüklenemedi.', 'error');
+      }
+    } catch (error) {
+      console.error('Error loading module settings:', error);
+      if (!isModal) showErrorState();
+      else showNotification('Ayarlar yüklenirken hata oluştu.', 'error');
+    }
+  }
+
+  // Get module info
+  async function getModuleInfo(moduleId) {
+    try {
+      const response = await axios.get(`/Store/GetModuleSettings?moduleId=${moduleId}`, {
+        headers: {
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+        }
+      });
+
+      if (response.data.success) {
+        return response.data.moduleInfo;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting module info:', error);
+      return null;
+    }
+  }
+
+  // Render module settings form
+  async function renderModuleSettings(moduleInfo, settings, isModal = false) {
+    const contentId = isModal ? 'module-settings-modal-content' : 'module-settings-content';
+    const content = document.getElementById(contentId);
+
+    // Generate settings form based on module type
+    let settingsHtml = await generateSettingsForm(moduleInfo, settings);
+
+    content.innerHTML = settingsHtml;
+
+    // Add event listeners for gift voucher settings
+    const giftVoucherCheckbox = document.getElementById('setting-enable-gift-voucher');
+    if (giftVoucherCheckbox) {
+      giftVoucherCheckbox.addEventListener('change', function() {
+        const giftVoucherSettings = document.getElementById('gift-voucher-settings');
+        if (giftVoucherSettings) {
+          if (this.checked) {
+            giftVoucherSettings.classList.remove('opacity-50', 'pointer-events-none');
+          } else {
+            giftVoucherSettings.classList.add('opacity-50', 'pointer-events-none');
+          }
+        }
+      });
+    }
+
+    if (moduleInfo && (moduleInfo.name === 'Doğum Günü Hatırlatma' || moduleInfo.name.includes('Doğum'))) {
+      ensure24HourFormat();
+    }
+  }
+
+  // Generate settings form based on module
+  async function generateSettingsForm(moduleInfo, settings) {
+    // Default settings that apply to all modules
+    let html = `
+      <div class="space-y-6">
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h4 class="text-sm font-medium text-gray-900 mb-3">Genel Ayarlar</h4>
+
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <label class="text-sm font-medium text-gray-700">Modülü etkinleştir</label>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="setting-enabled" ${settings.enabled !== false ? 'checked' : ''} class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <label class="text-sm font-medium text-gray-700">Bildirimler</label>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="setting-notifications" ${settings.notifications !== false ? 'checked' : ''} class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+    `;
+
+    // Module-specific settings
+    switch (moduleInfo.name) {
+      case 'Sepet Hatırlatma':
+        html += generateCartReminderSettings(settings);
+        break;
+      case 'SMS Gönderimi':
+        html += generateSmsSettings(settings);
+        break;
+      case 'Push Bildirim':
+        html += generatePushNotificationSettings(settings.settings);
+        break;
+      case 'Email Otomasyonu':
+        html += generateEmailAutomationSettings(settings);
+        break;
+      case 'Doğum Günü Hatırlatma':
+        html += await generateBirthdayReminderSettings(settings);
+        break;
+      case 'Toplu Mesaj Gönderimi':
+        html += await generateBulkMessagingSettings(settings);
+        break;
+      case 'Sipariş Durumu Bildirimleri':
+        html += await generateOrderStatusNotificationSettings(settings);
+        break;
+      case 'İlk Alışveriş Mesajı':
+        html += await generateFirstOrderSettings(settings);
+        break;
+      case 'Stok Hatırlatma':
+        html += await generateStockReminderSettings(settings);
+        break;
+      default:
+        html += generateDefaultModuleSettings(settings);
+        break;
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  // Generate cart reminder specific settings
+  function generateCartReminderSettings(settings) {
+    return `
+      <div class="bg-blue-50 p-4 rounded-lg">
+        <h4 class="text-sm font-medium text-gray-900 mb-3">Sepet Hatırlatma Modülü</h4>
+
+        <div class="space-y-4">
+          <div class="bg-blue-100 p-3 rounded-md">
+            <p class="text-sm text-blue-800">
+              <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Detaylı ayarlar için <strong>Sepet Hatırlatma</strong> modül sayfasını ziyaret edin.
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Generate SMS specific settings
+  function generateSmsSettings(settings) {
+    return `
+      <div class="bg-green-50 p-4 rounded-lg">
+        <h4 class="text-sm font-medium text-gray-900 mb-3">SMS Ayarları</h4>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Gönderici Adı</label>
+            <input type="text" id="setting-sender-name" value="${settings.senderName || ''}"
+                   maxlength="11" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div>
+            <label class="flex items-center">
+              <input type="checkbox" id="setting-auto-send" ${settings.autoSend ? 'checked' : ''}
+                     class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+              <span class="ml-2 text-sm text-gray-700">Otomatik gönderim</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Generate push notification specific settings
+  function generatePushNotificationSettings(settings) {
+    return `
+      <div class="bg-orange-50 p-4 rounded-lg">
+        <h4 class="text-sm font-medium text-gray-900 mb-3">Push Bildirim Ayarları</h4>
+
+        <div class="space-y-4">
+          <div>
+            <label class="flex items-center">
+              <input type="checkbox" id="setting-web-push" ${settings.webPush !== false ? 'checked' : ''}
+                     class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+              <span class="ml-2 text-sm text-gray-700">Web push bildirimleri</span>
+            </label>
+          </div>
+
+          <div>
+            <label class="flex items-center">
+              <input type="checkbox" id="setting-mobile-push" ${settings.mobilePush !== false ? 'checked' : ''}
+                     class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+              <span class="ml-2 text-sm text-gray-700">Mobil push bildirimleri</span>
+            </label>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Bildirim Sesi</label>
+            <select id="setting-notification-sound" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="default" ${settings.notificationSound == 'default' ? 'selected' : ''}>Varsayılan</option>
+              <option value="chime" ${settings.notificationSound == 'chime' ? 'selected' : ''}>Chime</option>
+              <option value="bell" ${settings.notificationSound == 'bell' ? 'selected' : ''}>Bell</option>
+              <option value="none" ${settings.notificationSound == 'none' ? 'selected' : ''}>Sessiz</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Generate email automation specific settings
+  function generateEmailAutomationSettings(settings) {
+    return `
+      <div class="bg-purple-50 p-4 rounded-lg">
+        <h4 class="text-sm font-medium text-gray-900 mb-3">Email Otomasyon Ayarları</h4>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Gönderici Email</label>
+            <input type="email" id="setting-sender-email" value="${settings.senderEmail || ''}"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Gönderici Adı</label>
+            <input type="text" id="setting-sender-display-name" value="${settings.senderDisplayName || ''}"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div>
+            <label class="flex items-center">
+              <input type="checkbox" id="setting-track-opens" ${settings.trackOpens !== false ? 'checked' : ''}
+                     class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+              <span class="ml-2 text-sm text-gray-700">Email açılma takibi</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Generate birthday reminder specific settings
+  async function generateBirthdayReminderSettings(settings) {
+    // Get active communication channels
+    const activeChannels = await getActiveChannels();
+
+    const birthdayCount = await getTodaysBirthdayCount();
+
+    return `
+      <div class="bg-pink-50 p-4 rounded-lg">
+        <h4 class="text-sm font-medium text-gray-900 mb-3">Doğum Günü Hatırlatma Ayarları</h4>
+
+        <div class="space-y-4">
+          <div>
+            <label class="flex items-center">
+              <input type="checkbox" id="setting-auto-send" ${settings.autoSend === true ? 'checked' : ''}
+                     class="rounded border-gray-300 text-pink-600 focus:ring-pink-500"
+                     onchange="toggleAutoSend()">
+              <span class="ml-2 text-sm text-gray-700">Otomatik gönderim</span>
+            </label>
+            <p class="text-xs text-gray-500 mt-1">Etkinleştirildiğinde her gün otomatik olarak doğum günü bildirimleri gönderilir</p>
+          </div>
+
+          <div>
+            <label class="flex items-center">
+              <input type="checkbox" id="setting-log-cost-to-spending" ${settings.logCostToSpending === true ? 'checked' : ''}
+                     class="rounded border-gray-300 text-pink-600 focus:ring-pink-500">
+              <span class="ml-2 text-sm text-gray-700">Maliyeti harcama geçmişine kaydet</span>
+            </label>
+            <p class="text-xs text-gray-500 mt-1">Gönderim maliyetlerini harcama geçmişinizde ayrı bir kalem olarak gösterir.</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Gönderim Saati (24 Saat Formatı)
+              <span class="text-pink-600 ml-1">*</span>
+            </label>
+            <input type="time" id="setting-send-time" value="${settings.sendTime || '09:00'}"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                   step="60" required>
+          </div>
+
+          <div>
+            <div class="mb-3">
+              <div class="flex items-center justify-between mb-2">
+                <h5 class="text-sm font-medium text-gray-900">İletişim Kanalları</h5>
+              </div>
+              <div id="birthday-summary" class="bg-gradient-to-r from-pink-50 to-pink-100 p-3 rounded-lg border border-pink-200">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-pink-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                      <p class="text-xs font-medium text-pink-900">Bugün Doğum Günü</p>
+                      <p class="text-sm font-bold text-pink-700">${birthdayCount} müşteri</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-3">
+                    ${birthdayCount > 0 ? `
+                    <div class="text-right mr-2">
+                      <p class="text-xs text-pink-600">Bildirim gönderilecek</p>
+                      <p class="text-xs text-pink-500">Seçili kanallardan</p>
+                    </div>
+                    ` : `
+                    <div class="text-right mr-2">
+                      <p class="text-xs text-gray-500">Bugün doğum günü</p>
+                      <p class="text-xs text-gray-400">olan müşteri yok</p>
+                    </div>
+                    `}
+                    <button type="button"
+                            onclick="sendBirthdayNotificationsNow()"
+                            class="px-4 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm font-medium whitespace-nowrap">
+                      Şimdi Gönder
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-3">
+              ${generateChannelSettings('email', 'Email', activeChannels.email, settings, "Birthday")}
+              ${generateChannelSettings('sms', 'SMS', activeChannels.sms, settings, "Birthday")}
+              ${generateChannelSettings('whatsapp', 'WhatsApp', activeChannels.whatsapp, settings, "Birthday")}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hediye Çeki Ayarları -->
+      <div class="bg-yellow-50 p-4 rounded-lg">
+        <h4 class="text-sm font-medium text-gray-900 mb-3">🎁 Hediye Çeki Ayarları</h4>
+        ${settings.hasEcommerceIntegration ?
+          `<p class="text-xs text-gray-600 mb-4">${settings.activePlatformName} entegrasyonu aktif olduğunda doğum günü maillerine otomatik hediye çeki eklenebilir.</p>` :
+          `<p class="text-xs text-yellow-700 mb-4">⚠️ Hediye çeki özelliği için aktif bir e-ticaret entegrasyonu gereklidir. Entegrasyonlar sayfasından bir e-ticaret platformu entegrasyonu ekleyin.</p>`
+        }
+
+        <div class="space-y-4 ${!settings.hasEcommerceIntegration ? 'opacity-50 pointer-events-none' : ''}">
+          <div>
+            <label class="flex items-center">
+              <input type="checkbox" id="setting-enable-gift-voucher" ${settings.enableGiftVoucher === true ? 'checked' : ''}
+                     ${!settings.hasEcommerceIntegration ? 'disabled' : ''}
+                     class="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500">
+              <span class="ml-2 text-sm text-gray-700">Hediye çeki özelliğini etkinleştir</span>
+            </label>
+            <p class="text-xs text-gray-500 mt-1">Etkinleştirildiğinde her doğum günü mailine otomatik hediye çeki eklenir</p>
+          </div>
+
+          <div id="gift-voucher-settings" class="space-y-4 ${settings.enableGiftVoucher !== true ? 'opacity-50 pointer-events-none' : ''}">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Hediye Çeki Tutarı</label>
+              <div class="flex items-center space-x-2">
+                <input type="number" id="setting-gift-voucher-amount" value="${settings.giftVoucherAmount || 50}"
+                       min="1" max="10000" step="1"
+                       class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                <select id="setting-gift-voucher-discount-type" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                  <option value="1" ${(settings.giftVoucherDiscountType || 1) == 1 ? 'selected' : ''}>TL</option>
+                  <option value="2" ${settings.giftVoucherDiscountType == 2 ? 'selected' : ''}>%</option>
+                </select>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Hediye çekinin değeri (sabit tutar veya yüzde indirim)</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Geçerlilik Süresi (Gün)</label>
+              <select id="setting-gift-voucher-validity-days" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                <option value="30" ${settings.giftVoucherValidityDays == 30 ? 'selected' : ''}>30 Gün</option>
+                <option value="60" ${settings.giftVoucherValidityDays == 60 ? 'selected' : ''}>60 Gün</option>
+                <option value="90" ${settings.giftVoucherValidityDays == 90 ? 'selected' : ''}>90 Gün</option>
+                <option value="180" ${settings.giftVoucherValidityDays == 180 ? 'selected' : ''}>6 Ay</option>
+                <option value="365" ${(settings.giftVoucherValidityDays || 365) == 365 ? 'selected' : ''}>1 Yıl</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">Hediye çekinin ne kadar süre geçerli olacağı</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
+              <input type="text" id="setting-gift-voucher-description" value="${settings.giftVoucherDescription || 'Doğum Günü Hediye Çeki'}"
+                     maxlength="100" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
+              <p class="text-xs text-gray-500 mt-1">Hediye çekinin açıklaması (mağazada görünecek)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Generate channel settings
+  function generateChannelSettings(channelType, channelName, isActive, settings, moduleType) {
+    const isEnabled = settings[`enable${channelType.charAt(0).toUpperCase() + channelType.slice(1)}`] !== false;
+    const cost = settings[`${channelType}Cost`] || 0;
+    const selectedTemplate = settings[`${channelType}Template`] || '';
+    const selectedTemplateName = settings[`${channelType}TemplateName`] || '';
+    const escapedTemplateName = selectedTemplateName ? selectedTemplateName.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
+    const escapedChannelName = channelName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+    return `
+      <div class="border border-gray-200 rounded-lg p-3 ${!isActive ? 'bg-gray-50 opacity-60' : ''}">
+        <div class="flex items-center justify-between mb-2">
+          <label class="flex items-center">
+            <input type="checkbox" id="setting-enable-${channelType}"
+                   ${isEnabled && isActive ? 'checked' : ''}
+                   ${!isActive ? 'disabled' : ''}
+                   class="rounded border-gray-300 text-pink-600 focus:ring-pink-500">
+            <span class="ml-2 text-sm font-medium text-gray-700">${channelName}</span>
+          </label>
+          <span class="text-xs px-2 py-1 rounded-full ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+            ${isActive ? 'Aktif' : 'Pasif'}
+          </span>
+        </div>
+
+        <div class="text-xs text-gray-600 mb-2">
+          <div class="flex justify-between">
+            <span>Maliyet:</span>
+            <span class="font-medium">${getCostDisplayText(channelType)}</span>
+          </div>
+        </div>
+
+        ${isActive ? `
+          <div class="mt-2">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-medium text-gray-700">Şablon:</label>
+              <button type="button"
+                      onclick="openTemplateSelector('${channelType}', '${escapedChannelName}','${moduleType}')"
+                      class="text-xs px-2 py-1 bg-pink-600 text-white rounded hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-500">
+                Şablon Seç
+              </button>
+            </div>
+            <div id="selected-template-${channelType}" class="text-xs text-gray-600 bg-gray-50 p-2 rounded border border-gray-200 min-h-[32px] flex items-center">
+              ${escapedTemplateName ? `<span class="font-medium">${escapedTemplateName}</span>` : '<span class="text-gray-400">Şablon seçilmedi</span>'}
+            </div>
+            <input type="hidden" id="setting-${channelType}-template" value="${selectedTemplate.replace(/"/g, '&quot;')}">
+            <input type="hidden" id="setting-${channelType}-template-name" value="${selectedTemplateName.replace(/"/g, '&quot;')}">
+          </div>
+        ` : ''}
+
+        ${!isActive ? `
+          <div class="mt-2 text-xs text-red-600">
+            <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+            Bu kanal yapılandırılmamış. Entegrasyonlar → İletişim Kanalları bölümünden yapılandırabilirsiniz.
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  // Generate bulk messaging specific settings
+  async function generateBulkMessagingSettings(settings) {
+    // Get available communication channels
+    const availableChannels = await getBulkMessagingChannels();
+
+    return `
+      <div class="bg-blue-50 p-4 rounded-lg">
+        <h4 class="text-sm font-medium text-gray-900 mb-3">📧 Aktif İletişim Kanalları</h4>
+        <p class="text-xs text-gray-600 mb-4">Toplu mesaj gönderiminde kullanılacak iletişim kanallarını seçin. Sadece yapılandırılmış kanallar kullanılabilir.</p>
+
+        <div class="space-y-3">
+          ${generateBulkChannelSetting('email', 'Email', availableChannels.email, settings)}
+          ${generateBulkChannelSetting('sms', 'SMS', availableChannels.sms, settings)}
+          ${generateBulkChannelSetting('whatsapp', 'WhatsApp', availableChannels.whatsapp, settings)}
+        </div>
+      </div>
+
+
+
+      <div class="bg-purple-50 p-4 rounded-lg">
+        <h4 class="text-sm font-medium text-gray-900 mb-3">💰 Maliyet Bilgileri</h4>
+        <div class="space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-700">Email Başına Maliyet:</span>
+            <span class="text-sm font-medium text-gray-900">Ücretsiz</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-700">SMS Başına Maliyet:</span>
+            <span class="text-sm font-medium text-gray-900">Ücretsiz</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-700">WhatsApp Başına Maliyet:</span>
+            <span class="text-sm font-medium text-gray-900">₺1.00</span>
+          </div>
+          <p class="text-xs text-gray-500 mt-2">
+            <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+            </svg>
+            Maliyet oranları sistem tarafından belirlenir ve güncellenemez.
+          </p>
+        </div>
+      </div>
+
+
+    `;
+  }
+
+  // Generate bulk messaging channel setting
+  function generateBulkChannelSetting(channelType, channelName, isAvailable, settings) {
+    const enabledChannels = settings.enabledChannels || [];
+    const isEnabled = enabledChannels.includes(channelType);
+
+    return `
+      <div class="border border-gray-200 rounded-lg p-3 ${!isAvailable ? 'bg-gray-50 opacity-60' : ''}">
+        <div class="flex items-center justify-between mb-2">
+          <label class="flex items-center">
+            <input type="checkbox" id="setting-enable-bulk-${channelType}"
+                   ${isEnabled && isAvailable ? 'checked' : ''}
+                   ${!isAvailable ? 'disabled' : ''}
+                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                   onchange="updateBulkChannelSettings()">
+            <span class="ml-2 text-sm font-medium text-gray-700">${channelName}</span>
+          </label>
+          <span class="text-xs px-2 py-1 rounded-full ${isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+            ${isAvailable ? 'Kullanılabilir' : 'Yapılandırılmamış'}
+          </span>
+        </div>
+
+        ${!isAvailable ? `
+          <div class="text-xs text-red-600">
+            <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+            Bu kanal yapılandırılmamış. Entegrasyonlar sayfasından ${channelName} entegrasyonunu yapılandırın.
+          </div>
+        ` : `
+          <div class="text-xs text-gray-600">
+            Bu kanal toplu mesaj gönderiminde kullanılabilir.
+          </div>
+        `}
+      </div>
+    `;
+  }
+
+  // Get available channels for bulk messaging
+  async function getBulkMessagingChannels() {
+    try {
+      const response = await fetch('/BulkMessaging/GetAvailableChannels', {
+        headers: {
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          const channels = { email: false, sms: false, whatsapp: false };
+          data.data.forEach(channel => {
+            channels[channel.channelType] = channel.isConfigured;
+          });
+          return channels;
+        }
+      }
+    } catch (error) {
+      console.error('Error getting bulk messaging channels:', error);
+    }
+
+    // Fallback
+    return { email: false, sms: false, whatsapp: false };
+  }
+
+  // Update bulk channel settings
+  function updateBulkChannelSettings() {
+    // This function will be called when channel checkboxes change
+    // The actual saving will happen when the user clicks save
+  }
+
+  // Get active communication channels
+  async function getActiveChannels() {
+    try {
+      const response = await fetch('/Settings/GetActiveChannels', {
+        headers: {
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.success ? data.channels : { email: false, sms: false, whatsapp: false };
+      }
+    } catch (error) {
+      console.error('Error getting active channels:', error);
+    }
+
+    // Fallback - assume only email is active
+    return { email: true, sms: false, whatsapp: false };
+  }
+
+  // Get today's birthday count
+  async function getTodaysBirthdayCount() {
+    try {
+      const response = await fetch('/Notification/GetTodaysBirthdays', {
+        headers: {
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.count !== undefined) {
+          return data.count;
+        }
+      }
+    } catch (error) {
+      console.error('Error getting today\'s birthday count:', error);
+    }
+
+    return 0;
+  }
+
+  // Generate default module settings
+  function generateDefaultModuleSettings(settings) {
+    return `
+      <div class="bg-gray-50 p-4 rounded-lg">
+        <h4 class="text-sm font-medium text-gray-900 mb-3">Özel Ayarlar</h4>
+        <p class="text-sm text-gray-600">Bu modül için özel ayarlar henüz tanımlanmamış.</p>
+      </div>
+    `;
+  }
+
+  // Save module settings
+  async function saveModuleSettings(isModal = false) {
+    if (!currentModuleId) return;
+
+    // Check if this is the First Order module
+    const moduleInfo = await getModuleInfo(currentModuleId);
+
+    if (moduleInfo && moduleInfo.name === 'İlk Alışveriş Mesajı') {
+      await saveFirstOrderSettings();
+      return;
+    }
+
+    // Check if this is the Basket Reminder module
+    if (moduleInfo && moduleInfo.name === 'Sepet Hatırlatma') {
+      await saveBasketReminderSettings();
+      return;
+    }
+
+    // Check if this is the Stock Reminder module
+    if (moduleInfo && moduleInfo.name === 'Stok Hatırlatma') {
+      await saveStockReminderSettings();
+      return;
+    }
+
+    const settings = collectSettingsFromForm();
+
+    try {
+      const response = await axios.post(`/Store/SaveModuleSettings?moduleId=${currentModuleId}`, {
+        settings: settings
+      }, {
+        headers: {
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data.success) {
+        showNotification('Ayarlar başarıyla kaydedildi!', 'success');
+        currentModuleSettings = settings;
+        if (isModal) {
+            closeModuleSettingsModal();
+        } else {
+            closeModuleSettings(); // Close PushDialog
+        }
+      } else {
+        showNotification(response.data.message || 'Ayarlar kaydedilemedi.', 'error');
+      }
+    } catch (error) {
+      console.error('Error saving module settings:', error);
+      showNotification('Ayarlar kaydedilirken bir hata oluştu.', 'error');
+    }
+  }
+
+  // Save basket reminder module settings
+  async function saveBasketReminderSettings() {
+    try {
+      // Get the actual toggle state from the UI
+      const isEnabledCheckbox = document.getElementById('setting-enabled');
+      const isEnabled = isEnabledCheckbox ? isEnabledCheckbox.checked : true;
+
+      const settings = {
+        enabled: isEnabled
+      };
+
+      const response = await axios.post(`/Store/SaveModuleSettings?moduleId=${currentModuleId}`, {
+        settings: settings
+      }, {
+        headers: {
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data.success) {
+        const statusText = isEnabled ? 'aktif' : 'pasif';
+        showNotification(`Sepet hatırlatma modülü ${statusText} yapıldı! Detaylı ayarlar için modül sayfasını ziyaret edin.`, 'success');
+        currentModuleSettings = settings;
+      } else {
+        showNotification(response.data.message || 'Ayarlar kaydedilemedi.', 'error');
+      }
+    } catch (error) {
+      console.error('Error saving basket reminder settings:', error);
+      showNotification('Ayarlar kaydedilirken bir hata oluştu.', 'error');
+    }
+  }
+
+  // Save first order module settings
+  async function saveFirstOrderSettings() {
+    try {
+      const settings = {
+        enabled: document.getElementById('setting-first-order-enabled')?.checked || false,
+        emailEnabled: document.getElementById('setting-email-enabled')?.checked || false,
+        smsEnabled: document.getElementById('setting-sms-enabled')?.checked || false,
+        whatsAppEnabled: document.getElementById('setting-whatsapp-enabled')?.checked || false,
+        pushEnabled: document.getElementById('setting-push-enabled')?.checked || false,
+        giftVoucherEnabled: document.getElementById('setting-gift-voucher-enabled')?.checked || false,
+        giftVoucherAmount: parseFloat(document.getElementById('setting-gift-voucher-amount')?.value) || 50,
+        giftVoucherDiscountType: parseInt(document.getElementById('setting-gift-voucher-discount-type')?.value) || 1,
+        giftVoucherValidityDays: parseInt(document.getElementById('setting-gift-voucher-validity-days')?.value) || 30
+      };
+
+      // Template bilgilerini ekle
+      const emailTemplateId = document.getElementById('setting-email-template-id')?.value;
+      const emailTemplateName = document.getElementById('setting-email-template-name')?.value;
+      const smsTemplateId = document.getElementById('setting-sms-template-id')?.value;
+      const smsTemplateName = document.getElementById('setting-sms-template-name')?.value;
+      const whatsappTemplateName = document.getElementById('setting-whatsapp-template-name')?.value;
+
+      if (emailTemplateId) settings.emailTemplateId = parseInt(emailTemplateId);
+      if (emailTemplateName) settings.emailTemplateName = emailTemplateName;
+      if (smsTemplateId) settings.smsTemplateId = parseInt(smsTemplateId);
+      if (smsTemplateName) settings.smsTemplateName = smsTemplateName;
+      if (whatsappTemplateName) settings.whatsAppTemplateName = whatsappTemplateName;
+
+      const response = await axios.post('/api/FirstOrderModule/settings', settings, {
+        headers: {
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.status === 200) {
+        showNotification('İlk alışveriş mesajı ayarları başarıyla kaydedildi!', 'success');
+        currentModuleSettings = settings;
+      } else {
+        showNotification(response.data.message || 'Ayarlar kaydedilemedi.', 'error');
+      }
+    } catch (error) {
+      console.error('Error saving first order settings:', error);
+      if (error.response && error.response.data && error.response.data.message) {
+        showNotification(error.response.data.message, 'error');
+      } else {
+        showNotification('Ayarlar kaydedilirken bir hata oluştu.', 'error');
+      }
+    }
+  }
+
+  // Collect settings from form
+  function collectSettingsFromForm() {
+    const settings = {};
+
+    // General settings
+    settings.enabled = document.getElementById('setting-enabled')?.checked || false;
+    settings.notifications = document.getElementById('setting-notifications')?.checked || false;
+
+    // Collect enabled channels for bulk messaging
+    const enabledChannels = [];
+    const emailCheckbox = document.getElementById('setting-enable-bulk-email');
+    const whatsappCheckbox = document.getElementById('setting-enable-bulk-whatsapp');
+
+    if (emailCheckbox && emailCheckbox.checked) {
+      enabledChannels.push('email');
+    }
+    if (whatsappCheckbox && whatsappCheckbox.checked) {
+      enabledChannels.push('whatsapp');
+    }
+
+    if (enabledChannels.length > 0) {
+      settings.enabledChannels = enabledChannels;
+    }
+
+    // Collect template settings for birthday module (always save, even if empty)
+    const emailTemplate = document.getElementById('setting-email-template')?.value || '';
+    const emailTemplateName = document.getElementById('setting-email-template-name')?.value || '';
+    const smsTemplate = document.getElementById('setting-sms-template')?.value || '';
+    const smsTemplateName = document.getElementById('setting-sms-template-name')?.value || '';
+    const whatsappTemplate = document.getElementById('setting-whatsapp-template')?.value || '';
+    const whatsappTemplateName = document.getElementById('setting-whatsapp-template-name')?.value || '';
+
+    settings.emailTemplate = emailTemplate;
+    settings.emailTemplateName = emailTemplateName;
+    settings.smsTemplate = smsTemplate;
+    settings.smsTemplateName = smsTemplateName;
+    settings.whatsappTemplate = whatsappTemplate;
+    settings.whatsappTemplateName = whatsappTemplateName;
+
+    // Collect gift voucher settings for birthday module
+    const enableGiftVoucher = document.getElementById('setting-enable-gift-voucher')?.checked || false;
+    const giftVoucherAmount = parseFloat(document.getElementById('setting-gift-voucher-amount')?.value) || 50;
+    const giftVoucherDiscountType = parseInt(document.getElementById('setting-gift-voucher-discount-type')?.value) || 1;
+    const giftVoucherValidityDays = parseInt(document.getElementById('setting-gift-voucher-validity-days')?.value) || 365;
+    const giftVoucherDescription = document.getElementById('setting-gift-voucher-description')?.value || 'Doğum Günü Hediye Çeki';
+
+    settings.enableGiftVoucher = enableGiftVoucher;
+    settings.giftVoucherAmount = giftVoucherAmount;
+    settings.giftVoucherDiscountType = giftVoucherDiscountType;
+    settings.giftVoucherValidityDays = giftVoucherValidityDays;
+    settings.giftVoucherDescription = giftVoucherDescription;
+
+    // Collect module specific settings from both sidebar and modal containers
+    const inputs = document.querySelectorAll('#module-settings-content input, #module-settings-content select, #module-settings-content textarea, #module-settings-modal-content input, #module-settings-modal-content select, #module-settings-modal-content textarea');
+    inputs.forEach(input => {
+      if (input.id && input.id.startsWith('setting-')) {
+        // Skip bulk channel checkboxes as they are handled above
+        if (input.id.includes('enable-bulk-')) {
+          return;
+        }
+        if (input.id.includes('-template') || input.id.includes('-template-name')) {
+          return;
+        }
+
+        const key = input.id.replace('setting-', '').replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+
+        if (input.type === 'checkbox') {
+          settings[key] = input.checked;
+          if (key === 'autoSend' && !input.checked) {
+            settings[key] = false;
+          }
+        } else if (input.type === 'number') {
+          const value = parseFloat(input.value);
+          settings[key] = isNaN(value) ? 0 : value;
+        } else {
+          settings[key] = input.value;
+        }
+      }
+    });
+
+    if (!settings.hasOwnProperty('autoSend')) {
+      const autoSendCheckbox = document.getElementById('setting-auto-send');
+      if (autoSendCheckbox) {
+        settings.autoSend = autoSendCheckbox.checked;
+      } else {
+        settings.autoSend = false;
+      }
+    }
+
+    return settings;
+  }
+
+  // Reset module settings
+async function resetModuleSettings() {
+  if (!currentModuleId) return;
+
+  showConfirmationDialog('Ayarları Sıfırla', "Ayarları varsayılan değerlere sıfırlamak istediğinizden emin misiniz?", 'Evet', 'Hayır', async () => {
+    try {
+      const response = await axios.post(`/Store/ResetModuleSettings?moduleId=${currentModuleId}`, {}, {
+        headers: {
+          "RequestVerificationToken": document.querySelector("input[name=\"__RequestVerificationToken\"]").value,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (response.data.success) {
+        showNotification("Ayarlar varsayılan değerlere sıfırlandı!", 'success');
+        // Reload settings to show default values
+        loadModuleSettings(currentModuleId);
+      } else {
+        showNotification(response.data.message || "Ayarlar sıfırlanamadı.", 'error');
+      }
+    } catch (error) {
+      console.error("Error resetting module settings:", error);
+      showNotification("Ayarlar sıfırlanırken bir hata oluştu.", 'error');
+    }
+  });
+}
+  // Retry loading settings
+  function retryLoadSettings() {
+    if (currentModuleId) {
+      loadModuleSettings(currentModuleId);
+    }
+  }
+
+  // UI state management (works inside PushDialog content)
+  function showLoadingState() {
+    const loading = document.getElementById('module-settings-loading');
+    const content = document.getElementById('module-settings-content');
+    const error = document.getElementById('module-settings-error');
+    if (loading) loading.classList.remove('hidden');
+    if (content) content.classList.add('hidden');
+    if (error) error.classList.add('hidden');
+  }
+
+  function showContentState() {
+    const loading = document.getElementById('module-settings-loading');
+    const content = document.getElementById('module-settings-content');
+    const error = document.getElementById('module-settings-error');
+    if (loading) loading.classList.add('hidden');
+    if (content) content.classList.remove('hidden');
+    if (error) error.classList.add('hidden');
+  }
+
+  function showErrorState() {
+    const loading = document.getElementById('module-settings-loading');
+    const content = document.getElementById('module-settings-content');
+    const error = document.getElementById('module-settings-error');
+    if (loading) loading.classList.add('hidden');
+    if (content) content.classList.add('hidden');
+    if (error) {
+      error.classList.remove('hidden');
+      error.innerHTML = `
+        <div class="text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">Ayarlar yüklenemedi</h3>
+          <p class="mt-1 text-sm text-gray-500">Lütfen tekrar deneyin.</p>
+          <button onclick="retryLoadSettings()" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
+            Tekrar Dene
+          </button>
+        </div>
+      `;
+    }
+  }
+
+  // Generate order status notification settings
+  async function generateOrderStatusNotificationSettings(settings) {
+    try {
+      // Sipariş durumu eşleştirme ayarlarını yükle
+      const response = await axios.get(`/Store/GetOrderStatusMappingSettings?moduleId=${currentModuleId}`, {
+        headers: {
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+        }
+      });
+
+      console.log('Order status mapping response:', response.data);
+
+      if (!response.data.success) {
+        console.error('Backend error:', response.data.message);
+        return `
+          <div class="bg-yellow-50 p-4 rounded-lg">
+            <h4 class="text-sm font-medium text-yellow-900 mb-2">Sipariş Durumu Eşleştirme</h4>
+            <p class="text-sm text-yellow-700">${response.data.message}</p>
+          </div>
+        `;
+      }
+
+      const mappingSettings = response.data.settings;
+
+      // Null check'ler ekle
+      if (!mappingSettings || !mappingSettings.externalStatuses || !mappingSettings.internalStatuses) {
+        console.error('Missing data in mappingSettings:', mappingSettings);
+        return `
+          <div class="bg-red-50 p-4 rounded-lg">
+            <h4 class="text-sm font-medium text-red-900 mb-2">Hata</h4>
+            <p class="text-sm text-red-700">Sipariş durumu verileri eksik.</p>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="bg-blue-50 p-4 rounded-lg">
+          <h4 class="text-sm font-medium text-blue-900 mb-3">Sipariş Durumu Eşleştirme</h4>
+          <p class="text-sm text-blue-700 mb-4">
+            ${mappingSettings.integrationType || 'Bilinmeyen'} platformundaki sipariş durumlarını sistem durumlarına eşleştirin.
+          </p>
+
+          <div class="space-y-3 mb-4">
+            ${(mappingSettings.internalStatuses || []).map(internalStatus => {
+              // Bu sistem durumu için mevcut eşleştirmeleri bul
+              const currentMappings = (mappingSettings.currentMappings || []).filter(m => m.internalStatus === internalStatus.value);
+              const selectedExternalStatuses = currentMappings.map(m => m.externalStatus);
+
+              return `
+                <div class="p-4 bg-white rounded border">
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="flex-1">
+                      <div class="text-sm font-medium text-gray-900">
+                        ${internalStatus.text} (${internalStatus.value})
+                      </div>
+                      <div class="text-xs text-gray-500">Bu sistem durumu için ${mappingSettings.integrationType} durumlarını seçin</div>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                    ${(mappingSettings.externalStatuses || []).map(externalStatus => `
+                      <label class="flex items-center space-x-2 text-xs">
+                        <input type="checkbox"
+                               id="mapping-${internalStatus.value}-${externalStatus.statusCode}"
+                               data-internal="${internalStatus.value}"
+                               data-external="${externalStatus.statusCode}"
+                               data-external-name="${externalStatus.statusName}"
+                               ${selectedExternalStatuses.includes(externalStatus.statusCode) ? 'checked' : ''}
+                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="text-gray-700">${externalStatus.statusName} (${externalStatus.statusCode})</span>
+                      </label>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <div class="flex space-x-2">
+            <button onclick="createDefaultMappings()"
+                    class="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm">
+              Varsayılan Eşleştirmeler
+            </button>
+            <button onclick="saveOrderStatusMappings()"
+                    class="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
+              Eşleştirmeleri Kaydet
+            </button>
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      console.error('Error loading order status mapping settings:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      return `
+        <div class="bg-red-50 p-4 rounded-lg">
+          <h4 class="text-sm font-medium text-red-900 mb-2">Hata</h4>
+          <p class="text-sm text-red-700">Sipariş durumu eşleştirme ayarları yüklenemedi.</p>
+          <p class="text-xs text-red-600 mt-1">Detay: ${error.message}</p>
+        </div>
+      `;
+    }
+  }
+
+  // Save order status mappings
+  async function saveOrderStatusMappings() {
+    if (!currentModuleId) return;
+
+    try {
+      // Collect mapping data
+      const mappings = [];
+      const checkboxes = document.querySelectorAll('[id^="mapping-"][data-internal][data-external]');
+
+      checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+          const internalStatus = checkbox.getAttribute('data-internal');
+          const externalStatus = checkbox.getAttribute('data-external');
+          const externalStatusName = checkbox.getAttribute('data-external-name');
+
+          mappings.push({
+            ExternalStatus: externalStatus,
+            ExternalStatusDisplayName: externalStatusName,
+            InternalStatus: internalStatus,
+            IsActive: true
+          });
+        }
+      });
+
+      const response = await axios.post(`/Store/SaveOrderStatusMappings?moduleId=${currentModuleId}`, mappings, {
+        headers: {
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data.success) {
+        showNotification('Sipariş durumu eşleştirmeleri başarıyla kaydedildi!', 'success');
+      } else {
+        showNotification(response.data.message || 'Eşleştirmeler kaydedilemedi.', 'error');
+      }
+    } catch (error) {
+      console.error('Error saving order status mappings:', error);
+      showNotification('Eşleştirmeler kaydedilirken bir hata oluştu.', 'error');
+    }
+  }
+
+  // Create default mappings
+  async function createDefaultMappings() {
+    if (!currentModuleId) return;
+
+    showConfirmationDialog('Varsayılan Eşleştirmeler', 'Varsayılan eşleştirmeler oluşturulacak. Mevcut eşleştirmeler silinecek. Devam etmek istiyor musunuz?', 'Evet', 'Hayır', async () => {
+      try {
+        const response = await axios.post(`/Store/CreateDefaultOrderStatusMappings?moduleId=${currentModuleId}`, {}, {
+          headers: {
+            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.data.success) {
+          showNotification('Varsayılan eşleştirmeler başarıyla oluşturuldu!', 'success');
+          // Reload settings to show new mappings
+          loadModuleSettings(currentModuleId);
+        } else {
+          showNotification(response.data.message || 'Varsayılan eşleştirmeler oluşturulamadı.', 'error');
+        }
+      } catch (error) {
+        console.error('Error creating default mappings:', error);
+        showNotification('Varsayılan eşleştirmeler oluşturulurken bir hata oluştu.', 'error');
+      }
+    });
+  }
+
+
+
+  // Generate channel settings for first order module
+  function generateFirstOrderChannelSettings(channels, settings) {
+    return channels.map(channel => {
+      let isEnabled = settings[`${channel.channelType}Enabled`];
+      if (isEnabled === undefined && channel.channelType === 'whatsapp') {
+        isEnabled = settings['whatsAppEnabled'];
+      }
+      isEnabled = isEnabled || false;
+
+      const statusColor = channel.isConfigured ? 'text-green-600' : 'text-red-600';
+      const statusIcon = channel.isConfigured ? '✓' : '✗';
+      
+      // Template bilgilerini al
+      const selectedTemplateId = settings[`${channel.channelType}TemplateId`] || '';
+      const selectedTemplateName = settings[`${channel.channelType}TemplateName`] || '';
+      const escapedTemplateName = selectedTemplateName ? selectedTemplateName.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
+      const escapedChannelName = channel.displayName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+      return `
+        <div class="border border-gray-200 rounded-lg p-3 bg-white mb-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center">
+              <span class="text-lg mr-3">${getChannelIcon(channel.channelType)}</span>
+              <div>
+                <div class="flex items-center">
+                  <span class="text-sm font-medium text-gray-900">${channel.displayName}</span>
+                  <span class="ml-2 text-xs ${statusColor}">${statusIcon} ${channel.configurationStatus}</span>
+                </div>
+                <div class="text-xs text-gray-500">Maliyet: ${getCostDisplayText(channel.channelType)}</div>
+                ${channel.lastTestResult ? `<div class="text-xs text-gray-400">Son test: ${channel.lastTestResult}</div>` : ''}
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="setting-${channel.channelType}-enabled" ${isEnabled ? 'checked' : ''} class="sr-only peer">
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+
+          ${channel.isConfigured ? `
+            <div class="mt-2">
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-xs font-medium text-gray-700">Şablon:</label>
+                <button type="button"
+                        onclick="openTemplateSelector('${channel.channelType}', '${escapedChannelName}', 'FirstOrder')"
+                        class="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  Şablon Seç
+                </button>
+              </div>
+              <div id="selected-template-${channel.channelType}" class="text-xs text-gray-600 bg-gray-50 p-2 rounded border border-gray-200 min-h-[32px] flex items-center">
+                ${escapedTemplateName ? `<span class="font-medium">${escapedTemplateName}</span>` : '<span class="text-gray-400">Şablon seçilmedi</span>'}
+              </div>
+              <input type="hidden" id="setting-${channel.channelType}-template-id" value="${selectedTemplateId}">
+              <input type="hidden" id="setting-${channel.channelType}-template-name" value="${selectedTemplateName.replace(/"/g, '&quot;')}">
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Get channel icon
+  function getChannelIcon(channelType) {
+    switch (channelType) {
+      case 'email': return '📧';
+      case 'sms': return '📱';
+      case 'whatsapp': return '💬';
+      case 'push': return '🔔';
+      default: return '📢';
+    }
+  }
+
+  // Get cost display text based on channel type
+  function getCostDisplayText(channelType) {
+    switch ((channelType || '').toLowerCase()) {
+      case 'whatsapp': return '1 TL';
+      case 'email':
+      case 'sms':
+      default: return 'Ücretsiz';
+    }
+  }
+
+  // Generate first order messaging specific settings
+  async function generateFirstOrderSettings(settings) {
+    try {
+      // Get first order module settings from API
+      const response = await axios.get('/api/FirstOrderModule/settings', {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+        }
+      });
+
+      const firstOrderSettings = response.data;
+
+      return `
+        <div class="bg-blue-50 p-4 rounded-lg mb-6">
+          <h4 class="text-sm font-medium text-gray-900 mb-3">🎉 İlk Alışveriş Mesajı Ayarları</h4>
+          <p class="text-xs text-gray-600 mb-4">Müşterilerinizin ilk alışverişlerinde otomatik olarak gönderilecek mesaj ayarlarını yapılandırın.</p>
+
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <label class="text-sm font-medium text-gray-700">Modül Etkin</label>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="setting-first-order-enabled" ${firstOrderSettings.enabled ? 'checked' : ''} class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+
+            <div>
+              <h5 class="text-sm font-medium text-gray-900 mb-3">📱 İletişim Kanalları</h5>
+              <div class="space-y-3">
+                ${firstOrderSettings.availableChannels.length > 0 ?
+                  generateFirstOrderChannelSettings(firstOrderSettings.availableChannels, firstOrderSettings) :
+                  `<div class="bg-yellow-50 p-3 rounded-md">
+                    <div class="flex items-center">
+                      <svg class="w-4 h-4 text-yellow-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                      </svg>
+                      <span class="text-sm text-yellow-800">Henüz aktif iletişim kanalı bulunmuyor. Lütfen önce Email veya WhatsApp entegrasyonunu yapılandırın.</span>
+                    </div>
+                  </div>`
+                }
+              </div>
+            </div>
+
+            <div class="border-t pt-4">
+              <h5 class="text-sm font-medium text-gray-900 mb-3">🎁 Hediye Çeki Ayarları</h5>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <label class="text-sm font-medium text-gray-700">Hediye Çeki Etkin</label>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="setting-gift-voucher-enabled" ${firstOrderSettings.giftVoucherEnabled ? 'checked' : ''} class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tutar</label>
+                    <input type="number" id="setting-gift-voucher-amount" value="${firstOrderSettings.giftVoucherAmount}" min="1" max="10000"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">İndirim Tipi</label>
+                    <select id="setting-gift-voucher-discount-type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="1" ${firstOrderSettings.giftVoucherDiscountType === 1 ? 'selected' : ''}>Sabit Tutar (TL)</option>
+                      <option value="2" ${firstOrderSettings.giftVoucherDiscountType === 2 ? 'selected' : ''}>Yüzde (%)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Geçerlilik Süresi (Gün)</label>
+                  <input type="number" id="setting-gift-voucher-validity-days" value="${firstOrderSettings.giftVoucherValidityDays}" min="1" max="365"
+                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <p class="text-xs text-gray-500 mt-1">Hediye çekinin kaç gün geçerli olacağını belirtin</p>
+                </div>
+
+                ${firstOrderSettings.hasActiveEcommerceIntegration ?
+                  `<div class="bg-green-50 p-3 rounded-md">
+                    <div class="flex items-center">
+                      <svg class="w-4 h-4 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                      </svg>
+                      <span class="text-sm text-green-800">E-ticaret entegrasyonu aktif: ${firstOrderSettings.activeEcommercePlatform}</span>
+                    </div>
+                  </div>` :
+                  `<div class="bg-yellow-50 p-3 rounded-md">
+                    <div class="flex items-center">
+                      <svg class="w-4 h-4 text-yellow-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                      </svg>
+                      <span class="text-sm text-yellow-800">Hediye çeki oluşturmak için e-ticaret entegrasyonu gerekli</span>
+                    </div>
+                  </div>`
+                }
+
+                <button type="button" onclick="testGiftVoucher()" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium">
+                  Hediye Çeki Testi Yap
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      console.error('Error loading first order settings:', error);
+      return `
+        <div class="bg-red-50 p-4 rounded-lg">
+          <p class="text-sm text-red-800">Ayarlar yüklenirken hata oluştu. Lütfen sayfayı yenileyin.</p>
+        </div>
+      `;
+    }
+  }
+
+  // Generate Stock Reminder Settings
+  async function generateStockReminderSettings(settings) {
+    try {
+      const activeChannels = await getActiveChannels();
+
+      const response = await axios.get('/api/StockReminderModule/settings', {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+        }
+      });
+
+      const stockReminderSettings = response.data;
+
+      // Adapt settings for generateChannelSettings
+      stockReminderSettings.enableEmail = stockReminderSettings.emailEnabled;
+      stockReminderSettings.enableSms = stockReminderSettings.smsEnabled;
+      stockReminderSettings.enableWhatsapp = stockReminderSettings.whatsAppEnabled;
+
+      return `
+        <div class="bg-purple-50 p-4 rounded-lg mb-6">
+          <h4 class="text-sm font-medium text-gray-900 mb-3">📦 Stok Hatırlatma Ayarları</h4>
+          <p class="text-xs text-gray-600 mb-4">Ürün stoğu belirlenen eşiğin altına düştüğünde müşterilere otomatik bildirim gönderilir.</p>
+
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <label class="text-sm font-medium text-gray-700">Modül Etkin</label>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="setting-stock-reminder-enabled" ${stockReminderSettings.enabled ? 'checked' : ''} class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+              </label>
+            </div>
+
+            <div>
+              <h5 class="text-sm font-medium text-gray-900 mb-3">📱 İletişim Kanalları</h5>
+              <div class="space-y-3">
+                 ${generateChannelSettings('email', 'Email', activeChannels.email, stockReminderSettings, "StockReminder")}
+                 ${generateChannelSettings('sms', 'SMS', activeChannels.sms, stockReminderSettings, "StockReminder")}
+                 ${generateChannelSettings('whatsapp', 'WhatsApp', activeChannels.whatsapp, stockReminderSettings, "StockReminder")}
+              </div>
+            </div>
+
+            <div class="border-t pt-4">
+              <h5 class="text-sm font-medium text-gray-900 mb-3">⚙️ Stok Eşik Ayarları</h5>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Stok Eşiği</label>
+                  <input type="number" id="setting-stock-threshold" value="${stockReminderSettings.stockThreshold || 10}" min="1" max="10000"
+                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500">
+                  <p class="text-xs text-gray-500 mt-1">Stok bu sayının altına düştüğünde bildirim gönderilir</p>
+                </div>
+
+                ${stockReminderSettings.hasActiveEcommerceIntegration ?
+                  `<div class="bg-green-50 p-3 rounded-md">
+                    <div class="flex items-center">
+                      <svg class="w-4 h-4 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                      </svg>
+                      <span class="text-sm text-green-800">E-ticaret entegrasyonu aktif: ${stockReminderSettings.activeEcommercePlatform}</span>
+                    </div>
+                  </div>` :
+                  `<div class="bg-yellow-50 p-3 rounded-md">
+                    <div class="flex items-center">
+                      <svg class="w-4 h-4 text-yellow-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                      </svg>
+                      <span class="text-sm text-yellow-800">Stok takibi için e-ticaret entegrasyonu gerekli</span>
+                    </div>
+                  </div>`
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      console.error('Error loading stock reminder settings:', error);
+      return `
+        <div class="bg-red-50 p-4 rounded-lg">
+          <p class="text-sm text-red-800">Ayarlar yüklenirken hata oluştu. Lütfen sayfayı yenileyin.</p>
+        </div>
+      `;
+    }
+  }
+
+  // Generate Stock Reminder channel settings
+  function generateStockReminderChannelSettings(channels, settings) { return channels.map(channel => {
+      // Handle casing mismatch for WhatsApp (WhatsAppEnabled vs whatsappEnabled)
+      let isEnabled = settings[`${channel.channelType}Enabled`];
+      if (isEnabled === undefined && channel.channelType === 'whatsapp') {
+        isEnabled = settings['whatsAppEnabled'];
+      }
+      isEnabled = isEnabled || false;
+
+      const statusColor = channel.isConfigured ? 'text-green-600' : 'text-red-600';
+      const statusIcon = channel.isConfigured ? '✓' : '✗';
+
+      return `
+        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-md bg-white">
+          <div class="flex items-center">
+            <span class="text-lg mr-3">${getChannelIcon(channel.channelType)}</span>
+            <div>
+              <div class="flex items-center">
+                <span class="text-sm font-medium text-gray-900">${channel.displayName}</span>
+                <span class="ml-2 text-xs ${statusColor}">${statusIcon} ${channel.configurationStatus}</span>
+              </div>
+              <div class="text-xs text-gray-500">Maliyet: ${getCostDisplayText(channel.channelType)}</div>
+              ${channel.lastTestResult ? `<div class="text-xs text-gray-400">Son test: ${channel.lastTestResult}</div>` : ''}
+            </div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="setting-${channel.channelType}-enabled" ${isEnabled ? 'checked' : ''} class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+      `;
+  }).join('');
+  }
+
+
+  // Save Stock Reminder settings
+  async function saveStockReminderSettings() {
+    try {
+      const settings = {
+        enabled: document.getElementById('setting-stock-reminder-enabled')?.checked || false,
+        emailEnabled: document.getElementById('setting-enable-email')?.checked || false,
+        smsEnabled: document.getElementById('setting-enable-sms')?.checked || false,
+        whatsAppEnabled: document.getElementById('setting-enable-whatsapp')?.checked || false,
+        pushEnabled: false,
+        stockThreshold: parseInt(document.getElementById('setting-stock-threshold')?.value) || 10,
+        
+        // Template settings
+        emailTemplate: document.getElementById('setting-email-template')?.value || '',
+        emailTemplateName: document.getElementById('setting-email-template-name')?.value || '',
+        smsTemplate: document.getElementById('setting-sms-template')?.value || '',
+        smsTemplateName: document.getElementById('setting-sms-template-name')?.value || '',
+        whatsAppTemplate: document.getElementById('setting-whatsapp-template')?.value || '',
+        whatsAppTemplateName: document.getElementById('setting-whatsapp-template-name')?.value || ''
+      };
+
+      const response = await axios.post('/api/StockReminderModule/settings', settings, {
+        headers: {
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.status === 200) {
+        showNotification('Stok hatırlatma ayarları başarıyla kaydedildi!', 'success');
+        currentModuleSettings = settings;
+      } else {
+        showNotification(response.data.message || 'Ayarlar kaydedilemedi.', 'error');
+      }
+    } catch (error) {
+      console.error('Error saving stock reminder settings:', error);
+      if (error.response && error.response.data && error.response.data.message) {
+        showNotification(error.response.data.message, 'error');
+      } else {
+        showNotification('Ayarlar kaydedilirken bir hata oluştu.', 'error');
+      }
+    }
+  }
+
+
+
+  // Test gift voucher creation
+  async function testGiftVoucher() {
+    try {
+      const response = await axios.post('/api/FirstOrderModule/test-gift-voucher', {}, {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+        }
+      });
+
+      const result = response.data;
+
+      if (result.success) {
+        showNotification(`Hediye çeki testi başarılı! Kod: ${result.voucherCode}, Tutar: ${result.amount}, Platform: ${result.platform}`, 'success');
+      } else {
+        showNotification(`Hediye çeki testi başarısız: ${result.errorMessage}`, 'error');
+      }
+    } catch (error) {
+      console.error('Error testing gift voucher:', error);
+      showNotification('Hediye çeki testi sırasında hata oluştu.', 'error');
+    }
+  }
+
+
+
+  // Escape key handling - PushDialog manages its own key events
+  // Kept for backward compatibility with modal-based modules
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      // PushDialog handles escape internally, no manual sidebar check needed
+    }
+  });
+
+  // Template selector modal functions
+  let currentTemplateChannelType = '';
+  let currentTemplateChannelName = '';
+  let currentModuleType = ''; // Modül tipi için (FirstOrder, BulkMessaging, etc.)
+  let templateSelectorDialog = null;
+
+  async function openTemplateSelector(channelType, channelName, moduleType = '') {
+    currentTemplateChannelType = channelType;
+    currentTemplateChannelName = channelName;
+    currentModuleType = moduleType;
+
+    if (!templateSelectorDialog) {
+        templateSelectorDialog = new PushDialog({
+            title: `${channelName} Şablonları`,
+            size: 'md',
+            position: 'center',
+            closeOnOverlayClick: true,
+            closeOnEsc: true
+        });
+    } else {
+        templateSelectorDialog.setTitle(`${channelName} Şablonları`);
+        templateSelectorDialog.setContent(''); // Clear previous content
+    }
+
+    // Set initial loading content
+    const loadingHtml = `
+      <div class="text-center py-8">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
+        <p class="mt-2 text-sm text-gray-600">Şablonlar yükleniyor...</p>
+      </div>
+    `;
+    templateSelectorDialog.setContent(loadingHtml);
+    templateSelectorDialog.open();
+
+    try {
+      const response = await axios.get(`/TemplateModule/GetChannelTemplates?channelType=${channelType}&moduleType=${currentModuleType || ''}`, {
+        headers: {
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+        }
+      });
+
+      if (response.data.success && response.data.data && response.data.data.length > 0) {
+        const templates = response.data.data;
+        const currentSelectedTemplate = document.getElementById(`setting-${channelType}-template-id`)?.value || 
+                                        document.getElementById(`setting-${channelType}-template`)?.value || '';
+
+        const templatesHtml = templates.map(template => {
+          const templateName = (template.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          const displayName = (template.displayName || template.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          const previewContent = template.previewContent ? (template.previewContent || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+          const subject = template.subject ? (template.subject || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+          const displayNameForOnClick = (template.displayName || template.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+          return `
+          <div class="p-3 mb-2 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors ${currentSelectedTemplate === template.name ? 'bg-pink-50 border-pink-300' : ''}"
+               onclick="selectTemplate('${templateName}', '${displayNameForOnClick}')">
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <div class="font-medium text-sm text-gray-900">${displayName}</div>
+                ${previewContent ? `<div class="text-xs text-gray-500 mt-1 line-clamp-2">${previewContent}</div>` : ''}
+                ${subject ? `<div class="text-xs text-gray-400 mt-1">Konu: ${subject}</div>` : ''}
+              </div>
+              ${currentSelectedTemplate === template.name ? `
+                <svg class="w-5 h-5 text-pink-600 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+              ` : ''}
+            </div>
+          </div>
+        `;
+        }).join('');
+        
+        templateSelectorDialog.setContent(`<div class="space-y-2 max-h-[60vh] overflow-y-auto">${templatesHtml}</div>`);
+
+      } else {
+        const emptyHtml = `
+          <div class="text-center py-8">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <p class="mt-2 text-sm text-gray-600">Bu kanal için şablon bulunamadı.</p>
+          </div>
+        `;
+        templateSelectorDialog.setContent(emptyHtml);
+      }
+    } catch (error) {
+      console.error('Error loading templates:', error);
+      templateSelectorDialog.setContent('<p class="text-center text-red-500 py-4">Şablonlar yüklenirken hata oluştu.</p>');
+      showNotification('Şablonlar yüklenirken hata oluştu.', 'error');
+    }
+  }
+
+  function selectTemplate(templateName, templateDisplayName) {
+    // İlk olarak doğum günü modülü için kullanılan standard ID'leri dene
+    let templateInput = document.getElementById(`setting-${currentTemplateChannelType}-template`);
+    let templateNameInput = document.getElementById(`setting-${currentTemplateChannelType}-template-name`);
+    
+    // Eğer bulunamazsa ilk alışveriş modülü için kullanılan ID'leri dene
+    if (!templateInput) {
+      templateInput = document.getElementById(`setting-${currentTemplateChannelType}-template-id`);
+    }
+    
+    const templateDisplayDiv = document.getElementById(`selected-template-${currentTemplateChannelType}`);
+
+    if (templateInput) {
+      templateInput.value = templateName;
+    }
+    if (templateNameInput) {
+      templateNameInput.value = templateDisplayName;
+    }
+    if (templateDisplayDiv) {
+      const escapedName = templateDisplayName.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      templateDisplayDiv.innerHTML = `<span class="font-medium">${escapedName}</span>`;
+    }
+
+    if (templateSelectorDialog) {
+        templateSelectorDialog.close();
+    }
+    showNotification('Şablon seçildi.', 'success');
+  }
+
+  // Toggle auto send visibility (artık buton her zaman görünür, bu fonksiyon sadece bilgilendirme için)
+  function toggleAutoSend() {
+    // Buton artık her zaman görünür, sadece log tutabiliriz
+    const autoSendCheckbox = document.getElementById('setting-auto-send');
+    if (autoSendCheckbox) {
+      const isAutoSend = autoSendCheckbox.checked;
+      console.log('Auto send toggled:', isAutoSend);
+    }
+  }
+
+  // Ensure 24-hour format for send time input
+  function ensure24HourFormat() {
+    const sendTimeInput = document.getElementById('setting-send-time');
+    if (sendTimeInput) {
+      // HTML5 time input already uses 24-hour format, but we can add validation
+      sendTimeInput.addEventListener('change', function() {
+        const value = this.value;
+        if (value) {
+          const [hours, minutes] = value.split(':');
+          const hour = parseInt(hours, 10);
+          if (hour < 0 || hour > 23) {
+            showNotification('Saat 00:00 ile 23:59 arasında olmalıdır (24 saatlik format).', 'error');
+            this.value = '09:00';
+          }
+        }
+      });
+    }
+  }
+
+  // Send birthday notifications now
+  async function sendBirthdayNotificationsNow(event) {
+    if (!currentModuleId) return;
+
+    const button = event?.target || document.querySelector('#birthday-summary button, #manual-send-section button');
+    if (!button) return;
+
+    const originalText = button.textContent;
+
+    try {
+      button.disabled = true;
+      button.textContent = 'Gönderiliyor...';
+
+      const response = await axios.post('/Notification/SendBirthdayNotifications', {}, {
+        headers: {
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data.success) {
+        showNotification(response.data.message || `Doğum günü bildirimleri başarıyla gönderildi! (${response.data.notificationsSent || 0} adet)`, 'success');
+        // Özet raporu güncelle
+        const birthdayCount = await getTodaysBirthdayCount();
+        const summaryDiv = document.getElementById('birthday-summary');
+        if (summaryDiv) {
+          const countElement = summaryDiv.querySelector('.text-sm.font-bold');
+          if (countElement) {
+            countElement.textContent = `${birthdayCount} müşteri`;
+          }
+        }
+      } else {
+        showNotification(response.data.message || 'Bildirimler gönderilemedi.', 'error');
+      }
+    } catch (error) {
+      console.error('Error sending birthday notifications:', error);
+      showNotification('Bildirimler gönderilirken bir hata oluştu.', 'error');
+    } finally {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+</script>

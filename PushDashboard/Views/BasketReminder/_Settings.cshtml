@@ -1,0 +1,230 @@
+@model BasketReminderSettings
+
+<div class="bg-white shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Genel Ayarlar</h3>
+            <button type="button" onclick="document.getElementById('settingsForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))"
+                    class="px-4 lg:px-6 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2">
+                <i class="fas fa-save"></i>
+                <span class="hidden sm:inline">Ayarları Kaydet</span>
+            </button>
+        </div>
+        
+        <form id="settingsForm">
+            <div class="grid grid-cols-1 gap-6">
+                <!-- Modül Durumu -->
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="isEnabled" name="IsEnabled" 
+                               class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                               @(Model?.IsEnabled == true ? "checked" : "")>
+                        <span class="ml-2 text-sm font-medium text-gray-700">Sepet hatırlatma modülünü aktif et</span>
+                    </label>
+                    <p class="mt-1 text-sm text-gray-500">Bu seçenek kapalı olduğunda hiçbir hatırlatma gönderilmez.</p>
+                </div>
+
+                <!-- Maksimum Bildirim Sayısı -->
+                <div>
+                    <label for="maxNotifications" class="block text-sm font-medium text-gray-700">
+                        Müşteri Başına Maksimum Bildirim Sayısı
+                    </label>
+                    <select id="maxNotifications" name="MaxNotificationsPerCustomer"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="1" selected="@(Model?.MaxNotificationsPerCustomer == 1)">1 Bildirim</option>
+                        <option value="2" selected="@(Model?.MaxNotificationsPerCustomer == 2)">2 Bildirim</option>
+                    </select>
+                    <p class="mt-1 text-sm text-gray-500">Bir müşteriye son 30 gün içinde en fazla kaç hatırlatma gönderilebileceğini belirler.</p>
+                </div>
+
+                <!-- Bildirim İçeriği -->
+                <div>
+                    <label for="notificationContent" class="block text-sm font-medium text-gray-700">
+                        Bildirim İçeriği
+                    </label>
+                    <div class="mt-1">
+                        <textarea id="notificationContent" name="NotificationContent" rows="4" 
+                                  class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                  maxlength="200" 
+                                  placeholder="Merhaba {FirstName}, sepetinizde ürünler bekliyor...">@(Model?.NotificationContent ?? "")</textarea>
+                    </div>
+                    <div class="mt-1 flex justify-between">
+                        <p class="text-sm text-gray-500">
+                            Kullanılabilir değişkenler: {FirstName}, {LastName}, {FullName}
+                        </p>
+                        <span id="charCount" class="text-sm text-gray-500">
+                            <span id="currentCount">@(Model?.NotificationContent?.Length ?? 0)</span>/200
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Placeholder Ekleme Butonları -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Hızlı Ekleme</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="insertPlaceholder('{FirstName}')" 
+                                class="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+                            {FirstName}
+                        </button>
+                        <button type="button" onclick="insertPlaceholder('{LastName}')" 
+                                class="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+                            {LastName}
+                        </button>
+                        <button type="button" onclick="insertPlaceholder('{FullName}')" 
+                                class="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+                            {FullName}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Örnek Görünüm -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Örnek Görünüm</label>
+                    <div class="bg-gray-50 border border-gray-200 rounded-md p-3">
+                        <p id="previewContent" class="text-sm text-gray-700">
+                            @if (!string.IsNullOrEmpty(Model?.NotificationContent))
+                            {
+                                @Model.NotificationContent.Replace("{FirstName}", "Ahmet").Replace("{LastName}", "Yılmaz").Replace("{FullName}", "Ahmet Yılmaz")
+                            }
+                            else
+                            {
+                                <span class="text-gray-400">Bildirim içeriği girilmemiş</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+
+        </form>
+    </div>
+</div>
+
+<script>
+// Karakter sayacı
+document.getElementById('notificationContent').addEventListener('input', function() {
+    const content = this.value;
+    const currentCount = content.length;
+    document.getElementById('currentCount').textContent = currentCount;
+    
+    // Karakter limiti kontrolü
+    if (currentCount > 200) {
+        this.value = content.substring(0, 200);
+        document.getElementById('currentCount').textContent = 200;
+    }
+    
+    // Renk değişimi
+    const charCountElement = document.getElementById('charCount');
+    if (currentCount > 180) {
+        charCountElement.classList.add('text-red-500');
+        charCountElement.classList.remove('text-gray-500');
+    } else {
+        charCountElement.classList.add('text-gray-500');
+        charCountElement.classList.remove('text-red-500');
+    }
+    
+    // Önizleme güncelle
+    updatePreview();
+});
+
+// Placeholder ekleme
+function insertPlaceholder(placeholder) {
+    const textarea = document.getElementById('notificationContent');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    
+    const newText = text.substring(0, start) + placeholder + text.substring(end);
+    
+    if (newText.length <= 200) {
+        textarea.value = newText;
+        textarea.setSelectionRange(start + placeholder.length, start + placeholder.length);
+        textarea.focus();
+        
+        // Karakter sayacını güncelle
+        document.getElementById('currentCount').textContent = newText.length;
+        updatePreview();
+    }
+}
+
+// Önizleme güncelleme
+function updatePreview() {
+    const content = document.getElementById('notificationContent');
+    const preview = document.getElementById('previewContent');
+
+    if (!content || !preview) return;
+
+    if (content.value.trim() === '') {
+        preview.innerHTML = '<span class="text-gray-400">Bildirim içeriği girilmemiş</span>';
+    } else {
+        const previewText = content.value
+            .replace(/{FirstName}/g, 'Ahmet')
+            .replace(/{LastName}/g, 'Yılmaz')
+            .replace(/{FullName}/g, 'Ahmet Yılmaz')
+            .replace(/{ISIM}/g, 'Ahmet')
+            .replace(/{SOYISIM}/g, 'Yılmaz');
+        preview.textContent = previewText;
+    }
+}
+
+// Form gönderimi
+document.addEventListener('DOMContentLoaded', function() {
+    const settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = {
+                IsEnabled: document.getElementById('isEnabled').checked,
+                MaxNotificationsPerCustomer: parseInt(document.getElementById('maxNotifications').value),
+                NotificationContent: document.getElementById('notificationContent').value
+            };
+
+            const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (!csrfToken) {
+                if (typeof showNotification === 'function') {
+                    showNotification('CSRF token bulunamadı. Sayfayı yenileyin.', 'error');
+                }
+                return;
+            }
+
+            // AJAX ile gönder
+            fetch('@Url.Action("UpdateSettings", "BasketReminder")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': csrfToken.value
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (typeof showNotification === 'function') {
+                        showNotification('Ayarlar başarıyla kaydedildi.', 'success');
+                    }
+                } else {
+                    if (typeof showNotification === 'function') {
+                        showNotification('Hata: ' + data.message, 'error');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Settings update error:', error);
+                if (typeof showNotification === 'function') {
+                    showNotification('Bir hata oluştu: ' + error.message, 'error');
+                }
+            });
+        });
+    }
+
+    // Notification content değişikliklerini dinle
+    const notificationContent = document.getElementById('notificationContent');
+    if (notificationContent) {
+        notificationContent.addEventListener('input', updatePreview);
+        notificationContent.addEventListener('keyup', updatePreview);
+        // İlk yüklemede önizlemeyi güncelle
+        updatePreview();
+    }
+});
+</script>

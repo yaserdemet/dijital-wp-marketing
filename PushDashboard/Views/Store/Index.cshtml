@@ -1,0 +1,49 @@
+@model PushDashboard.ViewModels.StoreIndexViewModel
+@{
+    ViewData["Title"] = "Mağaza";
+}
+
+@section Scripts
+{
+    @await Html.PartialAsync("Partials/_StoreScriptsPartial")
+    @await Html.PartialAsync("Partials/_ModuleSettingsScriptsPartial")
+    @await Html.PartialAsync("Partials/_ModuleDetailsScriptsPartial")
+    
+    <script>
+        // URL parametrelerinden modül ayarlarını otomatik aç
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const openModuleId = urlParams.get('openModule');
+            const moduleName = urlParams.get('moduleName');
+            
+            if (openModuleId && moduleName) {
+                // Sayfa yüklendikten sonra modal'ı aç
+                setTimeout(function() {
+                    if (typeof openModuleSettings === 'function') {
+                        openModuleSettings(openModuleId, decodeURIComponent(moduleName));
+                    }
+                }, 500);
+                
+                // URL'den parametreleri temizle (sayfa yenilendiğinde tekrar açılmasın)
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+    </script>
+}
+
+<!-- Anti-forgery token for AJAX requests -->
+@Html.AntiForgeryToken()
+
+<main class="p-4 bg-gray-50 relative">
+    <div class="mb-6">
+        <h2 class="text-2xl font-semibold text-gray-900">Mağaza</h2>
+        <p class="text-gray-500">Modüllerinizi yönetin ve yeni modüller keşfedin</p>
+    </div>
+
+    @await Html.PartialAsync("Partials/_StoreStatsPartial", Model)
+
+    @await Html.PartialAsync("Partials/_ModuleGridPartial", Model)
+
+    <!-- Module Settings Modal (Specific for Birthday etc.) -->
+    @await Html.PartialAsync("Partials/_ModuleSettingsModalPartial")
+</main>

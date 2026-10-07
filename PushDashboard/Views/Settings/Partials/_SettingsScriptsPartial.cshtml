@@ -1,0 +1,678 @@
+<!-- Axios CDN -->
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+<!-- IMask.js for input masking -->
+<script src="https://cdn.jsdelivr.net/npm/imask@7.1.3/dist/imask.min.js"></script>
+
+<script>
+  // Axios default configuration
+  axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+
+  // Get anti-forgery token
+  const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+  axios.defaults.headers.common['RequestVerificationToken'] = token;
+
+  // Tab işlevselliği
+  document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', function() {
+      const tabId = this.getAttribute('data-tab');
+
+      // Tüm tab butonlarından active sınıfını kaldır
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      // Tüm tab içeriklerini gizle
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+
+      // Tıklanan tab butonunu aktif yap
+      this.classList.add('active');
+
+      // İlgili tab içeriğini göster
+      document.getElementById(tabId).classList.add('active');
+
+
+    // Lazy load active sessions when security tab is clicked
+    if (tabId === 'security' && !window.sessionsLoaded) {
+      if (typeof window.loadActiveSessions === "function") {
+        window.loadActiveSessions();
+      } else {
+        console.error("loadActiveSessions function not available");
+      }
+    }
+      // Lazy load users when users tab is clicked
+      if (tabId === 'users' && !window.usersLoaded) {
+        if (typeof window.loadUsers === "function") {
+          window.loadUsers();
+        } else {
+          console.error("loadUsers function not available");
+        }
+      }
+
+      // Lazy load billing information when billing tab is clicked
+      if (tabId === 'billing' && !window.billingLoaded) {
+        if (typeof window.loadBillingInformation === "function") {
+          window.loadBillingInformation();
+        } else {
+          console.error("loadBillingInformation function not available");
+        }
+      }
+    });
+  });
+
+  // Button loading states
+  function setButtonLoading(button, loading) {
+    if (loading) {
+      button.disabled = true;
+      button.innerHTML = '<div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>Yükleniyor...';
+    }
+  }
+
+  function resetButton(button, originalText) {
+    button.disabled = false;
+    button.innerHTML = originalText;
+  }
+
+  // User Profile Form Handler
+  const userForm = document.getElementById('user-profile-form');
+  if (userForm) {
+    userForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const submitButton = this.querySelector('button[type="submit"]');
+      const originalText = submitButton.innerHTML;
+
+      try {
+        setButtonLoading(submitButton, true);
+
+        const formData = {
+          firstName: document.getElementById('UserProfile_FirstName').value,
+          lastName: document.getElementById('UserProfile_LastName').value,
+          email: document.getElementById('UserProfile_Email').value,
+          phoneNumber: document.getElementById('UserProfile_PhoneNumber').value
+        };
+
+        const response = await axios.post('/Settings/UpdateProfileAjax', formData, {
+          headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': token
+          }
+        });
+
+        if (response.data.success) {
+          showNotification(response.data.message, 'success');
+        } else {
+          showNotification(response.data.message, 'error');
+        }
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        if (error.response && error.response.data && error.response.data.message) {
+          showNotification(error.response.data.message, 'error');
+        } else {
+          showNotification('Profil güncellenirken bir hata oluştu.', 'error');
+        }
+      } finally {
+        resetButton(submitButton, originalText);
+      }
+    });
+  }
+
+  // Company Profile Form Handler
+  const companyForm = document.getElementById('company-profile-form');
+  if (companyForm) {
+    companyForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const submitButton = this.querySelector('button[type="submit"]');
+      const originalText = submitButton.innerHTML;
+
+      try {
+        setButtonLoading(submitButton, true);
+
+        const formData = {
+          name: document.getElementById('CompanyProfile_Name').value,
+          phone: document.getElementById('CompanyProfile_Phone').value,
+          address: document.getElementById('CompanyProfile_Address').value
+        };
+
+        const response = await axios.post('/Settings/UpdateCompanyAjax', formData, {
+          headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': token
+          }
+        });
+
+        if (response.data.success) {
+          showNotification(response.data.message, 'success');
+        } else {
+          showNotification(response.data.message, 'error');
+        }
+      } catch (error) {
+        console.error('Error updating company profile:', error);
+        if (error.response && error.response.data && error.response.data.message) {
+          showNotification(error.response.data.message, 'error');
+        } else {
+          showNotification('Firma profili güncellenirken bir hata oluştu.', 'error');
+        }
+      } finally {
+        resetButton(submitButton, originalText);
+      }
+    });
+  }
+
+  // Kart ekleme formu
+  const addCardBtn = document.getElementById('add-card-btn');
+  const addCardForm = document.getElementById('add-card-form');
+  const cancelAddCard = document.getElementById('cancel-add-card');
+
+  if (addCardBtn && addCardForm && cancelAddCard) {
+    addCardBtn.addEventListener('click', function() {
+      addCardForm.classList.remove('hidden');
+      this.style.display = 'none';
+    });
+
+    cancelAddCard.addEventListener('click', function() {
+      addCardForm.classList.add('hidden');
+      addCardBtn.style.display = 'block';
+    });
+  }
+  
+  // Notification Form Submit Handler
+  const notificationForm = document.getElementById("notification-preferences-form");
+  if (notificationForm) {
+    notificationForm.addEventListener("submit", async function(e) {
+      e.preventDefault();
+      await updateNotificationPreferences();
+    });
+  }
+
+  async function updateNotificationPreferences() {
+    try {
+      const formData = {
+        emailInvoiceNotifications: document.getElementById("EmailInvoiceNotifications").checked,
+        emailCreditNotifications: document.getElementById("EmailCreditNotifications").checked,
+        emailMarketingNotifications: document.getElementById("EmailMarketingNotifications").checked,
+        smsSecurityAlerts: document.getElementById("SmsSecurityAlerts").checked,
+        smsPaymentNotifications: document.getElementById("SmsPaymentNotifications").checked
+      };
+
+      const response = await axios.post("/Settings/UpdateNotificationPreferencesAjax", formData, {
+        headers: {
+          "Content-Type": "application/json",
+          "RequestVerificationToken": token
+        }
+      });
+
+      if (response.data.success) {
+        showNotification(response.data.message, "success");
+      } else {
+        showNotification(response.data.message, "error");
+      }
+    } catch (error) {
+      console.error("Error updating notification preferences:", error);
+      if (error.response && error.response.data && error.response.data.message) {
+        showNotification(error.response.data.message, "error");
+      } else {
+        showNotification("Bildirim tercihleri güncellenirken bir hata oluştu.", "error");
+      }
+    }
+  }
+
+  // Form gönderme işlemleri (sadece demo formlar için)
+  document.querySelectorAll('form').forEach(form => {
+    // Skip forms with specific IDs (these are handled by AJAX)
+    if (form.id === 'user-profile-form' || form.id === 'company-profile-form' || form.id === 'change-password-form' || form.id === 'notification-preferences-form') {
+      return;
+    }
+
+    // Skip forms with asp-action or action attribute (these are real forms)
+    if (!form.hasAttribute('asp-action') && !form.hasAttribute('action') && !form.action) {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        showNotification('Ayarlar başarıyla kaydedildi!', 'success');
+      });
+    }
+  });
+
+  // Kopyala butonları
+  document.querySelectorAll('button').forEach(button => {
+    if (button.textContent.trim() === 'Kopyala') {
+      button.addEventListener('click', function() {
+        const input = this.previousElementSibling;
+        input.select();
+        document.execCommand('copy');
+
+        const originalText = this.textContent;
+        this.textContent = 'Kopyalandı!';
+        showNotification('Metin panoya kopyalandı!', 'success', 3000);
+        setTimeout(() => {
+          this.textContent = originalText;
+        }, 2000);
+      });
+    }
+  });
+
+  let billingLoaded = false;
+  let isOwner = false;
+
+  // Check if user is owner when billing tab is clicked
+  document.addEventListener('DOMContentLoaded', function() {
+    // Check if user has owner role
+    checkOwnerRole();
+
+    // Setup billing form submission
+    setupBillingForm();
+
+    // Set initial billing type visibility
+    handleBillingTypeChange();
+
+    // Parse initial billing address data
+    parseInitialBillingData();
+    // Mark as loaded since data is already populated from server
+    billingLoaded = true;
+  });
+
+
+  function parseInitialBillingData() {
+    // This function logic is faulty and unnecessary as the server populates the correct values.
+    // Removing the parsing logic to prevent overwriting correct data with guesses from the address field.
+    try {
+        // Just ensure visibility is correct
+        handleBillingTypeChange();
+    } catch (error) {
+      console.error('Error in parseInitialBillingData:', error);
+    }
+  }  async function checkOwnerRole() {
+    try {
+      // Check if user can edit billing (has CompanyOwner role)
+      // This will be determined by checking the CanManageUsers property from the model
+      const canManageUsers = @Model.CanManageUsers.ToString().ToLower();
+      isOwner = canManageUsers === 'true';
+
+      // Set readonly attribute if user is not owner
+      const billingForm = document.getElementById('billing-form');
+      if (billingForm && !isOwner) {
+        billingForm.setAttribute('data-readonly', 'true');
+      }
+    } catch (error) {
+      console.error('Error checking owner role:', error);
+    }
+  }
+
+  async function loadBillingInformation() {
+    try {
+      showBillingLoading();
+
+      const response = await axios.get('/Settings/GetBillingInformationAjax');
+      console.log('Billing Information API Response:', response.data);
+
+      if (response.data.success) {
+        const billingInfo = response.data.data;
+        populateBillingForm(billingInfo);
+        billingLoaded = true;
+        hideBillingLoading();
+      } else {
+        showBillingError(response.data.message);
+      }
+    } catch (error) {
+      console.error('Error loading billing information:', error);
+      if (error.response && error.response.status === 403) {
+        showBillingAccessDenied();
+      } else {
+        showBillingError('Fatura bilgileri yüklenirken bir hata oluştu.');
+      }
+    }
+  }
+
+  function populateBillingForm(billingInfo) {
+    // Populate form fields directly from server response without parsing address
+    const billingTypeElement = document.getElementById('BillingType');
+    if (billingTypeElement) {
+        billingTypeElement.value = billingInfo.billingType || 'Corporate';
+        // Also update radio buttons if present
+        const radio = document.querySelector(`input[name="BillingType"][value="${billingTypeElement.value}"]`);
+        if (radio) radio.checked = true;
+    }
+    
+    if(document.getElementById('TaxOffice')) document.getElementById('TaxOffice').value = billingInfo.taxOffice || '';
+    if(document.getElementById('TaxNumber')) document.getElementById('TaxNumber').value = billingInfo.taxNumber || '';
+    if(document.getElementById('IdentityNumber')) document.getElementById('IdentityNumber').value = billingInfo.identityNumber || '';
+    
+    // Set company/full name directly from response
+    if(document.getElementById('CompanyName')) document.getElementById('CompanyName').value = billingInfo.companyName || '';
+    if(document.getElementById('FullName')) document.getElementById('FullName').value = billingInfo.fullName || '';
+    
+    // Set address directly without splitting
+    if(document.getElementById('BillingAddress')) document.getElementById('BillingAddress').value = billingInfo.billingAddress || '';
+    
+    // Trigger billing type change to show/hide fields
+    handleBillingTypeChange();
+  }
+  function setupBillingForm() {
+    const billingForm = document.getElementById('billing-form');
+    if (!billingForm) {
+      console.error('Billing form not found!');
+      return;
+    }
+
+    console.log('Setting up billing form...');
+
+    // Handle billing type change
+    const billingTypeSelect = document.getElementById('BillingType');
+    if (billingTypeSelect) {
+      billingTypeSelect.addEventListener('change', handleBillingTypeChange);
+    }
+
+    // Handle form submission
+    billingForm.addEventListener('submit', async function(e) {
+      console.log('Form submit event triggered');
+      e.preventDefault();
+      e.stopPropagation();
+
+      await saveBillingInformation();
+    });
+  }
+
+  function handleBillingTypeChange() {
+    let billingType = 'Corporate';
+    const select = document.getElementById('BillingType');
+    if (select) {
+        billingType = select.value;
+    } else {
+        // Safe fallback if only radios exist
+        const checked = document.querySelector('input[name="BillingType"]:checked');
+        if (checked) billingType = checked.value;
+    }
+
+    // Toggle main containers for cleaner logic
+    const corpContainer = document.getElementById('corporate-fields-container');
+    const indContainer = document.getElementById('individual-fields-container');
+    
+    if (corpContainer && indContainer) {
+        if (billingType === 'Corporate') {
+            corpContainer.style.display = 'grid';
+            indContainer.style.display = 'none';
+        } else {
+            corpContainer.style.display = 'none';
+            indContainer.style.display = 'grid';
+        }
+    } else {
+        // Fallback to individual field toggling for backward compatibility
+        const taxOfficeField = document.getElementById('tax-office-field');
+        const taxNumberField = document.getElementById('tax-number-field');
+        const identityNumberField = document.getElementById('identity-number-field');
+        const companyNameDiv = document.getElementById('company-name-field');
+        const fullNameDiv = document.getElementById('full-name-field');
+        
+        if (billingType === 'Corporate') {
+          if (taxOfficeField) taxOfficeField.style.display = 'block';
+          if (taxNumberField) taxNumberField.style.display = 'block';
+          if (identityNumberField) identityNumberField.style.display = 'none';
+          if (companyNameDiv) companyNameDiv.style.display = 'block'; 
+          if (fullNameDiv) fullNameDiv.style.display = 'none';
+        } else {
+          if (taxOfficeField) taxOfficeField.style.display = 'none';
+          if (taxNumberField) taxNumberField.style.display = 'none';
+          if (identityNumberField) identityNumberField.style.display = 'block';
+          if (companyNameDiv) companyNameDiv.style.display = 'none'; 
+          if (fullNameDiv) fullNameDiv.style.display = 'block';
+        }
+    }
+    
+    // Update required fields after visibility change
+    updateRequiredFields();
+  }
+
+    // Also remove pattern attributes to prevent validation
+    const taxNumberField = document.getElementById('TaxNumber');
+    const identityNumberField = document.getElementById('IdentityNumber');
+  if (taxNumberField) taxNumberField.removeAttribute('pattern');
+  if (identityNumberField) identityNumberField.removeAttribute('pattern');    if (identityNumberField) identityNumberField.removeAttribute('pattern');
+function updateRequiredFields() {
+  const billingType = document.getElementById('BillingType').value;
+  const taxOfficeField = document.getElementById('TaxOffice');
+  const taxNumberField = document.getElementById('TaxNumber');
+  const companyNameInput = document.getElementById('CompanyName');
+  const fullNameInput = document.getElementById('FullName');  const identityNumberField = document.getElementById('IdentityNumber');
+  // Remove all required attributes first
+  if (taxOfficeField) taxOfficeField.removeAttribute('required');
+  if (taxNumberField) taxNumberField.removeAttribute('required');
+  if (taxNumberField) taxNumberField.removeAttribute('pattern');
+  if (identityNumberField) identityNumberField.removeAttribute('pattern');  if (identityNumberField) identityNumberField.removeAttribute('required');
+  if (companyNameInput) companyNameInput.removeAttribute('required');
+  if (fullNameInput) fullNameInput.removeAttribute('required');  
+  // Add required attributes only for visible fields
+  if (billingType === 'Corporate') {
+    // For corporate, tax fields are visible
+    // Note: We're not making them required to avoid validation issues
+  } else {
+    // For individual, identity number is visible
+    // Note: We're not making it required to avoid validation issues
+  }
+}
+
+  async function saveBillingInformation() {
+    try {
+      console.log('Starting to save billing information...');
+
+      const submitButton = document.getElementById('billing-submit-btn');
+      setButtonLoading(submitButton, true);
+
+      // Clear previous errors
+      clearBillingErrors();
+
+    // Remove required attribute from hidden fields to prevent validation errors
+    updateRequiredFields();
+
+    // Also remove pattern attributes to prevent validation
+    const taxNumberField = document.getElementById('TaxNumber');
+    const identityNumberField = document.getElementById('IdentityNumber');
+  if (taxNumberField) taxNumberField.removeAttribute('pattern');
+  if (identityNumberField) identityNumberField.removeAttribute('pattern');    if (identityNumberField) identityNumberField.removeAttribute('pattern');      // Get form data
+      const billingAddress = document.getElementById('BillingAddress').value;
+      console.log('Billing Address Value:', billingAddress); // Debug log
+
+      const formData = new FormData();
+      formData.append('BillingType', document.getElementById('BillingType').value);
+      formData.append('TaxOffice', document.getElementById('TaxOffice').value);
+      formData.append('TaxNumber', document.getElementById('TaxNumber').value);
+      formData.append('IdentityNumber', document.getElementById('IdentityNumber').value);
+      
+      // Get company name or full name based on billing type
+      const billingType = document.getElementById('BillingType').value;
+      const companyName = document.getElementById('CompanyName').value || '';
+      const fullName = document.getElementById('FullName').value || '';
+      
+    // Combine name with address ONLY if saving legacy format is needed, 
+    // but better to keep address clean if possible.
+    // However, the backend might expect specific format if it combines them.
+    // Looking at controller, UpdateBillingInformationAjax saves separate fields AND billing address.
+    
+    // We should NOT prepend the name to the address if we are sending them separately.
+    // The controller saves: userWithCompany.Company.BillingAddress = model.BillingAddress;
+    // So sending just the address is correct.
+    
+      const finalBillingAddress = billingAddress;
+      console.log('Final Billing Address:', finalBillingAddress);
+      
+      formData.append('CompanyName', companyName);
+      formData.append('FullName', fullName);
+      formData.append('BillingAddress', finalBillingAddress);
+
+      // Get anti-forgery token
+      const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+      formData.append('__RequestVerificationToken', token);
+
+      console.log('Sending AJAX request...');
+      const response = await axios.post('/Settings/UpdateBillingInformationAjax', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      console.log('AJAX response:', response.data);
+
+      if (response.data.success) {
+        showNotification(response.data.message, 'success');
+      } else {
+        showNotification(response.data.message, 'error');
+      }
+    } catch (error) {
+      console.error('Error saving billing information:', error);
+      if (error.response && error.response.status === 403) {
+        showNotification('Bu işlemi gerçekleştirmek için yetkiniz bulunmamaktadır.', 'error');
+      } else {
+        showNotification('Fatura bilgileri kaydedilirken bir hata oluştu.', 'error');
+      }
+    } finally {
+      const submitButton = document.getElementById('billing-submit-btn');
+      setButtonLoading(submitButton, false);
+    }
+  }
+
+  function showBillingLoading() {
+    const billingContent = document.querySelector('#billing .bg-white');
+    if (billingContent) {
+      billingContent.innerHTML = `
+        <div class="text-center py-8">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p class="mt-2 text-gray-600">Fatura bilgileri yükleniyor...</p>
+        </div>
+      `;
+    }
+  }
+
+  function hideBillingLoading() {
+    // The form content will be restored when populated
+  }
+
+  function showBillingError(message) {
+    const billingContent = document.querySelector('#billing .bg-white');
+    if (billingContent) {
+      billingContent.innerHTML = `
+        <div class="text-center py-8">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-lg bg-rose-50 border border-rose-100">
+            <svg class="h-6 w-6 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">Hata</h3>
+          <p class="mt-1 text-sm text-gray-500">${message}</p>
+          <div class="mt-6">
+            <button type="button" onclick="loadBillingInformation()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark">
+              Tekrar Dene
+            </button>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  function showBillingAccessDenied() {
+    const billingContent = document.querySelector('#billing .bg-white');
+    if (billingContent) {
+      billingContent.innerHTML = `
+        <div class="text-center py-8">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-lg bg-amber-50 border border-amber-100">
+            <svg class="h-6 w-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">Erişim Reddedildi</h3>
+          <p class="mt-1 text-sm text-gray-500">Fatura bilgilerini görüntülemek ve düzenlemek için firma sahibi yetkisine sahip olmanız gerekmektedir.</p>
+        </div>
+      `;
+    }
+  }
+
+  function clearBillingErrors() {
+    const errorElements = document.querySelectorAll('#billing [id$="-error"]');
+    errorElements.forEach(element => {
+      element.classList.add('hidden');
+      element.textContent = '';
+    });
+
+    const validationSummary = document.getElementById('billing-validation-summary');
+    if (validationSummary) {
+      validationSummary.classList.add('hidden');
+    }
+  }
+
+  function setButtonLoading(button, loading) {
+    if (!button) return;
+
+    const btnText = button.querySelector('.btn-text');
+    const btnLoading = button.querySelector('.btn-loading');
+
+    if (loading) {
+      button.disabled = true;
+      if (btnText) btnText.classList.add('hidden');
+      if (btnLoading) btnLoading.classList.remove('hidden');
+    } else {
+      button.disabled = false;
+      if (btnText) btnText.classList.remove('hidden');
+      if (btnLoading) btnLoading.classList.add('hidden');
+    }
+  }
+
+  // Make functions globally available
+  window.loadBillingInformation = loadBillingInformation;
+  window.saveBillingInformation = saveBillingInformation;
+
+  // Phone number masking
+  document.addEventListener('DOMContentLoaded', () => {
+    // Mask for personal phone number
+    const personalPhoneInput = document.getElementById('UserProfile_PhoneNumber');
+    if (personalPhoneInput) {
+      IMask(personalPhoneInput, {
+        mask: '+{90} 000 000 00 00',
+        lazy: false,
+        placeholderChar: '_'
+      });
+    }
+
+    // Mask for company phone number
+    const companyPhoneInput = document.getElementById('CompanyProfile_Phone');
+    if (companyPhoneInput) {
+      IMask(companyPhoneInput, {
+        mask: '+{90} 000 000 00 00',
+        lazy: false,
+        placeholderChar: '_'
+      });
+    }
+  });
+
+  // URL parametrelerine göre tab açma
+  document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabName = urlParams.get('tab');
+    
+    if (tabName) {
+      const tabButton = document.querySelector(`.tab-button[data-tab="${tabName}"]`);
+      if (tabButton) {
+        // Tab click triggerla
+        tabButton.click();
+        
+        // Eğer openModal parametresi varsa ve function tanımlı ise çalıştır
+        const openModal = urlParams.get('openModal');
+        if (openModal === 'true' && tabName === 'payment') {
+            // Biraz bekle ki scriptler ve DOM hazır olsun
+            setTimeout(() => {
+                if (typeof openAddCreditModal === 'function') {
+                    openAddCreditModal();
+                } else {
+                    console.warn('openAddCreditModal function not found, retrying...');
+                    setTimeout(() => {
+                        if (typeof openAddCreditModal === 'function') {
+                            openAddCreditModal();
+                        }
+                    }, 500);
+                }
+            }, 300);
+        }
+      }
+    }
+  });
+</script>

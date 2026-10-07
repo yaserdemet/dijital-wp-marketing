@@ -1,0 +1,65 @@
+@if (User.Identity.IsAuthenticated)
+{
+<script>
+  // SignalR Connection for Session Management
+  let sessionConnection = null;
+
+  // Initialize SignalR connection
+  async function initializeSessionConnection() {
+    try {
+      sessionConnection = new signalR.HubConnectionBuilder()
+        .withUrl("/sessionHub")
+        .withAutomaticReconnect()
+        .build();
+
+      // Handle session termination notifications
+      sessionConnection.on("SessionTerminated", function (data) {
+        console.log("Session terminated:", data);
+        
+        // Show notification to user
+        showForceModal(
+          'Oturum Sonlandırıldı',
+          data.message + ' Lütfen tekrar giriş yapın.',
+          'Giriş Sayfasına Git',
+          function() {
+            // Redirect to login page
+            window.location.href = '/Account/Login';
+          },
+          'warning'
+        );
+      });
+
+      // Start the connection
+      await sessionConnection.start();
+      console.log("SignalR Connected for session management");
+
+    } catch (err) {
+      console.error("SignalR Connection Error:", err);
+      
+      // Retry connection after 5 seconds
+      setTimeout(initializeSessionConnection, 5000);
+    }
+  }
+
+  // Handle connection closed
+  sessionConnection?.onclose(async () => {
+    console.log("SignalR Connection closed. Attempting to reconnect...");
+    await initializeSessionConnection();
+  });
+
+  // Initialize connection when page loads
+  document.addEventListener('DOMContentLoaded', function() {
+    initializeSessionConnection();
+  });
+
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', function() {
+    if (sessionConnection) {
+      sessionConnection.stop();
+    }
+  });
+
+  // Make connection available globally
+  window.sessionConnection = sessionConnection;
+</script>
+}

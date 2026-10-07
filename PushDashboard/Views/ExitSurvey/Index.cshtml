@@ -1,0 +1,390 @@
+@model PushDashboard.Models.ViewModels.ExitSurveyIndexViewModel
+@{
+    ViewData["Title"] = "Çıkış Anketi";
+    ViewData["PageHeader"] = "Çıkış Anketi";
+    ViewData["PageDescription"] = "Ziyaretçilerinizin siteyi terk etme nedenlerini öğrenin ve deneyimlerini iyileştirin";
+}
+
+<main class="min-h-screen bg-gray-50/50 pb-20">
+    <div class="sticky top-2 lg:top-4 z-20 px-2 lg:px-6 mb-4 lg:mb-6">
+        <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm px-4 py-3 lg:px-6 lg:py-4">
+            <div class="flex items-center gap-3 lg:gap-4 w-full md:w-auto">
+                <div class="p-2.5 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl text-white shadow-sm">
+                    <i class="fas fa-door-open text-lg"></i>
+                </div>
+                <div class="min-w-0">
+                    <h2 class="text-lg lg:text-xl font-bold text-gray-900 truncate">Çıkış Anketi Yönetimi</h2>
+                    <div class="flex items-center gap-2 text-xs lg:text-sm text-gray-500 truncate">
+                        <span class="truncate">Ziyaretçilerinizin siteyi terk etme nedenlerini öğrenin</span>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:flex md:items-center gap-2 lg:gap-3 w-full md:w-auto mt-2 md:mt-0 justify-end">
+                
+                @if (Model.Surveys.Any(s => s.IsActive))
+                {
+                    <button id="exportToSiteBtn" onclick="exportToSite()" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg hover:from-green-700 hover:to-emerald-700 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                        <i class="fas fa-upload"></i> <span class="hidden sm:inline">Siteye Aktar</span><span class="inline sm:hidden">Aktar</span>
+                    </button>
+                }
+                else
+                {
+                    <button id="deleteFromSiteBtn" onclick="exportToSite()" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-white bg-gradient-to-r from-red-600 to-rose-600 rounded-lg hover:from-red-700 hover:to-rose-700 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                        <i class="fas fa-trash-alt"></i> <span class="hidden sm:inline">Siteden Sil</span><span class="inline sm:hidden">Sil</span>
+                    </button>
+                }
+                <button onclick="openCreateSurveyModal()" class="px-4 lg:px-6 py-2 text-xs lg:text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm hover:shadow transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <i class="fas fa-plus"></i> <span class="hidden sm:inline">Yeni Anket</span><span class="inline sm:hidden">Yeni</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Wrapper -->
+    <div class="max-w-[1600px] mx-auto px-2 lg:px-6">
+
+    @{
+        var stageTotal = Model.Stats.StageDistribution.HomePage + Model.Stats.StageDistribution.CategoryPage + Model.Stats.StageDistribution.ProductPage + Model.Stats.StageDistribution.CartPage + Model.Stats.StageDistribution.CheckoutPage + Model.Stats.StageDistribution.OtherPage;
+        var participationRate = Model.Stats.TotalImpressions > 0 ? Math.Round((double)Model.Stats.TotalSubmissions / Model.Stats.TotalImpressions * 100, 1) : 0;
+        var mobileTotal = Model.Stats.MobileCount + Model.Stats.DesktopCount;
+        var mobilePercent = mobileTotal > 0 ? Math.Round((double)Model.Stats.MobileCount / mobileTotal * 100, 1) : 0;
+        var desktopPercent = mobileTotal > 0 ? Math.Round((double)Model.Stats.DesktopCount / mobileTotal * 100, 1) : 0;
+    }
+
+    <!-- İstatistik Kartları -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
+
+        <!-- Kart 1: Toplam Gösterim + Özet -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                    <i class="fas fa-eye text-blue-600"></i>
+                </div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Gösterim</span>
+            </div>
+            <div class="mb-4">
+                <p class="text-3xl font-extrabold text-gray-900 tracking-tight">@Model.Stats.TotalImpressions</p>
+                <p class="text-xs text-gray-500 mt-1">Toplam Anket Gösterimi</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="bg-emerald-50 rounded-lg p-2 text-center">
+                    <p class="text-sm font-bold text-emerald-700">@Model.Stats.TotalSubmissions</p>
+                    <p class="text-[10px] text-emerald-600">Yanıt</p>
+                </div>
+                <div class="bg-red-50 rounded-lg p-2 text-center">
+                    <p class="text-sm font-bold text-red-600">@Model.Stats.TotalDismissals</p>
+                    <p class="text-[10px] text-red-500">Terk</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kart 2: Çıkış Aşaması -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
+                    <i class="fas fa-layer-group text-purple-600"></i>
+                </div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Sayfa Dağılımı</span>
+            </div>
+            @if (stageTotal > 0)
+            {
+                <div class="w-full flex rounded-full h-2.5 overflow-hidden mb-3">
+                    <div class="bg-sky-400 h-2.5" style="width: @(Math.Round((double)Model.Stats.StageDistribution.HomePage / stageTotal * 100))%;" title="Anasayfa"></div>
+                    <div class="bg-indigo-400 h-2.5" style="width: @(Math.Round((double)Model.Stats.StageDistribution.CategoryPage / stageTotal * 100))%;" title="Kategori"></div>
+                    <div class="bg-purple-500 h-2.5" style="width: @(Math.Round((double)Model.Stats.StageDistribution.ProductPage / stageTotal * 100))%;" title="Ürün"></div>
+                    <div class="bg-amber-400 h-2.5" style="width: @(Math.Round((double)Model.Stats.StageDistribution.CartPage / stageTotal * 100))%;" title="Sepet"></div>
+                    <div class="bg-rose-500 h-2.5" style="width: @(Math.Round((double)Model.Stats.StageDistribution.CheckoutPage / stageTotal * 100))%;" title="Ödeme"></div>
+                </div>
+                <div class="space-y-1.5">
+                    @{
+                        var stageItems = new[] {
+                            new { Label = "Anasayfa", Count = Model.Stats.StageDistribution.HomePage, Color = "bg-sky-400" },
+                            new { Label = "Kategori", Count = Model.Stats.StageDistribution.CategoryPage, Color = "bg-indigo-400" },
+                            new { Label = "Ürün", Count = Model.Stats.StageDistribution.ProductPage, Color = "bg-purple-500" },
+                            new { Label = "Sepet", Count = Model.Stats.StageDistribution.CartPage, Color = "bg-amber-400" },
+                            new { Label = "Ödeme", Count = Model.Stats.StageDistribution.CheckoutPage, Color = "bg-rose-500" }
+                        };
+                    }
+                    @foreach (var item in stageItems)
+                    {
+                        var pct = Math.Round((double)item.Count / stageTotal * 100, 1);
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full @item.Color inline-block flex-shrink-0"></span>
+                                <span class="text-gray-600">@item.Label</span>
+                            </div>
+                            <span class="font-semibold text-gray-800">@item.Count <span class="text-gray-400 font-normal">(%@pct)</span></span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="flex flex-col items-center justify-center py-4 text-center">
+                    <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mb-2">
+                        <i class="fas fa-chart-bar text-gray-300 text-sm"></i>
+                    </div>
+                    <p class="text-xs text-gray-400">Henüz veri yok</p>
+                </div>
+            }
+        </div>
+
+        <!-- Kart 3: Mobil / Web -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
+                    <i class="fas fa-mobile-screen-button text-green-600"></i>
+                </div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Cihaz</span>
+            </div>
+            @if (mobileTotal > 0)
+            {
+                <div class="flex items-end gap-3 mb-4">
+                    <div class="flex-1 text-center">
+                        <div class="w-12 h-12 mx-auto rounded-xl bg-green-50 flex items-center justify-center mb-1.5">
+                            <i class="fas fa-mobile-alt text-green-600 text-lg"></i>
+                        </div>
+                        <p class="text-lg font-bold text-gray-900">%@mobilePercent</p>
+                        <p class="text-[10px] text-gray-500">Mobil (@Model.Stats.MobileCount)</p>
+                    </div>
+                    <div class="text-gray-300 text-xs font-bold pb-4">vs</div>
+                    <div class="flex-1 text-center">
+                        <div class="w-12 h-12 mx-auto rounded-xl bg-blue-50 flex items-center justify-center mb-1.5">
+                            <i class="fas fa-desktop text-blue-600 text-lg"></i>
+                        </div>
+                        <p class="text-lg font-bold text-gray-900">%@desktopPercent</p>
+                        <p class="text-[10px] text-gray-500">Masaüstü (@Model.Stats.DesktopCount)</p>
+                    </div>
+                </div>
+                <div class="w-full flex rounded-full h-2 overflow-hidden">
+                    <div class="bg-green-500 h-2" style="width: @mobilePercent%;"></div>
+                    <div class="bg-blue-500 h-2" style="width: @desktopPercent%;"></div>
+                </div>
+            }
+            else
+            {
+                <div class="flex flex-col items-center justify-center py-4 text-center">
+                    <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mb-2">
+                        <i class="fas fa-mobile-alt text-gray-300 text-sm"></i>
+                    </div>
+                    <p class="text-xs text-gray-400">Henüz veri yok</p>
+                </div>
+            }
+        </div>
+
+        <!-- Kart 4: Katılım Oranı -->
+        @{
+            var dismissRate = 100 - (double)participationRate;
+            var greenDash = Math.Round((double)participationRate * 100) / 100;
+            var redDash = Math.Round(dismissRate * 100) / 100;
+            var redOffset = 100 - redDash;
+        }
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col items-center justify-center">
+            <div class="flex items-center justify-between w-full mb-4">
+                <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                    <i class="fas fa-chart-pie text-amber-600"></i>
+                </div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Katılım</span>
+            </div>
+            <div class="relative w-32 h-32 my-2">
+                <svg class="w-32 h-32 -rotate-90" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f3f4f6" stroke-width="3.5"/>
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#22c55e" stroke-width="3.5" stroke-dasharray="@greenDash 100"/>
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#ef4444" stroke-width="3.5" stroke-dasharray="@redDash 100" stroke-dashoffset="-@greenDash"/>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <span class="text-2xl font-extrabold text-gray-900">%@participationRate</span>
+                    <span class="text-[10px] text-gray-400">katılım</span>
+                </div>
+            </div>
+            <div class="flex items-center justify-center gap-4 mt-3 w-full">
+                <div class="flex items-center gap-1.5 text-xs">
+                    <span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>
+                    <span class="text-gray-600">Yanıt</span>
+                    <span class="font-bold text-gray-800">@Model.Stats.TotalSubmissions</span>
+                </div>
+                <div class="flex items-center gap-1.5 text-xs">
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>
+                    <span class="text-gray-600">Terk</span>
+                    <span class="font-bold text-gray-800">@Model.Stats.TotalDismissals</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Anket Kartları -->
+    <div class="mt-8">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-800">Anket Listesi</h3>
+        </div>
+
+        @if (Model.Surveys.Any())
+        {
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach (var survey in Model.Surveys)
+                {
+                    var questionCount = survey.Questions.Count(q => q.IsActive);
+                    var responseCount = survey.Responses.Select(r => r.SessionId).Distinct().Count();
+
+                    <div class="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-hidden relative">
+                        <div class="@(survey.IsActive ? "bg-green-500" : "bg-gray-300") absolute top-0 left-0 w-1 h-full transition-colors duration-300"></div>
+
+                        <div class="p-6 pl-8">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h4 class="text-lg font-bold text-gray-800 group-hover:text-blue-600 transition-colors">@(string.IsNullOrEmpty(survey.Name) ? survey.Title : survey.Name)</h4>
+                                    <p class="text-xs text-gray-500 mt-1 line-clamp-2">@(string.IsNullOrEmpty(survey.AdminDescription) ? "Açıklama belirtilmemiş" : survey.AdminDescription)</p>
+                                </div>
+                                <div class="flex flex-col items-end gap-2">
+                                    <span class="@(survey.IsActive ? "bg-green-50 text-green-700 ring-green-600/20" : "bg-gray-50 text-gray-600 ring-gray-600/20") inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset">
+                                        @(survey.IsActive ? "Aktif" : "Pasif")
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 mb-6 mt-6">
+                                <div class="flex items-center gap-3 p-2 rounded-lg bg-gray-50 group-hover:bg-blue-50/50 transition-colors">
+                                    <div class="p-2 bg-white rounded-md shadow-sm text-blue-500">
+                                        <i class="fas fa-question-circle"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">SORU</div>
+                                        <div class="text-xs font-semibold text-gray-700">@questionCount Adet</div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-3 p-2 rounded-lg bg-gray-50 group-hover:bg-blue-50/50 transition-colors">
+                                    <div class="p-2 bg-white rounded-md shadow-sm text-purple-500">
+                                        <i class="fas fa-comments"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">CEVAP</div>
+                                        <div class="text-xs font-semibold text-gray-700">@responseCount Oturum</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between items-center text-[11px] text-gray-400 mb-6 border-t border-gray-100 pt-4">
+                                <div class="flex items-center gap-1.5">
+                                    <i class="far fa-calendar-alt"></i>
+                                    <span>@survey.CreatedAt.ToString("d MMMM yyyy")</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <i class="far fa-clock"></i>
+                                    <span>@survey.CreatedAt.ToString("HH:mm")</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <a href="@Url.Action("Edit", "ExitSurvey", new { id = survey.Id })"
+                                   class="flex-1 bg-gray-900 hover:bg-black text-white text-center py-2 px-4 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 group/btn">
+                                    <i class="fas fa-edit text-xs group-hover/btn:text-blue-300 transition-colors"></i> Düzenle
+                                </a>
+
+                                <button onclick="toggleSurveyStatus(@survey.Id)"
+                                        class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-yellow-600 hover:border-yellow-600 hover:bg-yellow-50 transition-all"
+                                        title="@(survey.IsActive ? "Pasife Al" : "Aktife Al")">
+                                    <i class="fas @(survey.IsActive ? "fa-pause" : "fa-play")"></i>
+                                </button>
+                                <button onclick="deleteSurvey(@survey.Id, '@(survey.Name?.Replace("'", "\\'"))')"
+                                        class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-red-600 hover:border-red-600 hover:bg-red-50 transition-all"
+                                        title="Sil">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 lg:p-16 text-center">
+                <div class="w-16 h-16 lg:w-20 lg:h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
+                    <i class="fas fa-clipboard-question text-blue-500 text-2xl lg:text-3xl"></i>
+                </div>
+                <h3 class="text-lg lg:text-xl font-bold text-gray-900 mb-2">Henüz anket oluşturmadınız</h3>
+                <p class="text-sm lg:text-base text-gray-500 mb-6 lg:mb-8 max-w-sm mx-auto">Ziyaretçilerinizin deneyimlerini öğrenmek için ilk çıkış anketinizi oluşturun.</p>
+                <div class="mt-4 lg:mt-6">
+                    <button onclick="openCreateSurveyModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 lg:px-8 py-2 lg:py-3 rounded-xl font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2 mx-auto text-sm lg:text-base">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        İlk Anketi Oluştur
+                    </button>
+                </div>
+            </div>
+        }
+
+    </div>
+    </div>
+</main>
+
+<!-- Anket Oluşturma Modalı -->
+<div id="createSurveyModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"></div>
+
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-100">
+
+                <div class="bg-gray-50/50 px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900" id="modal-title">Yeni Anket Oluştur</h3>
+                        <p class="text-sm text-gray-500 mt-1">Anket özelliklerini aşağıdan belirleyebilirsiniz.</p>
+                    </div>
+                    <button type="button" onclick="closeCreateSurveyModal()" class="text-gray-400 hover:text-gray-500 hover:bg-gray-100 p-2 rounded-full transition-all">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <form id="createSurveyForm" class="p-6 space-y-6">
+                    <div>
+                        <label for="surveyName" class="block text-sm font-semibold text-gray-700 mb-1">Anket Adı</label>
+                        <div class="relative rounded-md shadow-sm">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <i class="fas fa-heading text-gray-400 text-sm"></i>
+                            </div>
+                            <input type="text" id="surveyName" name="name" required
+                                   class="block w-full rounded-xl border-0 py-3 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 bg-gray-50/50 focus:bg-white transition-all"
+                                   placeholder="Örn: Genel Çıkış Anketi">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="surveyDescription" class="block text-sm font-semibold text-gray-700 mb-1">
+                            Açıklama <span class="font-normal text-gray-400 text-xs ml-1">(Opsiyonel)</span>
+                        </label>
+                        <div class="relative rounded-md shadow-sm">
+                            <div class="pointer-events-none absolute top-3 left-0 flex items-center pl-3">
+                                <i class="fas fa-align-left text-gray-400 text-sm"></i>
+                            </div>
+                            <textarea id="surveyDescription" name="description" rows="3"
+                                      class="block w-full rounded-xl border-0 py-3 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 bg-gray-50/50 focus:bg-white transition-all resize-none"
+                                      placeholder="Bu anket hakkında kısa bir not..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex gap-3">
+                        <button type="button" onclick="closeCreateSurveyModal()"
+                                class="flex-1 rounded-xl bg-white px-3 py-3 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 hover:text-gray-900 transition-all">
+                            Vazgeç
+                        </button>
+                        <button type="submit"
+                                class="flex-1 rounded-xl bg-blue-600 px-3 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-plus"></i> Oluştur
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/modules/exit-survey-module.js"></script>
+    <script src="~/js/exit-survey.js"></script>
+}

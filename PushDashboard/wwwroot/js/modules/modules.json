@@ -1,0 +1,38 @@
+{
+    "version": "1.0.3",
+    "lastUpdated": "2025-2-24",
+    "modules": [
+        {
+            "name": "productSlider",
+            "pages": ["homepage", "category", "product"]
+        },
+        {
+            "name": "socialProof",
+            "pages": ["product"]
+        },
+        {
+            "name": "exitSurvey",
+            "pages": ["all"]
+        },
+        {
+            "name": "giftWheel",
+            "pages": ["homepage"]
+        },
+        {
+            "name": "cookieManagement",
+            "pages": ["all"]
+        },
+        {
+          "name": "trendyolReviews",
+          "pages": ["all"]
+        },
+      {
+        "name": "newsletterPopup",
+        "pages": ["all"]
+      },
+      {
+        "name": "stockReminderWidget",
+        "pages": ["product"]
+      }
+    ]
+}

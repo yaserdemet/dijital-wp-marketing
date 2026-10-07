@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Çerez Yönetimi Widget Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button.danger {
+            background: #dc3545;
+        }
+        .button.danger:hover {
+            background: #c82333;
+        }
+        .button.success {
+            background: #28a745;
+        }
+        .button.success:hover {
+            background: #218838;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .preferences {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .content-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #e9ecef;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍪 Çerez Yönetimi Widget Test Sayfası</h1>
+        
+        <div class="test-section">
+            <h3>Widget Kontrolleri</h3>
+            <button class="button success" onclick="testAcceptAll()">Tümünü Kabul Et</button>
+            <button class="button danger" onclick="testRejectAll()">Tümünü Reddet</button>
+            <button class="button" onclick="testOpenSettings()">Ayarları Aç</button>
+            <button class="button" onclick="testCloseSettings()">Ayarları Kapat</button>
+            <button class="button" onclick="testRestart()">Widget'ı Yeniden Başlat</button>
+            <button class="button danger" onclick="testDestroy()">Widget'ı Yok Et</button>
+            <button class="button" onclick="clearConsent()">Çerez Onayını Temizle</button>
+        </div>
+
+        <div class="test-section">
+            <h3>Durum Kontrolü</h3>
+            <button class="button" onclick="checkStatus()">Durumu Kontrol Et</button>
+            <div id="status-display"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Kategori Bazlı Test</h3>
+            <button class="button" onclick="checkCategory('necessary')">Gerekli Çerezler</button>
+            <button class="button" onclick="checkCategory('performance')">Performans Çerezleri</button>
+            <button class="button" onclick="checkCategory('functional')">Fonksiyonel Çerezler</button>
+            <button class="button" onclick="checkCategory('marketing')">Pazarlama Çerezleri</button>
+            <div id="category-status"></div>
+        </div>
+
+        <div class="content-section">
+            <h3>Test İçeriği</h3>
+            <p>Bu sayfa çerez yönetimi widget'ının test edilmesi için oluşturulmuştur. Widget sayfanın alt kısmında görünmelidir.</p>
+            <p>Widget'ın çalışması için aşağıdaki özellikleri test edebilirsiniz:</p>
+            <ul>
+                <li>Çerez banner'ının görünmesi</li>
+                <li>Kabul/Reddet butonlarının çalışması</li>
+                <li>Ayarlar modalının açılması</li>
+                <li>Kategori bazlı çerez yönetimi</li>
+                <li>LocalStorage'da tercihlerin saklanması</li>
+                <li>Sayfa yenilendiğinde tercihlerin hatırlanması</li>
+            </ul>
+        </div>
+
+        <div class="content-section">
+            <h3>Event Listener Test</h3>
+            <div id="event-log"></div>
+        </div>
+    </div>
+
+    <!-- Çerez Yönetimi Widget Script -->
+    <script src="/api/cookie-management/script/dd0ed437-18b2-47d5-8c53-67feb207737c"></script>
+
+    <script>
+        // Event listener for cookie consent changes
+        window.addEventListener('cookieConsentChanged', function(event) {
+            const eventLog = document.getElementById('event-log');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'status info';
+            logEntry.innerHTML = `
+                <strong>Çerez Tercihi Değişti:</strong><br>
+                <pre>${JSON.stringify(event.detail.preferences, null, 2)}</pre>
+                <small>Zaman: ${new Date().toLocaleString()}</small>
+            `;
+            eventLog.appendChild(logEntry);
+        });
+
+        function testAcceptAll() {
+            if (window.CookieManagement) {
+                window.CookieManagement.acceptAll();
+                showStatus('Tüm çerezler kabul edildi!', 'success');
+            } else {
+                showStatus('Widget henüz yüklenmedi!', 'danger');
+            }
+        }
+
+        function testRejectAll() {
+            if (window.CookieManagement) {
+                window.CookieManagement.rejectAll();
+                showStatus('Tüm çerezler reddedildi!', 'success');
+            } else {
+                showStatus('Widget henüz yüklenmedi!', 'danger');
+            }
+        }
+
+        function testOpenSettings() {
+            if (window.CookieManagement) {
+                window.CookieManagement.openSettings();
+                showStatus('Ayarlar modalı açıldı!', 'info');
+            } else {
+                showStatus('Widget henüz yüklenmedi!', 'danger');
+            }
+        }
+
+        function testCloseSettings() {
+            if (window.CookieManagement) {
+                window.CookieManagement.closeSettings();
+                showStatus('Ayarlar modalı kapatıldı!', 'info');
+            } else {
+                showStatus('Widget henüz yüklenmedi!', 'danger');
+            }
+        }
+
+        function testRestart() {
+            if (window.CookieManagement) {
+                window.CookieManagement.restart();
+                showStatus('Widget yeniden başlatıldı!', 'success');
+            } else {
+                showStatus('Widget henüz yüklenmedi!', 'danger');
+            }
+        }
+
+        function testDestroy() {
+            if (window.CookieManagement) {
+                window.CookieManagement.destroy();
+                showStatus('Widget yok edildi!', 'danger');
+            } else {
+                showStatus('Widget henüz yüklenmedi!', 'danger');
+            }
+        }
+
+        function clearConsent() {
+            localStorage.removeItem('cookie-consent');
+            localStorage.removeItem('cookie-preferences');
+            localStorage.removeItem('cookie-consent_expiry');
+            showStatus('Çerez onayı temizlendi! Sayfayı yenileyin.', 'info');
+        }
+
+        function checkStatus() {
+            const statusDiv = document.getElementById('status-display');
+            if (window.CookieManagement) {
+                const preferences = window.CookieManagement.getPreferences();
+                const hasConsent = localStorage.getItem('cookie-consent');
+                
+                statusDiv.innerHTML = `
+                    <div class="status success">
+                        <strong>Widget Durumu:</strong> Aktif<br>
+                        <strong>Çerez Onayı:</strong> ${hasConsent ? 'Var' : 'Yok'}<br>
+                        <strong>Tercihler:</strong>
+                        <div class="preferences">
+                            <pre>${JSON.stringify(preferences, null, 2)}</pre>
+                        </div>
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = '<div class="status danger">Widget henüz yüklenmedi!</div>';
+            }
+        }
+
+        function checkCategory(categoryId) {
+            const statusDiv = document.getElementById('category-status');
+            if (window.CookieManagement) {
+                const hasConsent = window.CookieManagement.hasConsent(categoryId);
+                statusDiv.innerHTML = `
+                    <div class="status ${hasConsent ? 'success' : 'info'}">
+                        <strong>${categoryId} çerezleri:</strong> ${hasConsent ? 'Kabul edildi' : 'Reddedildi'}
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = '<div class="status danger">Widget henüz yüklenmedi!</div>';
+            }
+        }
+
+        function showStatus(message, type) {
+            // Create a temporary status message
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            document.body.appendChild(statusDiv);
+            
+            // Position it at the top
+            statusDiv.style.position = 'fixed';
+            statusDiv.style.top = '20px';
+            statusDiv.style.right = '20px';
+            statusDiv.style.zIndex = '1000001';
+            statusDiv.style.maxWidth = '300px';
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                statusDiv.remove();
+            }, 3000);
+        }
+
+        // Auto-check status on page load
+        setTimeout(checkStatus, 1000);
+    </script>
+</body>
+</html>

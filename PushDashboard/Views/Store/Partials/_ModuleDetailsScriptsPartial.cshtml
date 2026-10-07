@@ -1,0 +1,214 @@
+<script>
+  let currentDetailsModuleId = null;
+  let currentModuleDetails = {};
+  let moduleDetailsDialog = null;
+
+  // Open module details via PushDialog
+  function openModuleDetails(moduleId, moduleName) {
+    currentDetailsModuleId = moduleId;
+
+    const loadingHtml = `
+      <div class="flex items-center justify-center py-12">
+        <div class="busy-indicator-inline">
+          <div class="busy-spinner busy-spinner-md busy-spinner-primary"></div>
+          <div class="busy-text">Detaylar yükleniyor...</div>
+        </div>
+      </div>
+    `;
+
+    const footerHtml = `
+      <button id="purchase-from-details" onclick="purchaseFromDetails()" class="inline-flex justify-center items-center px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium transition-colors">
+        <svg class="w-4 h-4 inline mr-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+        Satın Al
+      </button>
+      <button onclick="closeModuleDetails()" class="inline-flex justify-center items-center px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors">
+        Kapat
+      </button>
+    `;
+
+    if (!moduleDetailsDialog) {
+      moduleDetailsDialog = new PushDialog({
+        title: `${moduleName} - Detayları`,
+        size: 'lg',
+        scrollBehavior: 'inside',
+        position: 'center',
+        closeOnOverlayClick: true,
+        closeOnEsc: true,
+        content: loadingHtml,
+        footer: footerHtml,
+        onClose: function() {
+          currentDetailsModuleId = null;
+          currentModuleDetails = {};
+          moduleDetailsDialog = null;
+        }
+      });
+    } else {
+      moduleDetailsDialog.setTitle(`${moduleName} - Detayları`);
+      moduleDetailsDialog.setContent(loadingHtml);
+      moduleDetailsDialog.setFooter(footerHtml);
+    }
+
+    moduleDetailsDialog.open();
+
+    // Load details
+    loadModuleDetails(moduleId);
+  }
+
+  // Close module details PushDialog
+  function closeModuleDetails() {
+    if (moduleDetailsDialog) {
+      moduleDetailsDialog.close();
+    }
+  }
+
+  // Load module details
+  async function loadModuleDetails(moduleId) {
+    try {
+      const response = await axios.get(`/Store/GetModuleDetails?moduleId=${moduleId}`, {
+        headers: {
+          'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+        }
+      });
+      
+      if (response.data.success) {
+        currentModuleDetails = response.data.moduleDetails;
+        const html = buildModuleDetailsHtml(currentModuleDetails);
+        if (moduleDetailsDialog) {
+          moduleDetailsDialog.setContent(html);
+        }
+        updatePurchaseButton(currentModuleDetails.module);
+      } else {
+        showDetailsErrorInDialog();
+      }
+    } catch (error) {
+      console.error('Error loading module details:', error);
+      showDetailsErrorInDialog();
+    }
+  }
+
+  // Show error state within PushDialog
+  function showDetailsErrorInDialog() {
+    const errorHtml = `
+      <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">Detaylar yüklenemedi</h3>
+        <p class="mt-1 text-sm text-gray-500">Lütfen tekrar deneyin.</p>
+        <button onclick="retryLoadDetails()" class="mt-3 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium transition-colors">
+          Tekrar Dene
+        </button>
+      </div>
+    `;
+    if (moduleDetailsDialog) {
+      moduleDetailsDialog.setContent(errorHtml);
+    }
+  }
+
+  // Build module details HTML
+  function buildModuleDetailsHtml(moduleDetails) {
+    const module = moduleDetails.module;
+    
+    let html = `
+      <div class="space-y-6">
+        <!-- Module Header -->
+        <div class="text-center">
+          <div class="w-16 h-16 mx-auto mb-4 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-center">
+            ${module.iconClass ? 
+              `<i class="${module.iconClass} text-2xl text-indigo-600"></i>` :
+              `<svg class="w-8 h-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z"></path></svg>`
+            }
+          </div>
+          <h2 class="text-xl font-semibold text-gray-900 mb-2">${module.name}</h2>
+          <p class="text-gray-500 mb-4">${module.description}</p>
+          
+          <div class="flex items-center justify-center space-x-4 mb-6">
+            <div class="text-center">
+              <div class="text-2xl font-semibold text-gray-900">${module.formattedPrice}</div>
+              <div class="text-sm text-gray-500">Fiyat</div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-semibold text-gray-900">${module.categoryName}</div>
+              <div class="text-sm text-gray-500">Kategori</div>
+            </div>
+          </div>
+          
+          ${module.isNew ? '<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200 mb-4">Yeni</span>' : ''}
+          ${module.isFeatured ? '<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200 mb-4 ml-2">Öne Çıkan</span>' : ''}
+        </div>
+
+        <!-- Detailed Description -->
+        ${module.detailedDescription ? `
+          <div class="border border-gray-200 p-4 rounded-xl">
+            <h3 class="text-base font-medium text-gray-900 mb-3">Açıklama</h3>
+            <p class="text-gray-600 leading-relaxed">${module.detailedDescription}</p>
+          </div>
+        ` : ''}
+
+        <!-- Features -->
+        ${module.features && module.features.length > 0 ? `
+          <div class="border border-gray-200 p-4 rounded-xl">
+            <h3 class="text-base font-medium text-gray-900 mb-3">Özellikler</h3>
+            <ul class="space-y-2">
+              ${module.features.map(feature => `
+                <li class="flex items-start">
+                  <svg class="w-4 h-4 text-emerald-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  <span class="text-gray-600">${feature}</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+        ` : ''}
+
+        <!-- Module Stats -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="border border-gray-200 p-3 rounded-xl text-center">
+            <div class="text-lg font-semibold text-gray-900">${module.isActive ? 'Aktif' : 'Pasif'}</div>
+            <div class="text-sm text-gray-500">Durum</div>
+          </div>
+          <div class="border border-gray-200 p-3 rounded-xl text-center">
+            <div class="text-lg font-semibold text-gray-900">₺${module.price}</div>
+            <div class="text-sm text-gray-500">Fiyat</div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    return html;
+  }
+
+  // Update purchase button visibility in dialog footer
+  function updatePurchaseButton(module) {
+    const purchaseBtn = document.getElementById('purchase-from-details');
+    if (!purchaseBtn) return;
+    
+    if (module.isOwned) {
+      purchaseBtn.style.display = 'none';
+    } else {
+      purchaseBtn.style.display = 'inline-flex';
+      purchaseBtn.setAttribute('data-module-id', module.id);
+      purchaseBtn.setAttribute('data-module-name', module.name);
+      purchaseBtn.setAttribute('data-module-price', module.formattedPrice);
+    }
+  }
+
+  // Purchase from details
+  function purchaseFromDetails() {
+    const btn = document.getElementById('purchase-from-details');
+    const moduleId = btn.getAttribute('data-module-id');
+    const moduleName = btn.getAttribute('data-module-name');
+    const modulePrice = btn.getAttribute('data-module-price');
+    
+    if (moduleId && moduleName && modulePrice) {
+      closeModuleDetails();
+      purchaseModule(moduleId, moduleName, modulePrice);
+    }
+  }
+
+  // Retry loading details
+  function retryLoadDetails() {
+    if (currentDetailsModuleId) {
+      loadModuleDetails(currentDetailsModuleId);
+    }
+  }
+</script>

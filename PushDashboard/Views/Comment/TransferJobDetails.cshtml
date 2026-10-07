@@ -1,0 +1,236 @@
+@model PushDashboard.DTOs.TransferJobDetailDto
+
+@{
+    ViewData["Title"] = "Transfer Detayları";
+}
+
+<style>
+    .product-row {
+        border-left: 3px solid transparent;
+        transition: background .15s ease, border-color .15s ease;
+    }
+    .product-row:hover { background-color: #f9fafb; }
+    .product-row.status-completed { border-left-color: #34d399; }
+    .product-row.status-failed    { border-left-color: #f87171; }
+    .product-row.status-running   { border-left-color: #60a5fa; }
+    .product-row.status-pending   { border-left-color: #fbbf24; }
+
+    .badge-pending   { background:#fef9c3; color:#92400e; }
+    .badge-running   { background:#dbeafe; color:#1e40af; }
+    .badge-completed { background:#d1fae5; color:#065f46; }
+    .badge-failed    { background:#fee2e2; color:#991b1b; }
+    .badge-cancelled { background:#f3f4f6; color:#6b7280; }
+</style>
+
+<main class="min-h-screen bg-gray-50/50 pb-20">
+
+    <!-- STICKY HEADER -->
+    <div class="sticky top-2 lg:top-4 z-20 px-2 lg:px-6 mb-6">
+        <div class="w-full flex flex-col md:flex-row items-center justify-between gap-3 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm px-4 py-3 lg:px-6 lg:py-4">
+            <div class="flex items-center gap-3 lg:gap-4 w-full md:w-auto">
+                <div class="p-2.5 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-xl text-white shadow-sm flex-shrink-0">
+                    <i class="fas fa-star text-lg"></i>
+                </div>
+                <div class="min-w-0">
+                    <h2 class="text-lg lg:text-xl font-bold text-gray-900 truncate">@Model.JobTypeDisplay</h2>
+                    <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                        <i class="fas fa-store text-[10px]"></i>
+                        <span>@Model.StoreName</span>
+                        <span class="text-gray-300">·</span>
+                        <span class="font-mono text-gray-400">İş #@Model.JobId</span>
+                    </div>
+                </div>
+            </div>
+            <a href="@Url.Action("Index")"
+               class="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 bg-white rounded-xl hover:bg-gray-50 shadow-sm transition-all whitespace-nowrap w-full md:w-auto">
+                <i class="fas fa-arrow-left text-xs"></i> Yorum Taşıma
+            </a>
+        </div>
+    </div>
+
+    <div class="w-full px-2 lg:px-6">
+
+        <!-- STATS CARDS -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+                <div class="w-11 h-11 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-circle text-xs @(Model.Status == "Completed" ? "text-green-500" : Model.Status == "Failed" ? "text-red-500" : Model.Status == "Running" ? "text-blue-500" : "text-yellow-500")"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Durum</p>
+                    @{
+                        var statusMap = new Dictionary<string, (string cls, string label)> {
+                            ["Pending"]   = ("badge-pending",   "Bekliyor"),
+                            ["Running"]   = ("badge-running",   "Çalışıyor"),
+                            ["Completed"] = ("badge-completed", "Tamamlandı"),
+                            ["Failed"]    = ("badge-failed",    "Hata"),
+                            ["Cancelled"] = ("badge-cancelled", "İptal")
+                        };
+                        var (scls, slbl) = statusMap.TryGetValue(Model.Status, out var sv) ? sv : ("badge-cancelled", Model.Status);
+                    }
+                    <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full mt-1 @scls">@slbl</span>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+                <div class="w-11 h-11 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-box-open text-purple-600"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Toplam Ürün</p>
+                    <p class="text-2xl font-extrabold text-gray-900">@(Model.TotalProducts ?? 0)</p>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+                <div class="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-check-double text-blue-600"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">İşlenen Ürün</p>
+                    <p class="text-2xl font-extrabold text-gray-900">@(Model.ProcessedProducts ?? 0)</p>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+                <div class="w-11 h-11 bg-yellow-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-comments text-yellow-600"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Toplam Yorum</p>
+                    <p class="text-2xl font-extrabold text-gray-900">@(Model.TotalComments ?? 0)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- META ROW -->
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-6 py-4 mb-6 flex flex-wrap items-center gap-x-6 gap-y-2">
+            <div class="flex items-center gap-2 text-sm text-gray-500">
+                <i class="fas fa-calendar-alt text-gray-300 text-xs"></i>
+                <span>Oluşturulma: <span class="font-semibold text-gray-800">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span></span>
+            </div>
+            @if (Model.CompletedAt.HasValue)
+            {
+                <div class="flex items-center gap-2 text-sm text-gray-500">
+                    <i class="fas fa-flag-checkered text-gray-300 text-xs"></i>
+                    <span>Tamamlanma: <span class="font-semibold text-gray-800">@Model.CompletedAt.Value.ToString("dd.MM.yyyy HH:mm")</span></span>
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <!-- ERROR BANNER -->
+            <div class="bg-red-50 border border-red-200 rounded-xl px-5 py-4 mb-6 flex items-start gap-3">
+                <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <i class="fas fa-exclamation-circle text-red-500 text-sm"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-red-800 mb-0.5">Hata</p>
+                    <p class="text-sm text-red-700">@Model.ErrorMessage</p>
+                </div>
+            </div>
+        }
+
+        <!-- PRODUCTS TABLE -->
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-purple-50 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-box-open text-purple-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-900">Ürünler</h3>
+                        <p class="text-xs text-gray-400">@Model.Products.Count ürün işlendi</p>
+                    </div>
+                </div>
+                @if (Model.Products.Any(p => !string.IsNullOrEmpty(p.CommentsFileUrl)))
+                {
+                    <span class="text-xs text-gray-400">Dosya indirmeleri için sağdaki bağlantıları kullanın</span>
+                }
+            </div>
+
+            @if (Model.Products.Any())
+            {
+                <div class="divide-y divide-gray-50">
+                    @foreach (var product in Model.Products)
+                    {
+                        var pStatusMap = new Dictionary<string, (string cls, string rowCls, string label)> {
+                            ["Pending"]   = ("badge-pending",   "status-pending",   "Bekliyor"),
+                            ["Running"]   = ("badge-running",   "status-running",   "İşleniyor"),
+                            ["Completed"] = ("badge-completed", "status-completed", "Tamamlandı"),
+                            ["Failed"]    = ("badge-failed",    "status-failed",    "Hata"),
+                            ["Cancelled"] = ("badge-cancelled", "status-failed",    "İptal")
+                        };
+                        var (pcls, prowCls, plbl) = pStatusMap.TryGetValue(product.Status, out var pv) ? pv : ("badge-cancelled", "", product.Status);
+                        <div class="product-row @prowCls px-6 py-5 flex items-start gap-4">
+                            <!-- Icon -->
+                            <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center mt-0.5
+                                @(product.Status == "Completed" ? "bg-green-50" : product.Status == "Failed" ? "bg-red-50" : product.Status == "Running" ? "bg-blue-50" : "bg-gray-50")">
+                                <i class="fas @(product.Status == "Completed" ? "fa-check text-green-500" : product.Status == "Failed" ? "fa-times text-red-400" : product.Status == "Running" ? "fa-circle-notch fa-spin text-blue-500" : "fa-clock text-yellow-500") text-sm"></i>
+                            </div>
+
+                            <!-- Content -->
+                            <div class="flex-1 min-w-0">
+                                <div class="flex flex-wrap items-start justify-between gap-3">
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-sm font-semibold text-gray-900 truncate" title="@product.ProductTitle">
+                                            @product.ProductTitle
+                                        </h4>
+                                        <div class="flex flex-wrap items-center gap-3 mt-1.5">
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full @pcls">@plbl</span>
+                                            @if (product.CommentsCount.HasValue)
+                                            {
+                                                <span class="text-xs text-gray-500 flex items-center gap-1">
+                                                    <i class="fas fa-comment text-gray-300 text-[9px]"></i> @product.CommentsCount yorum
+                                                </span>
+                                            }
+                                            @if (product.ProcessedAt.HasValue)
+                                            {
+                                                <span class="text-xs text-gray-400 flex items-center gap-1">
+                                                    <i class="fas fa-clock text-gray-200 text-[9px]"></i> @product.ProcessedAt.Value.ToString("dd.MM.yyyy HH:mm")
+                                                </span>
+                                            }
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(product.ErrorMessage))
+                                        {
+                                            <p class="text-xs text-red-500 mt-2 flex items-start gap-1.5">
+                                                <i class="fas fa-exclamation-circle text-[9px] mt-0.5 flex-shrink-0"></i>
+                                                @product.ErrorMessage
+                                            </p>
+                                        }
+                                    </div>
+                                    <!-- Actions -->
+                                    <div class="flex items-center gap-2 flex-shrink-0">
+                                        @if (!string.IsNullOrEmpty(product.ProductUrl))
+                                        {
+                                            <a href="@product.ProductUrl" target="_blank"
+                                               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                                <i class="fas fa-external-link-alt text-[9px]"></i> Ürün
+                                            </a>
+                                        }
+                                        @if (!string.IsNullOrEmpty(product.CommentsFileUrl))
+                                        {
+                                            <a href="@product.CommentsFileUrl" target="_blank"
+                                               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                                                <i class="fas fa-eye text-[9px]"></i> Yorumları Gör
+                                            </a>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="flex flex-col items-center justify-center py-16 text-center">
+                    <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-5">
+                        <i class="fas fa-box-open text-gray-300 text-2xl"></i>
+                    </div>
+                    <h4 class="text-sm font-semibold text-gray-700 mb-1">Henüz ürün yok</h4>
+                    <p class="text-xs text-gray-400">Bu transfer işi için ürün bulunamadı.</p>
+                </div>
+            }
+        </div>
+
+    </div>
+</main>

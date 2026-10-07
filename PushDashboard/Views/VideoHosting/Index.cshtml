@@ -1,0 +1,937 @@
+@model List<PushDashboard.DTOs.VideoListDto>
+@{
+    ViewData["Title"] = "Video Hosting";
+    var stats = ViewBag.Stats as PushDashboard.DTOs.VideoStatsDto;
+}
+
+<style>
+    .vh-page { font-family: inherit; }
+
+    /* Gradient Header */
+    .vh-header { background: linear-gradient(135deg, var(--theme-800) 0%, var(--theme-600) 100%); border-radius: 1.25rem; padding: 2rem 2.5rem; position: relative; overflow: hidden; }
+    .vh-header::before { content: ''; position: absolute; top: -50%; right: -20%; width: 60%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%); pointer-events: none; }
+    .vh-header::after { content: ''; position: absolute; bottom: -30%; left: -10%; width: 40%; height: 160%; background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 60%); pointer-events: none; }
+
+    /* Stat Cards */
+    .vh-stat-card { background: white; border-radius: 1rem; padding: 1.5rem; border: 1px solid rgba(0,0,0,0.04); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; }
+    .vh-stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -4px rgba(0,0,0,0.1), 0 6px 12px -2px rgba(0,0,0,0.06); border-color: rgba(var(--theme-color-rgb), 0.2); }
+    .vh-stat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--theme-400), var(--theme-600)); opacity: 0; transition: opacity 0.3s; }
+    .vh-stat-card:hover::after { opacity: 1; }
+    .vh-stat-icon { width: 2.75rem; height: 2.75rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .vh-stat-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b; }
+    .vh-stat-value { font-size: 1.75rem; font-weight: 700; color: #0f172a; margin-top: 0.25rem; line-height: 1.2; }
+
+    /* Table Container */
+    .vh-table-container { background: white; border-radius: 1.25rem; border: 1px solid rgba(0,0,0,0.04); box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.03); overflow: hidden; }
+    .vh-table-header { padding: 1.25rem 1.5rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #f1f5f9; }
+    .vh-table thead th { background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; font-weight: 600; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; white-space: nowrap; text-align: left; }
+    .vh-table tbody tr { transition: all 0.15s ease; }
+    .vh-table tbody tr:hover { background: linear-gradient(90deg, rgba(var(--theme-color-rgb), 0.02) 0%, rgba(var(--theme-color-rgb), 0.04) 100%); }
+    .vh-table tbody td { padding: 1rem 1.25rem; vertical-align: middle; border-bottom: 1px solid #f1f5f9; font-size: 0.8125rem; color: #334155; }
+
+    /* Badges */
+    .vh-badge { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.01em; }
+    .vh-badge-success { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); color: #065f46; }
+    .vh-badge-danger { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); color: #991b1b; }
+    .vh-badge-warning { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); color: #92400e; }
+    .vh-badge-info { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); color: var(--theme-700); }
+    .vh-badge-neutral { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); color: #475569; }
+
+    /* Buttons */
+    .vh-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.25rem; border-radius: 0.75rem; font-size: 0.8125rem; font-weight: 600; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: none; white-space: nowrap; text-decoration: none; }
+    .vh-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+    .vh-btn-primary { background: linear-gradient(135deg, var(--theme-600) 0%, var(--theme-700) 100%); color: white; box-shadow: 0 2px 8px rgba(var(--theme-color-rgb), 0.3); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    .vh-btn-primary:hover:not(:disabled) { box-shadow: 0 4px 16px rgba(var(--theme-color-rgb), 0.4); color: white; background: linear-gradient(135deg, var(--theme-700) 0%, var(--theme-800) 100%); }
+    .vh-btn-white { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.25); backdrop-filter: blur(4px); }
+    .vh-btn-white:hover:not(:disabled) { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.4); color: white; text-decoration: none; }
+    .vh-btn-ghost { background: transparent; color: #64748b; border: 1px solid #e2e8f0; }
+    .vh-btn-ghost:hover:not(:disabled) { background: #f8fafc; border-color: #cbd5e1; color: #334155; }
+
+    /* Action Buttons */
+    .vh-action-btn { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 0.5rem; transition: all 0.2s; cursor: pointer; border: none; background: transparent; }
+    .vh-action-btn:hover { transform: scale(1.1); }
+    .vh-action-btn-play { color: var(--theme-600); }
+    .vh-action-btn-play:hover { background: rgba(var(--theme-color-rgb), 0.08); }
+    .vh-action-btn-embed { color: #059669; }
+    .vh-action-btn-embed:hover { background: rgba(5,150,105,0.08); }
+    .vh-action-btn-edit { color: #64748b; }
+    .vh-action-btn-edit:hover { background: #f1f5f9; color: #334155; }
+    .vh-action-btn-delete { color: #ef4444; }
+    .vh-action-btn-delete:hover { background: #fef2f2; }
+
+    /* Search Input */
+    .vh-search-wrap { position: relative; }
+    .vh-search-input { width: 100%; padding: 0.625rem 1rem 0.625rem 2.75rem; border: 1.5px solid #e2e8f0; border-radius: 0.75rem; font-size: 0.875rem; background: white; transition: all 0.2s; color: #1e293b; }
+    .vh-search-input:focus { outline: none; border-color: var(--theme-400); box-shadow: 0 0 0 3px rgba(var(--theme-color-rgb), 0.1); }
+    .vh-search-input::placeholder { color: #94a3b8; }
+    .vh-search-icon { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }
+
+    /* Thumbnail */
+    .vh-thumbnail { width: 4.5rem; height: 2.75rem; object-fit: cover; border-radius: 0.5rem; border: 1px solid #f1f5f9; flex-shrink: 0; transition: transform 0.2s; }
+    .vh-thumbnail:hover { transform: scale(1.05); }
+    .vh-thumbnail-placeholder { width: 4.5rem; height: 2.75rem; border-radius: 0.5rem; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    /* Empty State */
+    .vh-empty { text-align: center; padding: 4rem 2rem; }
+    .vh-empty-icon { width: 5rem; height: 5rem; border-radius: 1.25rem; background: linear-gradient(135deg, rgba(var(--theme-color-rgb), 0.08) 0%, rgba(var(--theme-color-rgb), 0.04) 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; }
+
+    /* Status Strip */
+    .vh-status-strip { display: flex; align-items: center; gap: 1.5rem; padding: 1rem 1.5rem; background: white; border-radius: 0.75rem; border: 1px solid rgba(0,0,0,0.04); flex-wrap: wrap; }
+    .vh-status-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: #64748b; }
+    .vh-status-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; }
+    .vh-status-dot-active { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.4); animation: vh-pulse-green 2s infinite; }
+    .vh-status-dot-inactive { background: #94a3b8; }
+
+    /* Mobile Cards */
+    .vh-mobile-card { display: none; }
+    @@media (max-width: 1023px) {
+        .vh-desktop-table { display: none !important; }
+        .vh-mobile-card { display: block; }
+        .vh-mobile-card-item { background: white; border-radius: 1rem; border: 1px solid rgba(0,0,0,0.04); box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 0.75rem; overflow: hidden; transition: all 0.2s; }
+        .vh-mobile-card-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    }
+    @@media (min-width: 1024px) {
+        .vh-mobile-card { display: none !important; }
+        .vh-desktop-table { display: block !important; }
+    }
+
+    /* Animations */
+    .vh-fade-in { animation: vhFadeIn 0.4s ease-out; }
+    @@keyframes vhFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @@keyframes vh-pulse-green { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    /* Modal */
+    .vh-modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 50; display: none; align-items: center; justify-content: center; padding: 1rem; }
+    .vh-modal-overlay.active { display: flex; }
+    .vh-modal { background: white; border-radius: 1.25rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); max-height: 90vh; overflow-y: auto; width: 100%; animation: vhModalSlide 0.3s ease-out; }
+    .vh-modal-sm { max-width: 32rem; }
+    .vh-modal-md { max-width: 40rem; }
+    .vh-modal-lg { max-width: 56rem; }
+    .vh-modal-header { padding: 1.5rem 1.75rem; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+    .vh-modal-title { font-size: 1.125rem; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 0.75rem; }
+    .vh-modal-close { width: 2rem; height: 2rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; border: none; background: transparent; color: #94a3b8; cursor: pointer; transition: all 0.15s; }
+    .vh-modal-close:hover { background: #f1f5f9; color: #334155; }
+    .vh-modal-body { padding: 1.75rem; }
+    .vh-modal-footer { padding: 1.25rem 1.75rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 0.75rem; }
+    @@keyframes vhModalSlide { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+    /* Embed Tabs */
+    .vh-tab { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.625rem 1rem; font-size: 0.8125rem; font-weight: 500; color: #64748b; border-bottom: 2px solid transparent; background: none; border-top: none; border-left: none; border-right: none; cursor: pointer; transition: all 0.2s; }
+    .vh-tab:hover { color: #334155; border-bottom-color: #d1d5db; }
+    .vh-tab.active { color: var(--theme-600); border-bottom-color: var(--theme-600); font-weight: 600; }
+
+    /* Toggle Switch */
+    .vh-toggle { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+    .vh-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .vh-toggle-track { width: 2.5rem; height: 1.375rem; background: #cbd5e1; border-radius: 999px; transition: background 0.2s; }
+    .vh-toggle input:checked + .vh-toggle-track { background: var(--theme-600); }
+    .vh-toggle-thumb { position: absolute; left: 2px; top: 50%; transform: translateY(-50%); width: 1.125rem; height: 1.125rem; background: white; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.15); transition: left 0.2s; }
+    .vh-toggle input:checked ~ .vh-toggle-thumb { left: calc(2.5rem - 1.125rem - 2px); }
+
+    /* Code Block */
+    .vh-code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 0.8125rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.625rem; padding: 0.75rem 1rem; color: #334155; resize: none; width: 100%; }
+    .vh-copy-row { display: flex; justify-content: flex-end; margin-top: 0.5rem; }
+    .vh-copy-btn { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; background: linear-gradient(135deg, var(--theme-600) 0%, var(--theme-700) 100%); color: white; border: none; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 1px 4px rgba(var(--theme-color-rgb), 0.25); }
+    .vh-copy-btn:hover { background: linear-gradient(135deg, var(--theme-700) 0%, var(--theme-800) 100%); box-shadow: 0 2px 8px rgba(var(--theme-color-rgb), 0.35); }
+</style>
+
+<div class="vh-page py-6 sm:py-8">
+    <div class="w-full px-4 sm:px-6 lg:px-8">
+
+        <!-- ===== HEADER ===== -->
+        <div class="vh-header mb-8 vh-fade-in">
+            <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">Video Hosting</h1>
+                    </div>
+                    <p class="text-sm sm:text-base max-w-xl" style="color: rgba(255,255,255,0.75);">Videolarınızı yükleyin, yönetin ve sitenize kolayca ekleyin. Profesyonel player ile müşteri deneyimini zenginleştirin.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <a href="@Url.Action("Settings")" class="vh-btn vh-btn-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        Ayarlar
+                    </a>
+                    <a href="@Url.Action("Upload")" class="vh-btn vh-btn-primary" style="background: rgba(255,255,255,0.95); color: var(--theme-700); box-shadow: 0 2px 12px rgba(0,0,0,0.15);">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                        Video Yükle
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== STATUS STRIP ===== -->
+        @if (stats != null)
+        {
+            <div class="vh-status-strip mb-6 vh-fade-in" style="animation-delay: 0.1s;">
+                <div class="vh-status-item">
+                    <div class="vh-status-dot @(stats.TotalVideos > 0 ? "vh-status-dot-active" : "vh-status-dot-inactive")"></div>
+                    <span>Video Servisi <strong class="text-gray-900">@(stats.TotalVideos > 0 ? "Aktif" : "Pasif")</strong></span>
+                </div>
+                <div style="width: 1px; height: 1.25rem; background: #e2e8f0;"></div>
+                <div class="vh-status-item">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>
+                    <span>Toplam: <strong class="text-gray-900">@stats.TotalVideos video</strong></span>
+                </div>
+                <div style="width: 1px; height: 1.25rem; background: #e2e8f0;"></div>
+                <div class="vh-status-item">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+                    <span>Depolama: <strong class="text-gray-900">@stats.TotalStorageFormatted</strong></span>
+                </div>
+                @if (stats.ProcessingVideos > 0)
+                {
+                    <div style="width: 1px; height: 1.25rem; background: #e2e8f0;"></div>
+                    <div class="vh-status-item">
+                        <div class="w-3 h-3 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span>İşleniyor: <strong class="text-amber-600">@stats.ProcessingVideos</strong></span>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- ===== STAT CARDS ===== -->
+        @if (stats != null)
+        {
+            <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6 mb-8">
+                <div class="vh-stat-card vh-fade-in" style="animation-delay: 0.15s;">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="vh-stat-label">Toplam Video</div>
+                            <div class="vh-stat-value">@stats.TotalVideos</div>
+                            <div class="flex items-center gap-2 mt-2">
+                                <span class="vh-badge vh-badge-success">
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                    @stats.ReadyVideos hazır
+                                </span>
+                            </div>
+                        </div>
+                        <div class="vh-stat-icon" style="background: linear-gradient(135deg, rgba(var(--theme-color-rgb), 0.1) 0%, rgba(var(--theme-color-rgb), 0.05) 100%);">
+                            <svg class="w-5 h-5" style="color: var(--theme-600);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vh-stat-card vh-fade-in" style="animation-delay: 0.2s;">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="vh-stat-label">Görüntüleme</div>
+                            <div class="vh-stat-value">@stats.TotalViews.ToString("N0")</div>
+                            <div class="text-xs text-gray-400 mt-2">Tüm videolar toplam</div>
+                        </div>
+                        <div class="vh-stat-icon" style="background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(16,185,129,0.05) 100%);">
+                            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vh-stat-card vh-fade-in" style="animation-delay: 0.25s;">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="vh-stat-label">Depolama</div>
+                            <div class="vh-stat-value">@stats.TotalStorageFormatted</div>
+
+                        </div>
+                        <div class="vh-stat-icon" style="background: linear-gradient(135deg, rgba(139,92,246,0.1) 0%, rgba(139,92,246,0.05) 100%);">
+                            <svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vh-stat-card vh-fade-in" style="animation-delay: 0.3s;">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="vh-stat-label">Toplam Süre</div>
+                            <div class="vh-stat-value">@stats.TotalDurationFormatted</div>
+                        </div>
+                        <div class="vh-stat-icon" style="background: linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(245,158,11,0.05) 100%);">
+                            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- ===== VIDEOS TABLE ===== -->
+        <div class="vh-table-container vh-fade-in" style="animation-delay: 0.35s;">
+            <div class="vh-table-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, rgba(var(--theme-color-rgb), 0.1) 0%, rgba(var(--theme-color-rgb), 0.05) 100%);">
+                        <svg class="w-4 h-4" style="color: var(--theme-600);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-semibold text-gray-900">Videolarım</h3>
+                        <p class="text-xs text-gray-400">Yüklenen tüm videoları yönetin</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="vh-search-wrap">
+                        <svg class="w-4 h-4 vh-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <input type="text" class="vh-search-input" id="videoSearch" placeholder="Video ara..." style="width: 14rem;" oninput="filterVideos(this.value)">
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.Any())
+            {
+                <!-- Desktop Table -->
+                <div class="vh-desktop-table">
+                    <div class="overflow-x-auto">
+                        <table class="vh-table w-full" id="videosTable">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Video</th>
+                                    <th>Dosya / Boyut</th>
+                                    <th>Süre</th>
+                                    <th>Çözünürlük</th>
+                                    <th>Durum</th>
+                                    <th>Görüntüleme</th>
+                                    <th>Maliyet</th>
+                                    <th>Tarih</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var video in Model)
+                                {
+                                    <tr data-title="@video.Title.ToLower()">
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(video.ThumbnailUrl))
+                                            {
+                                                <img src="@video.ThumbnailUrl" alt="@video.Title" class="vh-thumbnail">
+                                            }
+                                            else
+                                            {
+                                                <div class="vh-thumbnail-placeholder">
+                                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                                </div>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="flex flex-col gap-1">
+                                                <span class="font-semibold text-gray-900 text-sm">@video.Title</span>
+                                                @if (video.IsPublic)
+                                                {
+                                                    <span class="vh-badge vh-badge-success" style="width: fit-content;">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg>
+                                                        Herkese Açık
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="vh-badge vh-badge-neutral" style="width: fit-content;">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                                        Özel
+                                                    </span>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="flex flex-col gap-0.5">
+                                                <span class="text-xs text-gray-500 truncate max-w-[10rem]" title="@video.OriginalFileName">@video.OriginalFileName</span>
+                                                <span class="font-medium">@video.FileSizeFormatted</span>
+                                            </div>
+                                        </td>
+                                        <td><span class="font-medium">@video.DurationFormatted</span></td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(video.Resolution))
+                                            {
+                                                <span class="vh-badge vh-badge-info">@video.Resolution</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-gray-400">—</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @switch (video.Status)
+                                            {
+                                                case PushDashboard.Models.VideoStatus.Ready:
+                                                    <span class="vh-badge vh-badge-success">
+                                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                                        @video.StatusText
+                                                    </span>
+                                                    break;
+                                                case PushDashboard.Models.VideoStatus.Processing:
+                                                case PushDashboard.Models.VideoStatus.Uploading:
+                                                    <span class="vh-badge vh-badge-warning">
+                                                        <div class="w-3 h-3 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                                                        @video.StatusText
+                                                    </span>
+                                                    break;
+                                                case PushDashboard.Models.VideoStatus.Failed:
+                                                    <span class="vh-badge vh-badge-danger">
+                                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+                                                        @video.StatusText
+                                                    </span>
+                                                    break;
+                                                default:
+                                                    <span class="vh-badge vh-badge-neutral">@video.StatusText</span>
+                                                    break;
+                                            }
+                                        </td>
+                                        <td><span class="font-semibold text-gray-900">@video.ViewCount.ToString("N0")</span></td>
+                                        <td><span class="font-medium">₺@video.UploadCost.ToString("F2")</span></td>
+                                        <td><span class="text-xs">@video.CreatedAt.ToString("dd MMM yyyy")<br/><span class="text-gray-400">@video.CreatedAt.ToString("HH:mm")</span></span></td>
+                                        <td>
+                                            <div class="flex items-center gap-1">
+                                                @if (video.Status == PushDashboard.Models.VideoStatus.Ready)
+                                                {
+                                                    <button type="button" class="vh-action-btn vh-action-btn-play" onclick="viewVideo('@video.Id')" title="İzle">
+                                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/></svg>
+                                                    </button>
+                                                    <button type="button" class="vh-action-btn vh-action-btn-embed" onclick="generateEmbedCode('@video.Id')" title="Embed Kodu">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                                                    </button>
+                                                }
+                                                <button type="button" class="vh-action-btn vh-action-btn-edit" onclick="editVideo('@video.Id')" title="Düzenle">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                </button>
+                                                <button type="button" class="vh-action-btn vh-action-btn-delete" onclick="deleteVideo('@video.Id')" title="Sil">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Mobile Cards -->
+                <div class="vh-mobile-card p-4">
+                    @foreach (var video in Model)
+                    {
+                        <div class="vh-mobile-card-item" data-title="@video.Title.ToLower()">
+                            <div class="p-4">
+                                <div class="flex items-start gap-3 mb-3">
+                                    @if (!string.IsNullOrEmpty(video.ThumbnailUrl))
+                                    {
+                                        <img src="@video.ThumbnailUrl" alt="@video.Title" class="vh-thumbnail">
+                                    }
+                                    else
+                                    {
+                                        <div class="vh-thumbnail-placeholder">
+                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                        </div>
+                                    }
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-semibold text-gray-900 text-sm truncate">@video.Title</div>
+                                        <div class="text-xs text-gray-400 truncate mt-0.5">@video.OriginalFileName</div>
+                                    </div>
+                                    @switch (video.Status)
+                                    {
+                                        case PushDashboard.Models.VideoStatus.Ready:
+                                            <span class="vh-badge vh-badge-success flex-shrink-0">@video.StatusText</span>
+                                            break;
+                                        case PushDashboard.Models.VideoStatus.Processing:
+                                        case PushDashboard.Models.VideoStatus.Uploading:
+                                            <span class="vh-badge vh-badge-warning flex-shrink-0">@video.StatusText</span>
+                                            break;
+                                        case PushDashboard.Models.VideoStatus.Failed:
+                                            <span class="vh-badge vh-badge-danger flex-shrink-0">@video.StatusText</span>
+                                            break;
+                                        default:
+                                            <span class="vh-badge vh-badge-neutral flex-shrink-0">@video.StatusText</span>
+                                            break;
+                                    }
+                                </div>
+                                <div class="grid grid-cols-4 gap-3 text-xs mb-3">
+                                    <div>
+                                        <div class="text-gray-400">Boyut</div>
+                                        <div class="font-medium text-gray-700">@video.FileSizeFormatted</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-gray-400">Süre</div>
+                                        <div class="font-medium text-gray-700">@video.DurationFormatted</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-gray-400">Görüntüleme</div>
+                                        <div class="font-medium text-gray-700">@video.ViewCount.ToString("N0")</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-gray-400">Maliyet</div>
+                                        <div class="font-medium text-gray-700">₺@video.UploadCost.ToString("F2")</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                                    <div class="flex items-center gap-2">
+                                        @if (video.IsPublic)
+                                        {
+                                            <span class="vh-badge vh-badge-success">Herkese Açık</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="vh-badge vh-badge-neutral">Özel</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(video.Resolution))
+                                        {
+                                            <span class="vh-badge vh-badge-info">@video.Resolution</span>
+                                        }
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        @if (video.Status == PushDashboard.Models.VideoStatus.Ready)
+                                        {
+                                            <button type="button" class="vh-action-btn vh-action-btn-play" onclick="viewVideo('@video.Id')"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/></svg></button>
+                                            <button type="button" class="vh-action-btn vh-action-btn-embed" onclick="generateEmbedCode('@video.Id')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg></button>
+                                        }
+                                        <button type="button" class="vh-action-btn vh-action-btn-edit" onclick="editVideo('@video.Id')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
+                                        <button type="button" class="vh-action-btn vh-action-btn-delete" onclick="deleteVideo('@video.Id')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <!-- Empty State -->
+                <div class="vh-empty">
+                    <div class="vh-empty-icon">
+                        <svg class="w-8 h-8" style="color: var(--theme-500);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-1">Henüz video yüklenmemiş</h3>
+                    <p class="text-sm text-gray-500 mb-6 max-w-md mx-auto">İlk videonuzu yükleyin ve ürün sayfalarınızda, e-postalarınızda veya sosyal medyada paylaşın.</p>
+                    <a href="@Url.Action("Upload")" class="vh-btn vh-btn-primary">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        İlk Videoyu Yükle
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- ===== VIDEO PLAYER MODAL ===== -->
+<div id="videoPlayerModal" class="vh-modal-overlay" onclick="if(event.target===this) closeVideoModal();">
+    <div class="vh-modal vh-modal-lg">
+        <div class="vh-modal-header">
+            <div class="vh-modal-title">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, rgba(var(--theme-color-rgb), 0.1) 0%, rgba(var(--theme-color-rgb), 0.05) 100%);">
+                    <svg class="w-4 h-4" style="color: var(--theme-600);" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/></svg>
+                </div>
+                <span id="videoPlayerTitle">Video Player</span>
+            </div>
+            <button type="button" class="vh-modal-close" onclick="closeVideoModal()">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="vh-modal-body p-0">
+            <div id="videoPlayerContainer" style="background: #000; border-radius: 0 0 1.25rem 1.25rem;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== EDIT VIDEO MODAL ===== -->
+<div id="editVideoModal" class="vh-modal-overlay" onclick="if(event.target===this) closeEditModal();">
+    <div class="vh-modal vh-modal-sm">
+        <div class="vh-modal-header">
+            <div class="vh-modal-title">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, rgba(var(--theme-color-rgb), 0.1) 0%, rgba(var(--theme-color-rgb), 0.05) 100%);">
+                    <svg class="w-4 h-4" style="color: var(--theme-600);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </div>
+                <span>Video Düzenle</span>
+            </div>
+            <button type="button" class="vh-modal-close" onclick="closeEditModal()">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form id="editVideoForm">
+            <div class="vh-modal-body">
+                <input type="hidden" id="editVideoId" />
+                <div class="mb-5">
+                    <label for="editVideoTitle" class="block text-sm font-medium text-gray-700 mb-1.5">Video Başlığı</label>
+                    <input type="text" class="w-full px-3.5 py-2.5 border-[1.5px] border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[var(--theme-400)] focus:ring-[3px] focus:ring-[rgba(var(--theme-color-rgb),0.1)] transition-all" id="editVideoTitle" required maxlength="200" placeholder="Video başlığı">
+                </div>
+                <div class="mb-5">
+                    <label for="editVideoDescription" class="block text-sm font-medium text-gray-700 mb-1.5">Açıklama</label>
+                    <textarea class="w-full px-3.5 py-2.5 border-[1.5px] border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[var(--theme-400)] focus:ring-[3px] focus:ring-[rgba(var(--theme-color-rgb),0.1)] transition-all" id="editVideoDescription" rows="3" maxlength="1000" placeholder="Video açıklaması (isteğe bağlı)"></textarea>
+                </div>
+                <div>
+                    <label class="vh-toggle gap-3">
+                        <input type="checkbox" id="editVideoIsPublic">
+                        <div class="vh-toggle-track"></div>
+                        <div class="vh-toggle-thumb"></div>
+                        <div class="flex flex-col ml-1">
+                            <span class="text-sm font-medium text-gray-900">Herkese açık</span>
+                            <span class="text-xs text-gray-400">Paylaşılabilir link ile erişilebilir olur</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <div class="vh-modal-footer">
+                <button type="button" class="vh-btn vh-btn-ghost" onclick="closeEditModal()">İptal</button>
+                <button type="submit" class="vh-btn vh-btn-primary">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Kaydet
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== EMBED CODE MODAL ===== -->
+<div id="embedCodeModal" class="vh-modal-overlay" onclick="if(event.target===this) closeEmbedModal();">
+    <div class="vh-modal vh-modal-lg">
+        <div class="vh-modal-header">
+            <div class="vh-modal-title">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, rgba(5,150,105,0.1) 0%, rgba(5,150,105,0.05) 100%);">
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                </div>
+                <span>Video Paylaş & Embed</span>
+            </div>
+            <button type="button" class="vh-modal-close" onclick="closeEmbedModal()">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="vh-modal-body">
+            <!-- Player Settings -->
+            <div class="p-4 rounded-xl mb-5" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid rgba(0,0,0,0.04);">
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Oynatıcı Ayarları</h4>
+                <div class="flex flex-wrap gap-6">
+                    <label class="vh-toggle gap-2.5">
+                        <input type="checkbox" id="embedAutoPlay" onchange="refreshEmbedCodes()">
+                        <div class="vh-toggle-track"></div>
+                        <div class="vh-toggle-thumb"></div>
+                        <span class="text-sm text-gray-700 ml-1">Otomatik Oynat</span>
+                    </label>
+                    <label class="vh-toggle gap-2.5">
+                        <input type="checkbox" id="embedMuted" onchange="refreshEmbedCodes()">
+                        <div class="vh-toggle-track"></div>
+                        <div class="vh-toggle-thumb"></div>
+                        <span class="text-sm text-gray-700 ml-1">Sessiz Başlat</span>
+                    </label>
+                    <label class="vh-toggle gap-2.5">
+                        <input type="checkbox" id="embedShowControls" checked onchange="refreshEmbedCodes()">
+                        <div class="vh-toggle-track"></div>
+                        <div class="vh-toggle-thumb"></div>
+                        <span class="text-sm text-gray-700 ml-1">Kontroller Aktif</span>
+                    </label>
+                </div>
+                <p class="text-xs text-gray-400 mt-3 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Tarayıcılar otomatik oynatma için genelde sessiz mod gerektirir.
+                </p>
+            </div>
+
+            <!-- Dimensions -->
+            <div class="grid grid-cols-2 gap-4 mb-5">
+                <div>
+                    <label for="embedWidth" class="block text-xs font-medium text-gray-500 mb-1.5">Genişlik (px)</label>
+                    <input type="number" class="w-full px-3.5 py-2.5 border-[1.5px] border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[var(--theme-400)] focus:ring-[3px] focus:ring-[rgba(var(--theme-color-rgb),0.1)] transition-all" id="embedWidth" value="640" min="200" max="1920" onchange="refreshEmbedCodes()">
+                </div>
+                <div>
+                    <label for="embedHeight" class="block text-xs font-medium text-gray-500 mb-1.5">Yükseklik (px)</label>
+                    <input type="number" class="w-full px-3.5 py-2.5 border-[1.5px] border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[var(--theme-400)] focus:ring-[3px] focus:ring-[rgba(var(--theme-color-rgb),0.1)] transition-all" id="embedHeight" value="360" min="150" max="1080" onchange="refreshEmbedCodes()">
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="border-b border-gray-200 mb-5 flex overflow-x-auto" style="scrollbar-width: none;">
+                <button type="button" class="vh-tab active" data-tab="directVideo" onclick="switchEmbedTab('directVideo')">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>
+                    Video Linki
+                </button>
+                <button type="button" class="vh-tab" data-tab="iframeSrc" onclick="switchEmbedTab('iframeSrc')">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                    iframe URL
+                </button>
+                <button type="button" class="vh-tab" data-tab="videoEmbed" onclick="switchEmbedTab('videoEmbed')">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                    Video Embed
+                </button>
+                <button type="button" class="vh-tab" data-tab="iframeEmbed" onclick="switchEmbedTab('iframeEmbed')">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6z"/></svg>
+                    iframe Embed
+                </button>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="embed-tab-content" id="tab-directVideo">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Direkt Video Linki (MP4)</label>
+                <p class="text-xs text-gray-400 mb-2">Video dosyasının doğrudan linki. Ürün kartları, sosyal medya veya herhangi bir yerde kullanabilirsiniz.</p>
+                <div>
+                    <input type="text" class="vh-code" id="embedDirectVideoUrl" readonly>
+                    <div class="vh-copy-row">
+                        <button type="button" class="vh-copy-btn" onclick="copyToClipboard('embedDirectVideoUrl')">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                            Kopyala
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-3 p-3 rounded-lg text-xs flex items-start gap-2" style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); color: #065f46;">
+                    <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    <span><strong>Kullanım:</strong> Bu linki doğrudan ürün detay sayfalarında, WhatsApp, e-posta veya sosyal medya paylaşımlarında kullanabilirsiniz.</span>
+                </div>
+            </div>
+
+            <div class="embed-tab-content hidden" id="tab-iframeSrc">
+                <label class="block text-sm font-medium text-gray-700 mb-1">iframe Kaynak URL</label>
+                <p class="text-xs text-gray-400 mb-2">Bu URL'yi kendi iframe elementinizde src olarak kullanabilirsiniz.</p>
+                <div>
+                    <input type="text" class="vh-code" id="embedIframeSrcUrl" readonly>
+                    <div class="vh-copy-row">
+                        <button type="button" class="vh-copy-btn" onclick="copyToClipboard('embedIframeSrcUrl')">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                            Kopyala
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-3 p-3 rounded-lg text-xs flex items-start gap-2" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); color: var(--theme-700);">
+                    <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    <span><strong>Kullanım:</strong> &lt;iframe src="BU_URL" width="640" height="360" frameborder="0" allowfullscreen&gt;&lt;/iframe&gt;</span>
+                </div>
+            </div>
+
+            <div class="embed-tab-content hidden" id="tab-videoEmbed">
+                <label class="block text-sm font-medium text-gray-700 mb-1">HTML5 Video Embed Kodu</label>
+                <p class="text-xs text-gray-400 mb-2">Doğrudan HTML5 &lt;video&gt; etiketi. Sayfa içinde doğal video oynatıcı gösterir.</p>
+                <div>
+                    <textarea class="vh-code" id="embedVideoCode" rows="4" readonly></textarea>
+                    <div class="vh-copy-row">
+                        <button type="button" class="vh-copy-btn" onclick="copyToClipboard('embedVideoCode')">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                            Kopyala
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-3 p-3 rounded-lg text-xs flex items-start gap-2" style="background: linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(139,92,246,0.04) 100%); color: #6d28d9;">
+                    <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    <span><strong>Avantaj:</strong> iframe kullanamadığınız durumlarda, ürün detay sayfalarında doğrudan video göstermek için idealdir. SEO dostu ve hızlı yüklenir.</span>
+                </div>
+            </div>
+
+            <div class="embed-tab-content hidden" id="tab-iframeEmbed">
+                <label class="block text-sm font-medium text-gray-700 mb-1">iframe Embed Kodu</label>
+                <p class="text-xs text-gray-400 mb-2">Tam iframe embed kodu. Kopyalayıp sitenize yapıştırmanız yeterli.</p>
+                <div>
+                    <textarea class="vh-code" id="embedIframeCode" rows="3" readonly></textarea>
+                    <div class="vh-copy-row">
+                        <button type="button" class="vh-copy-btn" onclick="copyToClipboard('embedIframeCode')">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                            Kopyala
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-3 p-3 rounded-lg text-xs flex items-start gap-2" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); color: #92400e;">
+                    <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    <span><strong>Avantaj:</strong> İzole edilmiş oynatıcı ile sitenizin CSS'inden etkilenmez. Dijitaldesin oynatıcı özellikleri otomatik dahildir.</span>
+                </div>
+            </div>
+
+            <!-- Player Page Link -->
+            <div class="mt-5 pt-5 border-t border-gray-100">
+                <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    Player Sayfası
+                </label>
+                <p class="text-xs text-gray-400 mb-2">Standalone player sayfası linki.</p>
+                <div>
+                    <input type="text" class="vh-code" id="embedPlayerUrl" readonly>
+                    <div class="vh-copy-row">
+                        <button type="button" class="vh-copy-btn" onclick="copyToClipboard('embedPlayerUrl')">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                            Kopyala
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="vh-modal-footer">
+            <button type="button" class="vh-btn vh-btn-ghost" onclick="closeEmbedModal()">Kapat</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentVideoId = null;
+
+        // ===== Search / Filter =====
+        function filterVideos(query) {
+            const q = query.toLowerCase().trim();
+            document.querySelectorAll('#videosTable tbody tr').forEach(row => {
+                const title = row.getAttribute('data-title') || '';
+                row.style.display = title.includes(q) ? '' : 'none';
+            });
+            document.querySelectorAll('.vh-mobile-card-item').forEach(card => {
+                const title = card.getAttribute('data-title') || '';
+                card.style.display = title.includes(q) ? '' : 'none';
+            });
+        }
+
+        // ===== View Video =====
+        function viewVideo(videoId) {
+            $.get('@Url.Action("GetVideo")', { id: videoId })
+                .done(function(response) {
+                    if (response.success) {
+                        const video = response.data;
+                        $('#videoPlayerTitle').text(video.title);
+                        const playerHtml = `
+                            <video controls width="100%" style="display:block; max-height:480px;" poster="${video.thumbnailUrl || ''}" playsinline>
+                                <source src="${video.videoUrl}" type="video/mp4">
+                                Tarayıcınız video oynatmayı desteklemiyor.
+                            </video>
+                            ${video.description ? `<div style="padding:1rem 1.5rem;"><p class="text-sm text-gray-600">${video.description}</p></div>` : ''}
+                        `;
+                        $('#videoPlayerContainer').html(playerHtml);
+                        document.getElementById('videoPlayerModal').classList.add('active');
+                    } else {
+                        showNotification(response.message, 'error');
+                    }
+                })
+                .fail(function() { showNotification('Video bilgileri alınırken hata oluştu.', 'error'); });
+        }
+
+        // ===== Edit Video =====
+        function editVideo(videoId) {
+            $.get('@Url.Action("GetVideo")', { id: videoId })
+                .done(function(response) {
+                    if (response.success) {
+                        const video = response.data;
+                        $('#editVideoId').val(video.id);
+                        $('#editVideoTitle').val(video.title);
+                        $('#editVideoDescription').val(video.description || '');
+                        $('#editVideoIsPublic').prop('checked', video.isPublic);
+                        document.getElementById('editVideoModal').classList.add('active');
+                    } else {
+                        showNotification(response.message, 'error');
+                    }
+                })
+                .fail(function() { showNotification('Video bilgileri alınırken hata oluştu.', 'error'); });
+        }
+
+        // ===== Delete Video =====
+        function deleteVideo(videoId) {
+            showConfirmationDialog('Video Sil', 'Bu videoyu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.', 'Sil', 'İptal', () => {
+                $.post('@Url.Action("DeleteVideo")', { id: videoId })
+                    .done(function(response) {
+                        if (response.success) {
+                            showNotification(response.message, 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showNotification(response.message, 'error');
+                        }
+                    })
+                    .fail(function() { showNotification('Bir hata oluştu.', 'error'); });
+            });
+        }
+
+        // ===== Embed =====
+        function generateEmbedCode(videoId) {
+            currentVideoId = videoId;
+            $('#embedAutoPlay').prop('checked', false);
+            $('#embedMuted').prop('checked', false);
+            $('#embedShowControls').prop('checked', true);
+            $('#embedWidth').val(640);
+            $('#embedHeight').val(360);
+            switchEmbedTab('directVideo');
+            refreshEmbedCodes();
+            document.getElementById('embedCodeModal').classList.add('active');
+        }
+
+        function refreshEmbedCodes() {
+            if (!currentVideoId) return;
+            $.get('@Url.Action("GenerateEmbedCode")', {
+                id: currentVideoId,
+                width: $('#embedWidth').val(),
+                height: $('#embedHeight').val(),
+                autoPlay: $('#embedAutoPlay').is(':checked'),
+                muted: $('#embedMuted').is(':checked'),
+                showControls: $('#embedShowControls').is(':checked')
+            })
+            .done(function(response) {
+                if (response.success) {
+                    const d = response.data;
+                    $('#embedIframeSrcUrl').val(d.iframeSrcUrl);
+                    $('#embedDirectVideoUrl').val(d.directVideoUrl);
+                    $('#embedVideoCode').val(d.videoEmbedCode);
+                    $('#embedIframeCode').val(d.iframeEmbedCode);
+                    $('#embedPlayerUrl').val(d.playerUrl);
+                } else {
+                    showNotification(response.message, 'error');
+                }
+            })
+            .fail(function() { showNotification('Embed kodları oluşturulurken hata oluştu.', 'error'); });
+        }
+
+        function switchEmbedTab(tabName) {
+            document.querySelectorAll('.vh-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-tab') === tabName);
+            });
+            document.querySelectorAll('.embed-tab-content').forEach(c => c.classList.add('hidden'));
+            const t = document.getElementById('tab-' + tabName);
+            if (t) t.classList.remove('hidden');
+        }
+
+        function copyToClipboard(elementId) {
+            const el = document.getElementById(elementId);
+            const text = el.value || el.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('Panoya kopyalandı!', 'success');
+            }).catch(() => {
+                el.select();
+                document.execCommand('copy');
+                showNotification('Panoya kopyalandı!', 'success');
+            });
+        }
+
+        // ===== Edit Form Submit =====
+        $('#editVideoForm').on('submit', function(e) {
+            e.preventDefault();
+            const videoId = $('#editVideoId').val();
+            $.post('@Url.Action("UpdateVideo")', {
+                id: videoId,
+                title: $('#editVideoTitle').val(),
+                description: $('#editVideoDescription').val(),
+                isPublic: $('#editVideoIsPublic').is(':checked')
+            })
+            .done(function(response) {
+                if (response.success) {
+                    showNotification(response.message, 'success');
+                    closeEditModal();
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showNotification(response.message, 'error');
+                }
+            })
+            .fail(function() { showNotification('Video güncelleme sırasında hata oluştu.', 'error'); });
+        });
+
+        // ===== Modal Functions =====
+        function closeVideoModal() {
+            document.getElementById('videoPlayerModal').classList.remove('active');
+            $('#videoPlayerContainer').html('');
+        }
+        function closeEditModal() {
+            document.getElementById('editVideoModal').classList.remove('active');
+        }
+        function closeEmbedModal() {
+            document.getElementById('embedCodeModal').classList.remove('active');
+            currentVideoId = null;
+        }
+
+        // ESC key to close modals
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeVideoModal();
+                closeEditModal();
+                closeEmbedModal();
+            }
+        });
+    </script>
+}

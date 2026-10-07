@@ -1,0 +1,272 @@
+@{
+    ViewData["Title"] = "Yeni Slider Oluştur";
+}
+
+<!-- Anti-forgery token for AJAX requests -->
+@Html.AntiForgeryToken()
+
+<main class="p-4 bg-gray-50 relative">
+    <div class="mb-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">Yeni Slider Oluştur</h2>
+                <p class="text-gray-600">E-ticaret sitenize gömülebilir yeni bir ürün slider'ı oluşturun</p>
+            </div>
+            <a href="@Url.Action("Index")" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg">
+                Geri Dön
+            </a>
+        </div>
+    </div>
+
+    <div class="w-full">
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Slider Bilgileri</h3>
+                <p class="text-sm text-gray-600 mt-1">Slider'ınızın temel bilgilerini girin</p>
+            </div>
+            
+            <div class="p-6">
+                <form id="createSliderForm">
+                    <div class="space-y-6">
+                        <div>
+                            <label for="sliderName" class="block text-sm font-medium text-gray-700">
+                                Slider Adı <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" id="sliderName" name="name" required 
+                                   placeholder="Örn: En Çok Satanlar, Önerilen Ürünler"
+                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <p class="mt-1 text-sm text-gray-500">Slider'ınızı tanımlayıcı bir isim verin</p>
+                        </div>
+                        
+                        <div>
+                            <label for="sliderDescription" class="block text-sm font-medium text-gray-700">
+                                Açıklama
+                            </label>
+                            <textarea id="sliderDescription" name="description" rows="3"
+                                      placeholder="Slider'ınız hakkında kısa bir açıklama yazın (opsiyonel)"
+                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
+                            <p class="mt-1 text-sm text-gray-500">Bu açıklama sadece yönetim panelinde görünür</p>
+                        </div>
+                        
+                        <div>
+                            <label for="displayType" class="block text-sm font-medium text-gray-700">
+                                Görüntüleme Tipi <span class="text-red-500">*</span>
+                            </label>
+                            <select id="displayType" name="displayType" 
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <option value="slider">Slider - Yatay kaydırmalı görünüm</option>
+                                <option value="tabs">Sekmeler - Kategorize edilmiş görünüm</option>
+                                <option value="grid">Grid - Izgara düzeninde görünüm</option>
+                            </select>
+                            <p class="mt-1 text-sm text-gray-500">Ürünlerinizin nasıl görüntüleneceğini seçin</p>
+                        </div>
+
+                        <!-- Preview Section -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="text-sm font-medium text-gray-900 mb-3">Önizleme</h4>
+                            <div id="displayPreview" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                                <div class="slider-preview">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                                    </svg>
+                                    <p class="mt-2 text-sm text-gray-500">Slider görünümü - Ürünler yatay olarak kaydırılabilir</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Features Info -->
+                        <div class="bg-blue-50 rounded-lg p-4">
+                            <h4 class="text-sm font-medium text-blue-900 mb-2">Slider Özellikleri</h4>
+                            <ul class="text-sm text-blue-800 space-y-1">
+                                <li>• Responsive tasarım - Tüm cihazlarda uyumlu</li>
+                                <li>• Otomatik oynatma seçeneği</li>
+                                <li>• Özelleştirilebilir görünüm ayarları</li>
+                                <li>• Kolay embed kodu ile entegrasyon</li>
+                                <li>• Drag & drop ile ürün sıralama</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 flex gap-3">
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-md font-medium">
+                            Slider Oluştur
+                        </button>
+                        <a href="@Url.Action("Index")" 
+                           class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-3 px-4 rounded-md font-medium text-center">
+                            İptal
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Next Steps Info -->
+        <div class="mt-6 bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Sonraki Adımlar</h3>
+            <div class="space-y-3">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <div class="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-600 text-sm font-medium">1</div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">Slider Oluştur</p>
+                        <p class="text-sm text-gray-500">Temel bilgileri girin ve slider'ı oluşturun</p>
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <div class="flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">2</div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">Ürün Ekle</p>
+                        <p class="text-sm text-gray-500">Slider'ınıza gösterilecek ürünleri ekleyin</p>
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <div class="flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">3</div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">Ayarları Düzenle</p>
+                        <p class="text-sm text-gray-500">Görünüm ve davranış ayarlarını özelleştirin</p>
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <div class="flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">4</div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">Sitenize Ekle</p>
+                        <p class="text-sm text-gray-500">Embed kodunu kopyalayıp sitenize yapıştırın</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+@section Scripts {
+    <script>
+        // Initialize create slider form
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCreateSliderForm();
+            initializeDisplayTypePreview();
+        });
+
+        function initializeCreateSliderForm() {
+            const form = document.getElementById('createSliderForm');
+            if (form) {
+                form.addEventListener('submit', handleCreateSlider);
+            }
+        }
+
+        function initializeDisplayTypePreview() {
+            const displayTypeSelect = document.getElementById('displayType');
+            const previewDiv = document.getElementById('displayPreview');
+            
+            displayTypeSelect.addEventListener('change', function() {
+                updatePreview(this.value);
+            });
+        }
+
+        function updatePreview(displayType) {
+            const previewDiv = document.getElementById('displayPreview');
+            let previewContent = '';
+            
+            switch(displayType) {
+                case 'slider':
+                    previewContent = `
+                        <div class="slider-preview">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                            </svg>
+                            <p class="mt-2 text-sm text-gray-500">Slider görünümü - Ürünler yatay olarak kaydırılabilir</p>
+                        </div>
+                    `;
+                    break;
+                case 'tabs':
+                    previewContent = `
+                        <div class="tabs-preview">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            </svg>
+                            <p class="mt-2 text-sm text-gray-500">Sekmeli görünüm - Ürünler kategorilere ayrılabilir</p>
+                        </div>
+                    `;
+                    break;
+                case 'grid':
+                    previewContent = `
+                        <div class="grid-preview">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                            </svg>
+                            <p class="mt-2 text-sm text-gray-500">Grid görünümü - Ürünler ızgara düzeninde gösterilir</p>
+                        </div>
+                    `;
+                    break;
+            }
+            
+            previewDiv.innerHTML = previewContent;
+        }
+
+        async function handleCreateSlider(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const data = {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                displayType: formData.get('displayType')
+            };
+            
+            // Show loading state
+            const submitButton = event.target.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+            submitButton.textContent = 'Oluşturuluyor...';
+            submitButton.disabled = true;
+            
+            try {
+                const response = await fetch('/ProductSlider/CreateSlider', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Slider başarıyla oluşturuldu!', 'success');
+                    
+                    // Redirect to edit page
+                    if (result.sliderId) {
+                        setTimeout(() => {
+                            window.location.href = `/ProductSlider/Edit/${result.sliderId}`;
+                        }, 1000);
+                    } else {
+                        setTimeout(() => {
+                            window.location.href = '/ProductSlider';
+                        }, 1000);
+                    }
+                } else {
+                    showNotification(result.message || 'Slider oluşturulurken bir hata oluştu.', 'error');
+                    submitButton.textContent = originalText;
+                    submitButton.disabled = false;
+                }
+            } catch (error) {
+                console.error('Error creating slider:', error);
+                showNotification('Bir hata oluştu. Lütfen tekrar deneyin.', 'error');
+                submitButton.textContent = originalText;
+                submitButton.disabled = false;
+            }
+        }
+
+        function getAntiForgeryToken() {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            return token ? token.value : '';
+        }
+
+    </script>
+}

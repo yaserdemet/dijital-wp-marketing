@@ -1,0 +1,1148 @@
+@model PushDashboard.Controllers.StockReminderIndexViewModel
+@{
+    ViewData["Title"] = "Stok Hatırlatma";
+}
+
+<style>
+    .sr-page { min-height: 100vh; }
+    .sr-header { background: linear-gradient(135deg, var(--theme-800) 0%, var(--theme-600) 100%); border-radius: 1.25rem; padding: 2rem 2.5rem; position: relative; overflow: hidden; }
+    .sr-header::before { content: ''; position: absolute; top: -50%; right: -20%; width: 60%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%); pointer-events: none; }
+    .sr-header::after { content: ''; position: absolute; bottom: -30%; left: -10%; width: 40%; height: 160%; background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 60%); pointer-events: none; }
+
+    .sr-stat-card { background: white; border-radius: 1rem; padding: 1.5rem; border: 1px solid rgba(0,0,0,0.04); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; }
+    .sr-stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.1), 0 6px 12px -2px rgba(0, 0, 0, 0.06); border-color: rgba(var(--theme-color-rgb), 0.2); }
+    .sr-stat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--theme-400), var(--theme-600)); opacity: 0; transition: opacity 0.3s; }
+    .sr-stat-card:hover::after { opacity: 1; }
+
+    .sr-table-container { background: white; border-radius: 1.25rem; border: 1px solid rgba(0,0,0,0.04); box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.03); overflow: hidden; }
+    .sr-table thead th { background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; font-weight: 600; padding: 0.875rem 1.25rem; border-bottom: 1px solid #e2e8f0; white-space: nowrap; text-align: left; }
+    .sr-table tbody tr { transition: all 0.15s ease; }
+    .sr-table tbody tr:hover { background: linear-gradient(90deg, rgba(var(--theme-color-rgb), 0.02) 0%, rgba(var(--theme-color-rgb), 0.04) 100%); }
+    .sr-table tbody td { padding: 1rem 1.25rem; vertical-align: middle; border-bottom: 1px solid #f1f5f9; }
+
+    .sr-badge { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.01em; }
+    .sr-badge-success { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); color: #065f46; }
+    .sr-badge-danger { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); color: #991b1b; }
+    .sr-badge-warning { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); color: #92400e; }
+    .sr-badge-info { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); color: var(--theme-700); }
+    .sr-badge-neutral { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); color: #475569; }
+
+    .sr-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.25rem; border-radius: 0.75rem; font-size: 0.8125rem; font-weight: 600; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: none; white-space: nowrap; }
+    .sr-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+    .sr-btn-primary { background: linear-gradient(135deg, var(--theme-600) 0%, var(--theme-700) 100%); color: white; box-shadow: 0 2px 8px rgba(var(--theme-color-rgb), 0.3); }
+    .sr-btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(var(--theme-color-rgb), 0.4); }
+    .sr-btn-emerald { background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; box-shadow: 0 2px 8px rgba(5,150,105,0.3); }
+    .sr-btn-emerald:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(5,150,105,0.4); }
+    .sr-btn-ghost { background: transparent; color: #64748b; border: 1px solid #e2e8f0; }
+    .sr-btn-ghost:hover:not(:disabled) { background: #f8fafc; border-color: #cbd5e1; color: #334155; }
+    .sr-btn-white { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.25); backdrop-filter: blur(4px); }
+    .sr-btn-white:hover:not(:disabled) { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.4); }
+
+    .sr-action-btn { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 0.5rem; transition: all 0.2s; cursor: pointer; border: none; background: transparent; }
+    .sr-action-btn:hover { transform: scale(1.1); }
+
+    .sr-search-input { width: 100%; padding: 0.625rem 1rem 0.625rem 2.75rem; border: 1.5px solid #e2e8f0; border-radius: 0.75rem; font-size: 0.875rem; background: white; transition: all 0.2s; color: #1e293b; }
+    .sr-search-input:focus { outline: none; border-color: var(--theme-400); box-shadow: 0 0 0 3px rgba(var(--theme-color-rgb), 0.1); }
+    .sr-search-input::placeholder { color: #94a3b8; }
+
+    .sr-checkbox { width: 1.125rem; height: 1.125rem; border-radius: 0.375rem; border: 1.5px solid #cbd5e1; cursor: pointer; accent-color: var(--theme-600); transition: all 0.15s; }
+    .sr-checkbox:checked { border-color: var(--theme-600); }
+
+    .sr-product-img { width: 3rem; height: 3rem; object-fit: cover; border-radius: 0.625rem; border: 1px solid #f1f5f9; flex-shrink: 0; }
+    .sr-product-placeholder { width: 3rem; height: 3rem; border-radius: 0.625rem; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    /* Mobile Cards */
+    .sr-mobile-card { display: none; }
+    
+    @@media (max-width: 1023px) {
+        .sr-desktop-table { display: none !important; }
+        .sr-mobile-card { display: block; }
+        .sr-mobile-card-item { background: white; border-radius: 1rem; border: 1px solid rgba(0,0,0,0.04); box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 0.75rem; overflow: hidden; transition: all 0.2s; }
+        .sr-mobile-card-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    }
+
+    @@media (min-width: 1024px) {
+        .sr-mobile-card { display: none !important; }
+        .sr-desktop-table { display: block !important; }
+    }
+
+    .sr-page-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 2.25rem; height: 2.25rem; padding: 0 0.5rem; border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 500; border: 1px solid #e2e8f0; background: white; color: #475569; transition: all 0.15s; cursor: pointer; }
+    .sr-page-btn:hover:not(:disabled) { background: var(--theme-50); border-color: var(--theme-300); color: var(--theme-700); }
+    .sr-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .sr-page-btn.active { background: var(--theme-600); color: white; border-color: var(--theme-600); }
+
+    /* Skeleton Loading */
+    .sr-skeleton { background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 0.5rem; }
+    @@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* Fade In Animation */
+    .sr-fade-in { animation: srFadeIn 0.4s ease-out; }
+    @@keyframes srFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Status Strip */
+    .sr-status-strip { display: flex; align-items: center; gap: 1.5rem; padding: 1rem 1.5rem; background: white; border-radius: 0.75rem; border: 1px solid rgba(0,0,0,0.04); flex-wrap: wrap; }
+    .sr-status-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: #64748b; }
+    .sr-status-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; }
+    .sr-status-dot-active { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.4); animation: pulse-green 2s infinite; }
+    .sr-status-dot-inactive { background: #94a3b8; }
+    @@keyframes pulse-green { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    /* Filter Toggle */
+    .notif-filter-btn, .stock-filter-btn { color: #64748b; background: transparent; border: none; cursor: pointer; white-space: nowrap; }
+    .notif-filter-btn:hover:not(.active), .stock-filter-btn:hover:not(.active) { color: #334155; background: rgba(255,255,255,0.6); }
+    .notif-filter-btn.active, .stock-filter-btn.active { background: white; color: var(--theme-700); box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); }
+    
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;  
+        overflow: hidden;
+        white-space: normal;
+        word-break: break-word;
+    }
+</style>
+
+<div class="sr-page py-6 sm:py-8">
+    <div class="w-full px-4 sm:px-6 lg:px-8">
+
+        <div class="sr-header mb-8 sr-fade-in">
+            <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                        </div>
+                        <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">Stok Hatırlatma</h1>
+                    </div>
+                    <p class="text-sm sm:text-base max-w-xl" style="color: rgba(255,255,255,0.75);">Stok alarm ürünlerini yönetin ve belirli stok eşiklerinde otomatik bildirim gönderin.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <a href="@Url.Action("WidgetSettings", "StockReminder")" class="sr-btn sr-btn-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        Widget Ayarları
+                    </a>
+                    <a href="@Url.Action("Index", "Store")?openModule=13&moduleName=Stok%20Hatırlatma" class="sr-btn sr-btn-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        Modül Ayarları
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div id="tabProductList">
+
+
+        <!-- Status Strip -->
+        <div class="sr-status-strip mb-6 sr-fade-in" style="animation-delay: 0.15s;">
+            <div class="sr-status-item">
+                <span class="text-gray-400 text-xs font-medium uppercase tracking-wider">Modül</span>
+                @if (Model.Settings.Enabled)
+                {
+                    <span class="sr-badge sr-badge-success"><span class="sr-status-dot sr-status-dot-active"></span> Aktif</span>
+                }
+                else
+                {
+                    <span class="sr-badge sr-badge-neutral"><span class="sr-status-dot sr-status-dot-inactive"></span> Pasif</span>
+                }
+            </div>
+            <div class="w-px h-5 bg-gray-200 hidden sm:block"></div>
+            <div class="sr-status-item">
+                <span class="text-gray-400 text-xs font-medium uppercase tracking-wider">Eşik</span>
+                <span class="font-semibold text-gray-800" id="currentThreshold">@Model.Settings.StockThreshold adet</span>
+            </div>
+            <div class="w-px h-5 bg-gray-200 hidden sm:block"></div>
+            <div class="sr-status-item">
+                <span class="text-gray-400 text-xs font-medium uppercase tracking-wider">Oto. Bildirim</span>
+                @if (Model.Settings.AutoNotifyOnStockArrival)
+                {
+                    <span class="sr-badge sr-badge-success">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        Açık
+                    </span>
+                }
+                else
+                {
+                    <span class="sr-badge sr-badge-neutral">Kapalı</span>
+                }
+            </div>
+            <div class="w-px h-5 bg-gray-200 hidden sm:block"></div>
+            <div class="sr-status-item">
+                <span class="text-gray-400 text-xs font-medium uppercase tracking-wider">E-Ticaret</span>
+                @if (Model.Settings.HasActiveEcommerceIntegration)
+                {
+                    <span class="sr-badge sr-badge-info">@Model.Settings.ActiveEcommercePlatform</span>
+                }
+                else
+                {
+                    <span class="sr-badge sr-badge-neutral">Bağlı değil</span>
+                }
+            </div>
+            <div class="w-px h-5 bg-gray-200 hidden sm:block"></div>
+            <div class="sr-status-item">
+                <span class="text-gray-400 text-xs font-medium uppercase tracking-wider">Aboneler</span>
+                <span class="sr-badge sr-badge-info">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    @Model.Stats.TotalSubscribers toplam
+                </span>
+                <span class="sr-badge @(Model.Stats.TotalPendingSubscribers > 0 ? "sr-badge-warning" : "sr-badge-neutral")" id="totalPendingBadge">
+                    @if (Model.Stats.TotalPendingSubscribers > 0)
+                    {
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                    }
+                    <span id="totalPendingCount">@Model.Stats.TotalPendingSubscribers</span> bildirim bekliyor
+                </span>
+            </div>
+        </div>
+
+        <!-- Auto Notification Info -->
+        @if (Model.Settings.AutoNotifyOnStockArrival)
+        {
+            <div class="mb-6 sr-fade-in" style="animation-delay: 0.2s;">
+                <div class="rounded-xl border border-emerald-200/60 bg-gradient-to-r from-emerald-50/80 to-teal-50/60 p-5">
+                    <div class="flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg class="w-4.5 h-4.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-emerald-800">Otomatik Stok Bildirimi Aktif</h3>
+                            <p class="text-sm text-emerald-700/80 mt-1 leading-relaxed">
+                                Stok <strong>@Model.Settings.StockThreshold</strong> ve üzerine çıktığında abone müşterilere otomatik bildirim gönderilir.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Search & Actions Bar -->
+        <div class="mb-6 sr-fade-in" style="animation-delay: 0.25s;">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <!-- Search -->
+                <div class="relative flex-1">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input type="text" id="searchTerm" placeholder="Ürün adı veya stok kodu ile arayın..." class="sr-search-input">
+                </div>
+                <!-- Min Stock -->
+                <div class="relative w-full sm:w-44">
+                    <input type="number" id="minStockFilter" placeholder="Min. stok adedi" min="0"
+                           class="w-full px-3 py-2.5 border-[1.5px] border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:border-blue-400 focus:ring-[3px] focus:ring-blue-50 transition-all text-gray-800 placeholder:text-gray-400">
+                </div>
+                <!-- Stock Status Filter -->
+                <div class="relative w-full sm:w-auto">
+                    <input type="hidden" id="inStockFilter" value="">
+                    <div class="flex items-center gap-1.5 p-1 bg-gray-100/80 rounded-xl border border-gray-200/60">
+                        <button type="button" onclick="setInStockFilter('')" id="stockFilterAll"
+                                class="stock-filter-btn active px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200">
+                            Tümü
+                        </button>
+                        <button type="button" onclick="setInStockFilter('true')" id="stockFilterYes"
+                                class="stock-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Stoğu Gelenler
+                        </button>
+                        <button type="button" onclick="setInStockFilter('false')" id="stockFilterNo"
+                                class="stock-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Stoğu Bitenler (&lt; @Model.Settings.StockThreshold)
+                        </button>
+                    </div>
+                </div>
+                <!-- Notification Status Filter -->
+                <div class="relative w-full sm:w-auto">
+                    <input type="hidden" id="notifiedFilter" value="">
+                    <div class="flex items-center gap-1.5 p-1 bg-gray-100/80 rounded-xl border border-gray-200/60">
+                        <button type="button" onclick="setNotifiedFilter('')" id="notifFilterAll"
+                                class="notif-filter-btn active px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200">
+                            Tümü
+                        </button>
+                        <button type="button" onclick="setNotifiedFilter('true')" id="notifFilterSent"
+                                class="notif-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Bilgilendirme Yapıldı
+                        </button>
+                        <button type="button" onclick="setNotifiedFilter('false')" id="notifFilterPending"
+                                class="notif-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Stok Bekleniyor
+                        </button>
+                    </div>
+                </div>
+                <!-- Filter Buttons -->
+                <div class="flex items-center gap-2">
+                    <button onclick="applyFilters()" class="sr-btn sr-btn-primary">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                        Filtrele
+                    </button>
+                    <button onclick="resetFilters()" class="sr-btn sr-btn-ghost">
+                        Sıfırla
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table Header Bar -->
+        <div class="sr-table-container sr-fade-in" style="animation-delay: 0.3s;">
+            <div class="px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-base font-bold text-gray-900">Stok Alarm Ürünleri</h2>
+                    <span id="productCount" class="sr-badge sr-badge-neutral">0 ürün</span>
+                    <span id="tableSubscribersBadge" class="sr-badge sr-badge-info">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span id="tableTotalSubscribers">@Model.Stats.TotalSubscribers</span> abone
+                    </span>
+                    <span id="tablePendingBadge" class="sr-badge @(Model.Stats.TotalPendingSubscribers > 0 ? "sr-badge-warning" : "sr-badge-neutral")">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                        <span id="tablePendingCount">@Model.Stats.TotalPendingSubscribers</span> bildirim bekliyor
+                    </span>
+                    <span id="lastSyncInfo" class="hidden text-xs text-gray-500 ml-2"></span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="sendStockArrivedNotification()" id="sendStockArrivedBtn" disabled class="sr-btn sr-btn-emerald text-xs sm:text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                        <span id="stockArrivedBtnText">Stok Bildirimi Gönder</span>
+                    </button>
+                    <button onclick="sendNotificationToSelected()" id="sendNotificationBtn" disabled style="display: none;" class="sr-btn sr-btn-primary text-xs sm:text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                        <span id="sendBtnText">Düşük Stok Uyarısı</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Desktop Table -->
+            <div class="sr-desktop-table">
+                <div class="overflow-x-auto">
+                    <table class="w-full sr-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 3rem; text-align: center;">
+                                    <input type="checkbox" id="selectAll" class="sr-checkbox" title="Tümünü Seç">
+                                </th>
+                                <th>Ürün Adı</th>
+                                <th>Bildirim</th>
+                                <th>Stok Kodu</th>
+                                <th>Abone Sayısı</th>
+                                <th style="text-align: right;">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody">
+                            <!-- Products will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mobile Cards -->
+            <div class="sr-mobile-card p-4">
+                <div class="flex items-center justify-between mb-3 px-1" id="mobileSelectAllContainer" style="display: none;">
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-600 cursor-pointer select-none">
+                        <input type="checkbox" id="selectAllMobile" class="sr-checkbox">
+                        <span>Tümünü Seç</span>
+                    </label>
+                </div>
+                <div id="mobileProductsContainer">
+                    <!-- Mobile products will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div id="loadingState" class="hidden py-16 text-center">
+                <div class="inline-flex flex-col items-center gap-4">
+                    <div class="relative">
+                        <div class="w-12 h-12 rounded-full border-[3px] border-gray-200"></div>
+                        <div class="w-12 h-12 rounded-full border-[3px] border-transparent border-t-blue-600 animate-spin absolute inset-0"></div>
+                    </div>
+                    <p class="text-sm text-gray-500 font-medium">Ürünler yükleniyor...</p>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden py-16 text-center">
+                <div class="inline-flex flex-col items-center gap-3">
+                    <div class="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-700">Stok alarm ürünü bulunamadı</h3>
+                        <p class="text-sm text-gray-400 mt-1">Entegrasyonunuzun aktif olduğundan emin olun.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div id="paginationContainer" class="hidden px-5 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <p class="text-sm text-gray-400">
+                    Toplam <span id="totalItems" class="font-semibold text-gray-700">0</span> ürün
+                </p>
+                <div class="flex items-center gap-1.5">
+                    <button id="prevPageBtn" onclick="goToPage(currentPage - 1)" disabled class="sr-page-btn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <span class="px-3 text-sm text-gray-500">
+                        <span id="currentPageNum" class="font-semibold text-gray-800">1</span>
+                        <span class="mx-1">/</span>
+                        <span id="totalPagesNum">1</span>
+                    </span>
+                    <button id="nextPageBtn" onclick="goToPage(currentPage + 1)" disabled class="sr-page-btn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        </div><!-- /tabProductList -->
+    </div>
+</div>
+
+<!-- Subscribers Modal -->
+<div id="subscribersModal" class="fixed inset-0 z-50 hidden" style="background: rgba(15,23,42,0.5); backdrop-filter: blur(4px);">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden sr-fade-in border border-gray-100">
+            <div class="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">Stok Alarm Aboneleri</h3>
+                        <p class="text-sm text-gray-500 mt-0.5" id="subscribersModalProductName">Ürün</p>
+                    </div>
+                    <button onclick="closeSubscribersModal()" class="w-9 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[65vh]" id="subscribersListContent">
+                <!-- Subscriber list will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // State
+    let currentPage = 1;
+    let totalPages = 1;
+    let selectedProductIds = new Set();
+    let productsDataMap = new Map(); // Ürün verilerini saklar (productId -> product)
+    let currentSettings = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Settings));
+    const siteUrl = '@(Model.SiteUrl ?? "")';
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        loadProducts();
+        setupEventListeners();
+    });
+
+    function setupEventListeners() {
+        const handleSelectAll = function(checked) {
+            const checkboxes = document.querySelectorAll('.product-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = checked;
+                const productId = parseInt(cb.dataset.productId);
+                if (checked) selectedProductIds.add(productId);
+                else selectedProductIds.delete(productId);
+            });
+            
+            // Sync both select all checkboxes
+            const selectAllDesktop = document.getElementById('selectAll');
+            const selectAllMobile = document.getElementById('selectAllMobile');
+            if (selectAllDesktop) selectAllDesktop.checked = checked;
+            if (selectAllMobile) selectAllMobile.checked = checked;
+
+            updateSendButton();
+        };
+
+        const selectAllDesktop = document.getElementById('selectAll');
+        if (selectAllDesktop) {
+            selectAllDesktop.addEventListener('change', function() {
+                handleSelectAll(this.checked);
+            });
+        }
+
+        const selectAllMobile = document.getElementById('selectAllMobile');
+        if (selectAllMobile) {
+            selectAllMobile.addEventListener('change', function() {
+                handleSelectAll(this.checked);
+            });
+        }
+
+        document.getElementById('searchTerm').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') applyFilters();
+        });
+    }
+
+    async function loadProducts() {
+        showLoading(true);
+        hideEmpty();
+
+        const searchTerm = document.getElementById('searchTerm').value;
+        const minStock = document.getElementById('minStockFilter').value;
+        const notifiedFilter = document.getElementById('notifiedFilter').value;
+        const inStockFilter = document.getElementById('inStockFilter').value;
+
+        try {
+            const params = new URLSearchParams({ page: currentPage, pageSize: 20 });
+            if (searchTerm) params.append('searchTerm', searchTerm);
+            if (minStock) params.append('minStock', minStock);
+            if (notifiedFilter !== '') params.append('notified', notifiedFilter);
+            if (inStockFilter !== '') params.append('inStock', inStockFilter);
+
+            const response = await fetch(`/StockReminder/GetStockReminderItems?${params}`);
+            const data = await response.json();
+            showLoading(false);
+
+            if (data.success) {
+                if (data.data.length === 0) {
+                    showEmpty();
+                    document.getElementById('productCount').textContent = '0 ürün';
+                    updateTableSubscriberCounts(0, 0);
+                } else {
+                    renderProducts(data.data);
+                    renderMobileProducts(data.data);
+                    updatePagination(data);
+                    document.getElementById('productCount').textContent = `${data.totalCount} ürün`;
+                    updateTableSubscriberCounts(data.totalSubscribers || 0, data.totalPendingSubscribers || 0);
+
+                     // Son senkronizasyon zamanını göster
+                    if (data.lastSyncedAt) {
+                        const syncInfo = document.getElementById('lastSyncInfo');
+                        if (syncInfo) {
+                            syncInfo.textContent = `Son senkronizasyon: ${formatDate(data.lastSyncedAt)}`;
+                            syncInfo.classList.remove('hidden');
+                        }
+                    }
+                    
+                    // Show mobile Select All if products exist
+                    document.getElementById('mobileSelectAllContainer').style.display = 'flex';
+                    updateSelectAllCheckbox();
+                }
+            } else {
+                showNotification(data.message || 'Ürünler yüklenirken hata oluştu.', 'error');
+                showEmpty();
+            }
+        } catch (error) {
+            console.error('Error loading products:', error);
+            showLoading(false);
+            showEmpty();
+            showNotification('Ürünler yüklenirken hata oluştu.', 'error');
+        }
+    }
+
+    function renderProducts(products) {
+        const tbody = document.getElementById('productsTableBody');
+        tbody.innerHTML = '';
+
+        // Ürün verilerini Map'e kaydet (ID'yi integer olarak kaydet)
+        products.forEach(product => {
+            productsDataMap.set(parseInt(product.urunKartiID), product);
+        });
+
+        products.forEach((product, index) => {
+            const isSelected = selectedProductIds.has(product.urunKartiID);
+            const stockThreshold = currentSettings.stockThreshold;
+            const stockOk = product.toplamStokAdedi >= stockThreshold;
+
+            const row = document.createElement('tr');
+            row.className = 'sr-fade-in';
+            row.style.animationDelay = `${index * 0.03}s`;
+            row.innerHTML = `
+                <td style="text-align: center; width: 3rem;">
+                    <input type="checkbox" class="product-checkbox sr-checkbox"
+                           data-product-id="${product.urunKartiID}" ${isSelected ? 'checked' : ''}>
+                </td>
+                <td>
+                    <div class="flex items-center gap-3">
+                        ${product.resimUrl
+                            ? `<img src="${product.resimUrl}" alt="" class="sr-product-img" loading="lazy">`
+                            : `<div class="sr-product-placeholder">
+                                <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                              </div>`
+                        }
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-semibold text-gray-900 line-clamp-2 max-w-[280px]" title="${product.urunAdi || ''}">${product.urunAdi || 'İsimsiz Ürün'}</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="sr-badge ${stockOk ? 'sr-badge-success' : 'sr-badge-danger'}" style="font-size: 0.6875rem; padding: 0.125rem 0.5rem;">
+                                    ${stockOk
+                                        ? `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`
+                                        : `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/></svg>`
+                                    }
+                                    ${product.toplamStokAdedi} adet
+                                </span>
+                                ${(() => {
+                                    const fullUrl = buildProductUrl(product.urunUrl, product.stokKodu);
+                                    return fullUrl ? `<a href="${fullUrl}" target="_blank" class="text-xs text-blue-500 hover:text-blue-700 hover:underline transition-colors">Görüntüle ↗</a>` : '';
+                                })()}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    ${(() => {
+                        const sent = product.bildirimGonderilen || 0;
+                        const pending = product.bildirimBekleyen || 0;
+                        const total = sent + pending;
+                        if (total === 0) {
+                            return `<span class="sr-badge sr-badge-neutral" style="font-size: 0.6875rem; padding: 0.1875rem 0.625rem;">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+                                Veri yok</span>`;
+                        } else if (pending === 0) {
+                            return `<span class="sr-badge sr-badge-success" style="font-size: 0.6875rem; padding: 0.1875rem 0.625rem;">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                Bilgilendirme Yapıldı (${sent})</span>`;
+                        } else if (sent === 0) {
+                            return `<span class="sr-badge sr-badge-warning" style="font-size: 0.6875rem; padding: 0.1875rem 0.625rem;">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Stok Bekleniyor (${pending})</span>`;
+                        } else {
+                            return `<div class="inline-flex items-center gap-1.5">
+                                <span class="sr-badge sr-badge-success" style="font-size: 0.6875rem; padding: 0.1875rem 0.625rem;">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    ${sent} bilgilendirme yapıldı</span>
+                                <span class="sr-badge sr-badge-warning" style="font-size: 0.6875rem; padding: 0.1875rem 0.625rem;">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    ${pending} stok bekleniyor</span>
+                            </div>`;
+                        }
+                    })()}
+                </td>
+                <td>
+                    <span class="text-sm text-gray-700 font-mono tracking-wide bg-gray-50 px-2 py-1 rounded-md">${product.stokKodu || '—'}</span>
+                </td>
+                <td>
+                    <button onclick="showSubscribers(${product.urunKartiID}, '${escapeQuotes(product.urunAdi || 'Ürün')}')"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all hover:scale-105"
+                            style="background: linear-gradient(135deg, #eff6ff, #dbeafe); color: var(--theme-700); border: 1px solid rgba(var(--theme-color-rgb),0.15);">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        ${product.aboneSayisi ?? 0} abone
+                    </button>
+                </td>
+                <td style="text-align: right;">
+                    <div class="flex items-center justify-end gap-1.5">
+                        <button onclick="sendStockArrivedToProduct(${product.urunKartiID}, '${escapeQuotes(product.urunAdi || 'Ürün')}', '${product.urunUrl || ''}', ${product.toplamStokAdedi})"
+                                class="sr-action-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-600" title="Stok geldi bildirimi gönder">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+            `;
+
+            const checkbox = row.querySelector('.product-checkbox');
+            checkbox.addEventListener('change', function() {
+                const productId = parseInt(this.dataset.productId);
+                if (this.checked) selectedProductIds.add(productId);
+                else selectedProductIds.delete(productId);
+                // Sync mobile checkbox
+                document.querySelectorAll(`.product-checkbox[data-product-id="${productId}"]`).forEach(cb => cb.checked = this.checked);
+                updateSendButton();
+                updateSelectAllCheckbox();
+            });
+
+            tbody.appendChild(row);
+        });
+    }
+
+    function renderMobileProducts(products) {
+        const container = document.getElementById('mobileProductsContainer');
+        container.innerHTML = '';
+
+        products.forEach((product, index) => {
+            const isSelected = selectedProductIds.has(product.urunKartiID);
+            const stockThreshold = currentSettings.stockThreshold;
+            const stockOk = product.toplamStokAdedi >= stockThreshold;
+
+            const card = document.createElement('div');
+            card.className = 'sr-mobile-card-item sr-fade-in';
+            card.style.animationDelay = `${index * 0.04}s`;
+            card.innerHTML = `
+                <div class="p-4">
+                    <div class="flex items-start gap-3">
+                        <input type="checkbox" class="product-checkbox sr-checkbox mt-1" data-product-id="${product.urunKartiID}" ${isSelected ? 'checked' : ''}>
+                        ${product.resimUrl
+                            ? `<img src="${product.resimUrl}" alt="" class="sr-product-img" loading="lazy">`
+                            : `<div class="sr-product-placeholder">
+                                <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                              </div>`
+                        }
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-semibold text-gray-900 line-clamp-2">${product.urunAdi || 'İsimsiz Ürün'}</p>
+                            <div class="flex flex-wrap items-center gap-2 mt-2">
+                                <span class="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-0.5 rounded">${product.stokKodu || '—'}</span>
+                                <span class="sr-badge ${stockOk ? 'sr-badge-success' : 'sr-badge-danger'}" style="font-size: 0.6875rem; padding: 0.125rem 0.5rem;">${product.toplamStokAdedi} adet</span>
+
+                                ${(() => {
+                                    const sent = product.bildirimGonderilen || 0;
+                                    const pending = product.bildirimBekleyen || 0;
+                                    const total = sent + pending;
+                                    if (total === 0) return '';
+                                    if (pending === 0) return `<span class="sr-badge sr-badge-success" style="font-size: 0.625rem; padding: 0.0625rem 0.375rem;">Bilgilendirme Yapıldı ✓</span>`;
+                                    if (sent === 0) return `<span class="sr-badge sr-badge-warning" style="font-size: 0.625rem; padding: 0.0625rem 0.375rem;">Stok Bekleniyor (${pending})</span>`;
+                                    return `<span class="sr-badge sr-badge-info" style="font-size: 0.625rem; padding: 0.0625rem 0.375rem;">${sent}/${total} bilgilendirme yapıldı</span>`;
+                                })()}
+
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold" style="background: linear-gradient(135deg, #eff6ff, #dbeafe); color: var(--theme-700);">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    ${product.aboneSayisi ?? 0} abone
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-gray-100">
+                        <button onclick="sendStockArrivedToProduct(${product.urunKartiID}, '${escapeQuotes(product.urunAdi || 'Ürün')}', '${product.urunUrl || ''}', ${product.toplamStokAdedi})"
+                                class="sr-btn sr-btn-emerald" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                            Stok Geldi
+                        </button>
+                        <button onclick="showSubscribers(${product.urunKartiID}, '${escapeQuotes(product.urunAdi || 'Ürün')}')"
+                                class="sr-btn sr-btn-ghost" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            ${product.aboneSayisi ?? 0} Abone
+                        </button>
+                        ${(() => {
+                            const fullUrl = buildProductUrl(product.urunUrl, product.stokKodu);
+                            return fullUrl ? `<a href="${fullUrl}" target="_blank" class="sr-btn sr-btn-ghost" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">Görüntüle ↗</a>` : '';
+                        })()}
+                    </div>
+                </div>
+            `;
+
+            const checkbox = card.querySelector('.product-checkbox');
+            checkbox.addEventListener('change', function() {
+                const productId = parseInt(this.dataset.productId);
+                if (this.checked) selectedProductIds.add(productId);
+                else selectedProductIds.delete(productId);
+                document.querySelectorAll(`.product-checkbox[data-product-id="${productId}"]`).forEach(cb => cb.checked = this.checked);
+                updateSendButton();
+                updateSelectAllCheckbox();
+            });
+
+            container.appendChild(card);
+        });
+    }
+
+    function updatePagination(data) {
+        currentPage = data.currentPage;
+        totalPages = data.totalPages;
+
+        document.getElementById('totalItems').textContent = data.totalCount;
+        document.getElementById('currentPageNum').textContent = currentPage;
+        document.getElementById('totalPagesNum').textContent = totalPages;
+
+        document.getElementById('prevPageBtn').disabled = currentPage <= 1;
+        document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
+
+        document.getElementById('paginationContainer').classList.remove('hidden');
+    }
+
+    function goToPage(page) {
+        if (page >= 1 && page <= totalPages) {
+            currentPage = page;
+            loadProducts();
+        }
+    }
+
+    function updateSendButton() {
+        const btn = document.getElementById('sendNotificationBtn');
+        const text = document.getElementById('sendBtnText');
+        const stockArrivedBtn = document.getElementById('sendStockArrivedBtn');
+        const stockArrivedText = document.getElementById('stockArrivedBtnText');
+        const count = selectedProductIds.size;
+
+        // Seçili ürünlerin toplam abone sayısını ve bildirim bekleyen sayısını hesapla
+        let totalSelectedSubscribers = 0;
+        let totalPendingSubscribers = 0;
+        selectedProductIds.forEach(productId => {
+            const product = productsDataMap.get(productId);
+            if (product) {
+                totalSelectedSubscribers += (product.aboneSayisi || 0);
+                totalPendingSubscribers += (product.bildirimBekleyen || 0);
+            }
+        });
+
+        btn.disabled = count === 0;
+        stockArrivedBtn.disabled = count === 0;
+
+        text.textContent = count > 0 ? `Düşük Stok Uyarısı (${count})` : 'Düşük Stok Uyarısı';
+
+        if (count > 0 && totalPendingSubscribers > 0) {
+            stockArrivedText.textContent = `${totalPendingSubscribers} Aboneye Bildirim Gönder (${count} ürün)`;
+        } else if (count > 0 && totalSelectedSubscribers > 0) {
+            // Abone var ama hepsi zaten bilgilendirilmiş
+            stockArrivedText.textContent = `Bildirim Bekleyen Yok (${count} ürün)`;
+        } else if (count > 0) {
+            stockArrivedText.textContent = `Abone Yok (${count} ürün)`;
+        } else {
+            stockArrivedText.textContent = 'Stok Bildirimi Gönder';
+        }
+    }
+
+    // Tablo başlığındaki abone sayılarını güncelle (filtrelenmiş tüm ürünler için - API'den gelen değerler)
+    function updateTableSubscriberCounts(totalSubscribers, totalPending) {
+        // Tablo başlığındaki badge'leri güncelle
+        document.getElementById('tableTotalSubscribers').textContent = totalSubscribers;
+        document.getElementById('tablePendingCount').textContent = totalPending;
+
+        // Pending badge stilini güncelle
+        const pendingBadge = document.getElementById('tablePendingBadge');
+        if (totalPending > 0) {
+            pendingBadge.classList.remove('sr-badge-neutral');
+            pendingBadge.classList.add('sr-badge-warning');
+        } else {
+            pendingBadge.classList.remove('sr-badge-warning');
+            pendingBadge.classList.add('sr-badge-neutral');
+        }
+    }
+
+    function updateSelectAllCheckbox() {
+        // Collect all unique products based on ID to determine selection state
+        // We use checkable items (inputs) to see if they are checked
+        const allCheckboxes = document.querySelectorAll('.product-checkbox');
+        if (allCheckboxes.length === 0) {
+           const sa = document.getElementById('selectAll'); if(sa) { sa.checked = false; sa.indeterminate = false; }
+           const sam = document.getElementById('selectAllMobile'); if(sam) { sam.checked = false; sam.indeterminate = false; }
+           return;
+        }
+
+        const totalProductIds = new Set();
+        const checkedProductIds = new Set();
+        
+        allCheckboxes.forEach(cb => {
+            const pid = parseInt(cb.dataset.productId);
+            totalProductIds.add(pid);
+            if (cb.checked) checkedProductIds.add(pid);
+        });
+        
+        // If all available products on this page are selected
+        const isAllSelected = totalProductIds.size > 0 && totalProductIds.size === checkedProductIds.size;
+        // If some but not all are selected
+        const isSomeSelected = checkedProductIds.size > 0 && checkedProductIds.size < totalProductIds.size;
+
+        const selectAllDesktop = document.getElementById('selectAll');
+        const selectAllMobile = document.getElementById('selectAllMobile');
+
+        if (selectAllDesktop) {
+            selectAllDesktop.checked = isAllSelected;
+            selectAllDesktop.indeterminate = isSomeSelected;
+        }
+        if (selectAllMobile) {
+            selectAllMobile.checked = isAllSelected;
+            selectAllMobile.indeterminate = isSomeSelected;
+        }
+    }
+
+    async function sendNotificationToSelected() {
+        if (selectedProductIds.size === 0) { showNotification('Lütfen en az bir ürün seçin.', 'warning'); return; }
+
+        showConfirmationDialog('Bildirim Gönder', `${selectedProductIds.size} ürün için bildirim göndermek istediğinizden emin misiniz?`, 'Evet', 'Hayır', async () => {
+            try {
+                const response = await fetch('/StockReminder/SendStockNotification', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ productIds: Array.from(selectedProductIds) })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    selectedProductIds.clear(); updateSendButton();
+                    document.getElementById('selectAll').checked = false;
+                    document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = false);
+                } else { showNotification(data.message || 'Bildirim gönderilirken hata oluştu.', 'error'); }
+            } catch (error) { console.error('Error:', error); showNotification('Bildirim gönderilirken hata oluştu.', 'error'); }
+        });
+    }
+
+    async function sendNotificationToProduct(productId, currentStock) {
+        showConfirmationDialog('Bildirim Gönder', 'Bu ürün için bildirim göndermek istediğinizden emin misiniz?', 'Evet', 'Hayır', async () => {
+            try {
+                const response = await fetch('/StockReminder/SendStockNotification', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ productIds: [productId], currentStock })
+                });
+                const data = await response.json();
+                if (data.success) showNotification(data.message, 'success');
+                else showNotification(data.message || 'Bildirim gönderilirken hata oluştu.', 'error');
+            } catch (error) { console.error('Error:', error); showNotification('Bildirim gönderilirken hata oluştu.', 'error'); }
+        });
+    }
+
+    async function sendStockArrivedNotification() {
+        if (selectedProductIds.size === 0) { showNotification('Lütfen en az bir ürün seçin.', 'warning'); return; }
+
+        const selectedProductsMap = new Map();
+        document.querySelectorAll('#productsTableBody .product-checkbox:checked, #mobileProductsContainer .product-checkbox:checked').forEach(cb => {
+            const productId = parseInt(cb.dataset.productId);
+            if (selectedProductsMap.has(productId)) return;
+            const container = cb.closest('tr') || cb.closest('.sr-mobile-card-item');
+            const productName = container.querySelector('.text-sm.font-semibold.text-gray-900')?.textContent?.trim() || 'Ürün';
+            const productUrl = container.querySelector('a[target="_blank"]')?.href || null;
+            const stockBadge = container.querySelector('.sr-badge-success, .sr-badge-danger');
+            const stockText = stockBadge?.textContent?.trim() || '0';
+            const currentStock = parseInt(stockText.replace(/[^0-9]/g, '')) || 0;
+            selectedProductsMap.set(productId, { productId, productName, productUrl, currentStock });
+        });
+        const selectedProducts = Array.from(selectedProductsMap.values());
+
+        // Toplam abone ve bildirim bekleyen sayısını hesapla
+        let totalSubscribers = 0;
+        let totalPending = 0;
+        selectedProductIds.forEach(productId => {
+            const product = productsDataMap.get(productId);
+            if (product) {
+                totalSubscribers += (product.aboneSayisi || 0);
+                totalPending += (product.bildirimBekleyen || 0);
+            }
+        });
+
+        let subscriberInfo = '';
+        if (totalPending > 0) {
+            subscriberInfo = `<span style="color: #059669;"><strong>${totalPending} kişiye</strong> bildirim gönderilecek.</span>`;
+        } else if (totalSubscribers > 0) {
+            subscriberInfo = `<span style="color: #d97706;">⚠️ Tüm aboneler zaten bilgilendirilmiş. <strong>Kimseye bildirim gönderilmeyecek.</strong></span>`;
+        } else {
+            subscriberInfo = `<span style="color: #dc2626;">⚠️ Seçili ürünlerde abone bulunmuyor. <strong>Kimseye bildirim gönderilmeyecek.</strong></span>`;
+        }
+
+        const confirmMsg = `${selectedProducts.length} ürün için stok geldi bildirimi göndermek istediğinizden emin misiniz?<br><br>${subscriberInfo}`;
+
+        showConfirmationDialog('Stok Bildirimi', confirmMsg, 'Evet', 'Hayır', async () => {
+            const btn = document.getElementById('sendStockArrivedBtn');
+            const originalText = document.getElementById('stockArrivedBtnText').textContent;
+            btn.disabled = true;
+            document.getElementById('stockArrivedBtnText').textContent = 'Gönderiliyor...';
+
+            try {
+                const response = await fetch('/StockReminder/SendStockArrivedNotification', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ products: selectedProducts })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    selectedProductIds.clear(); updateSendButton();
+                    document.getElementById('selectAll').checked = false;
+                    document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = false);
+                } else { showNotification(data.message || 'Bildirim gönderilirken hata oluştu.', 'error'); }
+            } catch (error) { console.error('Error:', error); showNotification('Bildirim gönderilirken hata oluştu.', 'error'); }
+            finally {
+                btn.disabled = selectedProductIds.size === 0;
+                document.getElementById('stockArrivedBtnText').textContent = originalText;
+            }
+        });
+    }
+
+    async function sendStockArrivedToProduct(productId, productName, productUrl, currentStock) {
+        showConfirmationDialog('Stok Bildirimi', `"${productName}" için stok geldi bildirimi göndermek istediğinizden emin misiniz?`, 'Evet', 'Hayır', async () => {
+            try {
+                const response = await fetch('/StockReminder/SendStockArrivedNotification', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ products: [{ productId, productName, productUrl, currentStock }] })
+                });
+                const data = await response.json();
+                if (data.success) showNotification(data.message, 'success');
+                else showNotification(data.message || 'Bildirim gönderilirken hata oluştu.', 'error');
+            } catch (error) { console.error('Error:', error); showNotification('Bildirim gönderilirken hata oluştu.', 'error'); }
+        });
+    }
+
+    function applyFilters() {
+        currentPage = 1; selectedProductIds.clear(); updateSendButton(); loadProducts();
+    }
+
+    function resetFilters() {
+        document.getElementById('searchTerm').value = '';
+        document.getElementById('minStockFilter').value = '';
+        setNotifiedFilter('');
+        setInStockFilter('');
+        currentPage = 1; selectedProductIds.clear(); updateSendButton(); loadProducts();
+    }
+
+    function setInStockFilter(value) {
+        document.getElementById('inStockFilter').value = value;
+        document.querySelectorAll('.stock-filter-btn').forEach(btn => btn.classList.remove('active'));
+        if (value === '') document.getElementById('stockFilterAll').classList.add('active');
+        else if (value === 'true') document.getElementById('stockFilterYes').classList.add('active');
+        else if (value === 'false') document.getElementById('stockFilterNo').classList.add('active');
+    }
+
+    function setNotifiedFilter(value) {
+        document.getElementById('notifiedFilter').value = value;
+        document.querySelectorAll('.notif-filter-btn').forEach(btn => btn.classList.remove('active'));
+        if (value === '') document.getElementById('notifFilterAll').classList.add('active');
+        else if (value === 'true') document.getElementById('notifFilterSent').classList.add('active');
+        else if (value === 'false') document.getElementById('notifFilterPending').classList.add('active');
+    }
+
+    // Helpers
+    function showLoading(show) {
+        document.getElementById('loadingState').classList.toggle('hidden', !show);
+        if (show) {
+            document.getElementById('productsTableBody').innerHTML = '';
+            document.getElementById('mobileProductsContainer').innerHTML = '';
+        }
+    }
+
+    function showEmpty() {
+        document.getElementById('emptyState').classList.remove('hidden');
+        document.getElementById('paginationContainer').classList.add('hidden');
+        const msa = document.getElementById('mobileSelectAllContainer'); if(msa) msa.style.display = 'none';
+        
+        // Also ensure headers are unchecked
+        const sa = document.getElementById('selectAll'); if(sa) { sa.checked = false; sa.indeterminate = false; }
+    }
+
+    function hideEmpty() {
+        document.getElementById('emptyState').classList.add('hidden');
+    }
+
+    function formatPrice(price) {
+        return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(price);
+    }
+
+    function formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString('tr-TR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    }
+
+    function escapeQuotes(str) {
+        if (!str) return '';
+        return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    function buildProductUrl(productUrl, productCode) {
+        if (productUrl && (productUrl.startsWith('http://') || productUrl.startsWith('https://'))) return productUrl;
+        if (siteUrl) {
+            const baseUrl = siteUrl.endsWith('/') ? siteUrl.slice(0, -1) : siteUrl;
+            if (productUrl) { const path = productUrl.startsWith('/') ? productUrl : '/' + productUrl; return baseUrl + path; }
+            if (productCode) return baseUrl + '/urun/' + encodeURIComponent(productCode);
+        }
+        return null;
+    }
+
+    async function showSubscribers(productId, productName) {
+        const modal = document.getElementById('subscribersModal');
+        const content = document.getElementById('subscribersListContent');
+        const titleElement = document.getElementById('subscribersModalProductName');
+
+        titleElement.textContent = productName || 'Ürün';
+        modal.classList.remove('hidden');
+
+        content.innerHTML = `
+            <div class="flex justify-center py-10">
+                <div class="relative">
+                    <div class="w-10 h-10 rounded-full border-[3px] border-gray-200"></div>
+                    <div class="w-10 h-10 rounded-full border-[3px] border-transparent border-t-blue-600 animate-spin absolute inset-0"></div>
+                </div>
+            </div>
+        `;
+
+        try {
+            const response = await fetch(`/StockReminder/GetStockAlarmSubscribers?productId=${productId}`);
+            const data = await response.json();
+
+            if (data.success) {
+                if (!data.data || data.data.length === 0) {
+                    content.innerHTML = `
+                        <div class="text-center py-10">
+                            <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                                <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                            </div>
+                            <p class="text-sm text-gray-500">Bu ürün için abone bulunamadı.</p>
+                        </div>
+                    `;
+                } else {
+                    const ticimaxSubs = data.data.filter(s => s.source !== 'widget');
+                    const widgetSubs = data.data.filter(s => s.source === 'widget');
+
+                    let html = `
+                        <div class="mb-4 flex items-center justify-between flex-wrap gap-2">
+                            <span class="text-sm text-gray-600 font-medium">${data.data.length} abone</span>
+                            <div class="flex items-center gap-2">
+                                ${ticimaxSubs.length > 0 ? `<span class="sr-badge sr-badge-info" style="font-size: 0.6875rem;">Ticimax: ${ticimaxSubs.length}</span>` : ''}
+                                ${widgetSubs.length > 0 ? `<span class="sr-badge" style="font-size: 0.6875rem; background: linear-gradient(135deg, #faf5ff, #ede9fe); color: #6d28d9;">Widget: ${widgetSubs.length}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                    `;
+
+                    data.data.forEach(sub => {
+                        const isWidget = sub.source === 'widget';
+                        const avatarBg = isWidget ? 'bg-gradient-to-br from-violet-100 to-purple-100' : 'bg-gradient-to-br from-blue-50 to-indigo-100';
+                        const avatarText = isWidget ? 'text-violet-600' : 'text-blue-600';
+                        const sourceBadge = isWidget
+                            ? '<span class="sr-badge" style="font-size: 0.625rem; padding: 0.0625rem 0.375rem; background: linear-gradient(135deg, #faf5ff, #ede9fe); color: #6d28d9;">Widget</span>'
+                            : '<span class="sr-badge sr-badge-info" style="font-size: 0.625rem; padding: 0.0625rem 0.375rem;">Ticimax</span>';
+
+                        html += `
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 ${avatarBg} rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <span class="${avatarText} font-bold text-xs">${(sub.customerName || 'B')[0].toUpperCase()}</span>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="font-semibold text-sm text-gray-900 truncate">${sub.customerName || 'Bilinmeyen'}</span>
+                                            ${sourceBadge}
+                                        </div>
+                                        <div class="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
+                                            ${sub.email ? `<span>${sub.email}</span>` : ''}
+                                            ${sub.phone ? `<span>${sub.phone}</span>` : ''}
+                                            ${sub.selectedVariant ? `<span class="text-violet-500">${sub.selectedVariant}</span>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-gray-400 flex-shrink-0 ml-3">
+                                    ${sub.subscribedAt ? formatDate(sub.subscribedAt) : (sub.addedAt ? formatDate(sub.addedAt) : '')}
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += '</div>';
+                    content.innerHTML = html;
+                }
+            } else {
+                content.innerHTML = `<div class="text-center py-8 text-red-500 text-sm"><p>${data.message || 'Aboneler yüklenirken hata oluştu.'}</p></div>`;
+            }
+        } catch (error) {
+            console.error('Error loading subscribers:', error);
+            content.innerHTML = `<div class="text-center py-8 text-red-500 text-sm"><p>Aboneler yüklenirken hata oluştu.</p></div>`;
+        }
+    }
+
+    function closeSubscribersModal() {
+        document.getElementById('subscribersModal').classList.add('hidden');
+    }
+
+    document.getElementById('subscribersModal')?.addEventListener('click', function(e) {
+        if (e.target === this) closeSubscribersModal();
+    });
+</script>
+}

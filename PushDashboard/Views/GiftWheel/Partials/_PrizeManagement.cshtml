@@ -1,0 +1,177 @@
+@using PushDashboard.ViewModels
+@model GiftWheelViewModel
+
+<div class="space-y-3 md:space-y-4">
+    <!-- Quick Add & Warnings -->
+    <div class="bg-gray-50 p-3 md:p-4 rounded-xl shadow-sm border border-gray-200 mb-3 md:mb-4">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4 mb-3 md:mb-4">
+            <!-- Probability Info -->
+            @{
+                var totalProbability = Model.Prizes.Where(p => p.IsActive).Sum(p => p.Probability);
+                var isPerfect = totalProbability == 100;
+                string probColor = isPerfect ? "text-green-600" : (totalProbability < 100 ? "text-yellow-600" : "text-red-600");
+            }
+            <div class="flex flex-col items-center md:items-start w-full md:w-auto">
+                <div class="text-xs md:text-sm font-medium text-gray-500">Toplam Olasılık</div>
+                <div class="flex items-end">
+                    <span class="text-xl md:text-2xl font-bold @probColor" id="totalProbabilityDisplay">@totalProbability%</span>
+                    @if(!isPerfect) {
+                        <span class="text-[10px] md:text-xs text-gray-400 mb-1 ml-2">(100% olmalı)</span>
+                    }
+                </div>
+            </div>
+
+            <div class="flex space-x-2 md:space-x-3 w-full sm:w-auto justify-center sm:justify-end">
+                 <button id="addPrizeBtn" class="flex items-center px-3 md:px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 font-medium text-xs md:text-sm whitespace-nowrap flex-1 sm:flex-none justify-center">
+                    <i class="fas fa-plus mr-1 md:mr-2"></i> Satır Ekle
+                </button>
+                <button id="removeAllPrizesBtn" class="flex items-center px-3 md:px-4 py-2 bg-white hover:bg-red-50 text-red-600 border border-red-100 rounded-lg hover:shadow-md transition-all font-medium text-xs md:text-sm whitespace-nowrap flex-1 sm:flex-none justify-center">
+                    <i class="fas fa-trash-alt mr-1 md:mr-2"></i> Sil
+                </button>
+            </div>
+        </div>
+
+        <!-- Total Probability Bar & Legend -->
+        <div class="w-full">
+             <div class="h-4 md:h-6 w-full bg-white rounded-lg overflow-hidden flex shadow-inner relative mb-2 md:mb-3 border border-gray-100" id="totalProbabilityBar">
+                @foreach(var prize in Model.Prizes.Where(p => p.IsActive).OrderBy(p => p.SortOrder)) {
+                   <div class="h-full relative group transition-all duration-500 hover:brightness-110 flex items-center justify-center overflow-hidden"
+                        style="width: @prize.Probability%; background-color: @prize.Color; color: @prize.TextColor"
+                        title="@prize.Name: @prize.Probability%">
+                        @if(prize.Probability > 5) {
+                            <span class="text-[8px] md:text-[10px] font-bold px-1 truncate drop-shadow-md select-none" style="color: @prize.TextColor">@prize.Probability%</span>
+                        }
+                   </div>
+                }
+             </div>
+             <div class="flex flex-wrap gap-x-3 gap-y-1 md:gap-x-4 md:gap-y-2 justify-center md:justify-start text-[10px] md:text-xs text-gray-600" id="probabilityLegend">
+                @foreach(var prize in Model.Prizes.Where(p => p.IsActive).OrderBy(p => p.SortOrder)) {
+                    <div class="flex items-center">
+                        <span class="w-2 h-2 md:w-3 md:h-3 rounded-full mr-1 md:mr-1.5 shadow-sm" style="background-color: @prize.Color"></span>
+                        <span class="font-medium truncate max-w-[80px] md:max-w-none">@prize.Name</span>
+                        <span class="ml-1 text-gray-400">(@prize.Probability%)</span>
+                    </div>
+                }
+             </div>
+        </div>
+    </div>
+
+    <!-- Prizes List as Rows -->
+    <div class="space-y-2 md:space-y-3" id="prizesList">
+        @if (Model.Prizes.Any())
+        {
+            @foreach (var prize in Model.Prizes.OrderBy(p => p.SortOrder))
+            {
+                <div class="prize-item group relative flex flex-col md:flex-row items-center p-3 md:p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden gap-2 md:gap-0" data-prize-id="@prize.Id">
+                    <!-- Color Strip/Glow -->
+                    <div class="absolute inset-y-0 left-0 w-1.5 transition-all group-hover:w-2" style="background-color: @prize.Color; box-shadow: 0 0 10px @(prize.Color)66;"></div>
+
+                    <!-- Drag (Hidden on minimal mobile view, visible on md) -->
+                    <div class="drag-handle cursor-move text-gray-300 group-hover:text-indigo-500 transition-colors pl-2 md:pl-4 md:pr-4 self-center md:self-auto hidden md:block">
+                        <i class="fas fa-grip-vertical"></i>
+                    </div>
+
+                    <!-- Content Grid -->
+                    <div class="flex-1 grid grid-cols-2 sm:grid-cols-12 gap-3 sm:gap-4 items-center w-full">
+                        <!-- Name -->
+                        <div class="col-span-2 sm:col-span-4 font-semibold text-gray-800 text-lg tracking-tight flex items-center">
+                             <div class="drag-handle md:hidden cursor-move text-gray-300 mr-3">
+                                <i class="fas fa-grip-vertical"></i>
+                             </div>
+                             @prize.Name
+                        </div>
+
+                        <!-- Probability Badge -->
+                        <div class="col-span-1 sm:col-span-2 flex justify-start sm:justify-center">
+                             <span class="px-3 py-1 rounded-full text-sm font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 flex items-center shadow-sm w-full sm:w-auto justify-center" data-probability="@prize.Probability">
+                                <i class="fas fa-percentage text-xs mr-1 opacity-50"></i>
+                                @prize.Probability
+                             </span>
+                        </div>
+
+                        <!-- Color Preview -->
+                        <div class="col-span-1 sm:col-span-1 flex justify-end sm:justify-center items-center">
+                             <div class="flex flex-col items-center gap-1">
+                                 <div class="w-8 h-8 rounded-full border-2 border-white shadow-sm ring-1 ring-gray-100 transition-transform group-hover:scale-110 relative flex items-center justify-center"
+                                      style="background-color: @prize.Color;" title="Görünüm Önizleme">
+                                      <span class="text-xs font-bold select-none" style="color: @(prize.TextColor ?? "#ffffff")">Aa</span>
+                                 </div>
+                             </div>
+                        </div>
+
+                        <!-- Discount -->
+                        <div class="col-span-1 sm:col-span-2 text-left sm:text-center">
+                             @{
+                                string discountVal = "-";
+                                string badgeClass = "bg-yellow-50 text-yellow-700 border-yellow-100";
+                                string iconHtml = "";
+                                if (prize.PrizeType == "voucher" && prize.DiscountAmount.HasValue)
+                                {
+                                    discountVal = prize.DiscountType == 1 ? $"{prize.DiscountAmount:N0} TL" : $"%{prize.DiscountAmount:N0}";
+                                }
+                                else if (prize.PrizeType == "cargo" && prize.DiscountAmount.HasValue)
+                                {
+                                    discountVal = prize.DiscountAmount >= 100 ? "Ücretsiz Kargo" : $"%{prize.DiscountAmount:N0} Kargo";
+                                    badgeClass = "bg-blue-50 text-blue-700 border-blue-100";
+                                    iconHtml = "<i class='fas fa-truck mr-1'></i>";
+                                }
+                             }
+                             @if(discountVal != "-") {
+                                 <span class="inline-block @badgeClass px-2 py-1 rounded-md border text-sm font-medium">@Html.Raw(iconHtml)@discountVal</span>
+                             } else {
+                                 <span class="text-gray-300 font-light">-</span>
+                             }
+                        </div>
+
+                        <!-- Info -->
+                        <div class="col-span-1 sm:col-span-3 text-xs text-gray-500 text-right truncate font-medium">
+                            @if(prize.PrizeType == "voucher") {
+                                <span class="flex items-center justify-end"><i class="far fa-clock mr-1"></i> @prize.ValidityDays gün</span>
+                                @if (prize.MinimumOrderAmount.HasValue && prize.MinimumOrderAmount.Value > 0)
+                                {
+                                    <span class="flex items-center justify-end text-[11px] text-gray-500"><i class="fas fa-shopping-cart mr-1"></i> Min Sepet: @prize.MinimumOrderAmount.Value.ToString("N0") TL</span>
+                                }
+                            } else if(prize.PrizeType == "cargo") {
+                                <span class="flex items-center justify-end text-blue-500"><i class="fas fa-truck mr-1"></i> @prize.ValidityDays gün</span>
+                                @if (prize.MinimumOrderAmount.HasValue && prize.MinimumOrderAmount.Value > 0)
+                                {
+                                    <span class="flex items-center justify-end text-[11px] text-gray-500"><i class="fas fa-shopping-cart mr-1"></i> Min Sepet: @prize.MinimumOrderAmount.Value.ToString("N0") TL</span>
+                                }
+                            } else {
+                                <span class="text-amber-500"><i class="fas fa-redo mr-1"></i>Tekrar Dene</span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-1 w-full md:w-auto justify-end md:justify-start md:pl-4 border-t md:border-t-0 md:border-l border-gray-100 pt-3 md:pt-0 md:ml-4 mt-2 md:mt-0">
+                          <button class="edit-prize-btn w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all tooltip-trigger"
+                                  onclick="window.giftWheelAdmin.openPrizeModal(@prize.Id)" data-prize-id="@prize.Id" title="Düzenle">
+                                 <i class="fas fa-edit"></i>
+                          </button>
+                          <button class="delete-prize-btn w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"
+                                  onclick="window.giftWheelAdmin.deletePrize(@prize.Id)" data-prize-id="@prize.Id" title="Sil">
+                                 <i class="fas fa-trash-alt"></i>
+                          </button>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 group hover:border-indigo-300 transition-colors">
+                <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:scale-110 transition-transform">
+                    <i class="fas fa-gift text-2xl text-gray-400 group-hover:text-indigo-500"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-1">Henüz dilim eklenmemiş</h3>
+                <p class="text-gray-500 text-sm mb-4">Müşterileriniz için çekici hediyeler ekleyin.</p>
+                <button onclick="document.getElementById('addPrizeBtn').click()" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm">
+                    İlk dilimi ekle &rarr;
+                </button>
+            </div>
+        }
+    </div>
+
+    <!-- Hidden Warning for Logic (Preserved but hidden or integrated?) -->
+    <div id="probabilityWarning" class="hidden" data-optimal="@isPerfect.ToString().ToLower()" data-critical="@((totalProbability < 50).ToString().ToLower())"></div>
+</div>

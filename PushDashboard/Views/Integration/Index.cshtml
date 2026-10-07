@@ -1,0 +1,1550 @@
+@model PushDashboard.ViewModels.IntegrationIndexViewModel
+@{
+  ViewData["Title"] = "Entegrasyonlar";
+}
+
+@section Scripts
+  {
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+      // Global variable to track connection test status
+      let connectionTestPassed = false;
+      let currentIntegrationId = null;    // Integration functionality
+      function addIntegration(integrationId, integrationName) {
+        showIntegrationModal(integrationId, integrationName);
+      }
+
+      function showIntegrationModal(integrationId, integrationName) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-gray-900/50 overflow-y-auto h-full w-full z-50 transition-opacity duration-300';
+        modal.id = 'integration-modal';
+
+        modal.innerHTML = `
+          <div class="relative top-20 mx-auto p-0 border-0 w-[28rem] rounded-xl bg-white overflow-hidden transform transition-all scale-100">
+            <div class="p-6 text-center">
+              <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-xl bg-gray-50 border border-gray-200 mb-4">
+                <svg class="h-8 w-8 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+              </div>
+              <h3 class="text-xl leading-6 font-bold text-gray-900 mb-2">Entegrasyon Ekle</h3>
+              <div class="mt-2 px-2 py-2">
+                <p class="text-sm text-gray-500 leading-relaxed">
+                  <span class="font-bold text-gray-800">${integrationName}</span> entegrasyonunu hesabınıza eklemek ve yapılandırmaya başlamak istediğinizden emin misiniz?
+                </p>
+              </div>
+            </div>
+            <div class="bg-gray-50 px-6 py-4 flex gap-3">
+               <button id="cancel-integration"
+                      class="flex-1 px-4 py-2.5 bg-white text-gray-700 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors">
+                Vazgeç
+              </button>
+              <button id="confirm-integration"
+                      class="flex-1 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-dark transition-colors">
+                Entegrasyonu Ekle
+              </button>
+            </div>
+          </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Event listeners
+        document.getElementById('confirm-integration').addEventListener('click', () => {
+          performAddIntegration(integrationId, integrationName);
+          document.body.removeChild(modal);
+        });
+
+        document.getElementById('cancel-integration').addEventListener('click', () => {
+          document.body.removeChild(modal);
+        });
+
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            document.body.removeChild(modal);
+          }
+        });
+      }
+
+      async function performAddIntegration(integrationId, integrationName) {
+        try {
+          // Show loading notification
+          showNotification('Entegrasyon ekleniyor...', 'info');
+
+          // Get anti-forgery token
+          const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+          // Prepare integration data
+          const integrationData = {
+            integrationId: parseInt(integrationId)
+          };
+
+          // Make API call
+          const response = await axios.post('/Integration/AddIntegration', integrationData, {
+            headers: {
+              'Content-Type': 'application/json',
+              'RequestVerificationToken': token
+            }
+          });
+
+          if (response.data.success) {
+            // Show success notification
+            showNotification(response.data.message, 'success');
+
+            console.log('Integration added successfully, reloading page...');
+
+            // Reload page to show updated integration status
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } else {
+            showNotification(response.data.message, 'error');
+          }
+
+        } catch (error) {
+          console.error('Integration add error:', error);
+          if (error.response && error.response.data && error.response.data.message) {
+            showNotification(error.response.data.message, 'error');
+          } else {
+            showNotification('Entegrasyon eklenirken bir hata oluştu.', 'error');
+          }
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        initializeDialogs();
+        attachSyncAllListener();
+      });
+
+      // Tümünü Senkronize Et butonu listener'ı
+      function attachSyncAllListener() {
+        const syncAllBtn = document.getElementById('sync-all-btn');
+        if (syncAllBtn) {
+          syncAllBtn.addEventListener('click', syncAllIntegrations);
+        }
+      }
+
+      // Tüm entegrasyonları senkronize et
+      async function syncAllIntegrations() {
+        const syncAllBtn = document.getElementById('sync-all-btn');
+        const syncButtons = document.querySelectorAll('.sync-integration-btn');
+
+        if (syncButtons.length === 0) {
+          showNotification('Senkronize edilecek entegrasyon bulunamadı.', 'warning');
+          return;
+        }
+
+        // Butonu devre dışı bırak
+        const originalText = syncAllBtn.innerHTML;
+        syncAllBtn.disabled = true;
+        syncAllBtn.innerHTML = `
+          <svg class="animate-spin inline-block w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Tümü senkronize ediliyor...
+        `;
+
+        let successCount = 0;
+        let failureCount = 0;
+        const results = [];
+
+        // Tüm senkronize et butonlarını sırayla çalıştır
+        for (const button of syncButtons) {
+          const integrationId = button.getAttribute('data-integration-id');
+          const integrationName = button.getAttribute('data-integration-name');
+
+          try {
+            const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (!csrfToken) {
+              failureCount++;
+              results.push(`${integrationName}: Güvenlik token'ı bulunamadı`);
+              continue;
+            }
+
+            const response = await axios.post('/Integration/SyncIntegration', {
+              integrationId: parseInt(integrationId)
+            }, {
+              headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': csrfToken.value
+              }
+            });
+
+            if (response.data.success) {
+              successCount++;
+              results.push(`✓ ${integrationName}: Başarılı`);
+            } else {
+              failureCount++;
+              results.push(`✗ ${integrationName}: ${response.data.message}`);
+            }
+          } catch (error) {
+            failureCount++;
+            const errorMsg = error.response?.data?.message || error.message || 'Bilinmeyen hata';
+            results.push(`✗ ${integrationName}: ${errorMsg}`);
+          }
+
+          // Kısa bir gecikme ekle (API'ye aşırı yük binmesin diye)
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        // Butonu tekrar aktif et
+        syncAllBtn.disabled = false;
+        syncAllBtn.innerHTML = originalText;
+
+        // Sonuçları göster
+        const message = `Senkronizasyon tamamlandı. Başarılı: ${successCount}, Başarısız: ${failureCount}`;
+        showNotification(message, successCount > 0 ? 'success' : 'error');
+
+        // Sayfayı yenile (başarılı olanlar varsa)
+        if (successCount > 0) {
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        }
+      }
+
+      let integrationSettingsDialog = null;
+
+      function initializeDialogs() {
+        // Initialize PushDialog
+        integrationSettingsDialog = new PushDialog({
+          title: 'Entegrasyon Ayarları',
+          size: '3xl', // Genişlik artırıldı
+          scrollBehavior: 'inside', // Scroll inside the dialog content
+          position: 'center', // Center on screen
+          closeOnOverlayClick: true,
+          content: '<div id="drawer-content"></div>'
+        });
+
+        // Settings butonlarına event listener ekle
+        attachSettingsListeners();
+
+        // Sync butonlarına event listener ekle
+        attachSyncListeners();
+      }
+
+      function attachSettingsListeners() {
+        const settingsButtons = document.querySelectorAll('.settings-btn');
+        console.log('Found settings buttons:', settingsButtons.length);
+
+        settingsButtons.forEach((button, index) => {
+          // Remove old listeners? No easy way, but this runs once on DOM load mostly.
+          // Cloning node is a trick to remove listeners but might be overkill.
+          // Assuming pages doesn't reload scripts partially.
+          
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const integrationName = button.getAttribute('data-integration-name');
+            const integrationId = button.getAttribute('data-integration-id');
+            console.log('Settings button clicked:', integrationName, integrationId);
+            openIntegrationSettingsDialog(integrationName, integrationId);
+          });
+        });
+      }
+
+      function attachSyncListeners() {
+        const syncButtons = document.querySelectorAll('.sync-integration-btn');
+        console.log('Found sync buttons:', syncButtons.length);
+
+        syncButtons.forEach((button, index) => {
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const integrationId = button.getAttribute('data-integration-id');
+            const integrationName = button.getAttribute('data-integration-name');
+            console.log('Sync button clicked:', integrationName, integrationId);
+            syncIntegration(integrationId, integrationName, button);
+          });
+        });
+      }
+
+      // Dialog'ı açma fonksiyonu
+      async function openIntegrationSettingsDialog(integrationName, integrationId) {
+        if (!integrationSettingsDialog) return;
+
+        // Başlık ayarla
+        integrationSettingsDialog.setTitle(integrationName + ' Entegrasyon Ayarları');
+
+        // Footer'ı temizle (Yüklenirken butonlar görünmesin)
+        if (typeof integrationSettingsDialog.setFooter === 'function') {
+            integrationSettingsDialog.setFooter(null);
+        }
+
+        // Loading göster
+        integrationSettingsDialog.setContent(`
+          <div id="drawer-content">
+            <div class="flex items-center justify-center py-8">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span class="ml-2">Ayarlar yükleniyor...</span>
+            </div>
+          </div>
+        `);
+
+        // Dialog'ı aç
+        integrationSettingsDialog.open();
+
+        try {
+          // Entegrasyon ayarlarını yükle
+          // drawer-content ID'si dialog içinde oluşturduğumuz için çalışacaktır.
+          // Ancak DOM güncellenmesi için kısa bir süre beklemek gerekebilir, 
+          // ama PushDialog.setContent senkron yapar, innerHTML değişir.
+          await loadIntegrationSettings(integrationId, integrationName);
+        } catch (error) {
+          console.error('Error loading integration settings:', error);
+          const drawerContent = document.getElementById('drawer-content');
+          if (drawerContent) {
+            drawerContent.innerHTML = `
+              <div class="text-center py-8">
+                <div class="text-red-500 mb-2">Ayarlar yüklenirken hata oluştu</div>
+                <button onclick="closeDrawer()" class="px-4 py-2 bg-gray-500 text-white rounded-md">Kapat</button>
+              </div>
+            `;
+          }
+        }
+      }
+
+      async function loadIntegrationSettings(integrationId, integrationName) {
+        // Reset connection test status when opening settings
+        connectionTestPassed = integrationName === 'Telegram'; // Telegram entegrasyonu için test zorunluluğunu kaldır
+        currentIntegrationId = integrationId;
+        const drawerContent = document.getElementById('drawer-content');
+
+        // Entegrasyon tipine göre form oluştur
+        let formContent = '';
+
+        if (integrationName === 'Ticimax') {
+          // Ticimax entegrasyonu formu
+          formContent = `
+            <!-- Tab Navigation -->
+            <div class="border-b border-gray-200 mb-4">
+              <nav class="-mb-px flex">
+                <button type="button" class="tab-button active" data-tab="connection">
+                  Bağlantı Ayarları
+                </button>
+                <button type="button" class="tab-button" data-tab="status-mapping" id="status-mapping-tab" style="display: none;">
+                  Sipariş Durumu Eşleştirme
+                </button>
+              </nav>
+            </div>
+
+            <!-- Connection Settings Tab -->
+            <div id="connection-tab" class="ticimax-tab-content">
+              <form id="integration-settings-form" data-integration-id="${integrationId}">
+                <label class="block text-sm font-medium text-gray-700 mb-1">API URL</label>
+                <input type="text" name="apiUrl" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="https://api.ticimax.com/v1/">
+                <label class="block text-sm font-medium text-gray-700 mb-1">API Anahtarı</label>
+                <input type="password" name="apiKey" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="API anahtarınızı girin">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Senkronizasyon Sıklığı (saat)</label>
+                <select name="syncFrequency" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                  <option value="1">Her saatte bir</option>
+                  <option value="2">Her 2 saatte bir</option>
+                  <option value="4">Her 4 saatte bir</option>
+                  <option value="6">Her 6 saatte bir</option>
+                  <option value="12">Her 12 saatte bir</option>
+                  <option value="24">Günde bir kez</option>
+                </select>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Senkronizasyon Seçenekleri</label>
+                <div class="space-y-2">
+                  <input type="checkbox" name="syncCustomers" class="rounded border-gray-300 text-primary focus:ring-primary" checked>
+                  <span class="ml-2 text-sm text-gray-700">Müşterileri senkronize et</span>
+                  <input type="checkbox" name="syncCarts" class="rounded border-gray-300 text-primary focus:ring-primary" checked>
+                  <span class="ml-2 text-sm text-gray-700">Sepetleri senkronize et</span>
+                </div>
+                
+                <label class="block text-sm font-medium text-gray-700 mb-2 mt-6 pt-4 border-t">Yasal Metin Linkleri:</label>
+                
+                <label class="block text-sm font-medium text-gray-700 mb-1">KVKK Aydınlatma Metni Linki</label>
+                <div class="flex gap-2">
+                    <input type="text" name="kvkkLink" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="https://siteniz.com/kvkk-aydinlatma-metni">
+                    <button type="button" onclick="openLegalTextsModal('kvkk')" title="Örnek Metni Al"
+                            class="group relative inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:border-gray-200 transition-all duration-200 whitespace-nowrap">
+                        <i class="fas fa-file-contract text-gray-500 group-hover:text-gray-700 transition-colors"></i>
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-1 mb-3">Kişisel Verilerin Korunması Kanunu (KVKK) Aydınlatma Metni sayfanızın linkini girin</p>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Ticari Elektronik İleti Metni Linki</label>
+                <div class="flex gap-2">
+                    <input type="text" name="ticariElektronikIletiLink" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="https://siteniz.com/ticari-elektronik-iletisim">
+                     <button type="button" onclick="openLegalTextsModal('etk')" title="Örnek Metni Al"
+                            class="group relative inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:border-gray-200 transition-all duration-200 whitespace-nowrap">
+                             <i class="fas fa-file-contract text-gray-500 group-hover:text-gray-700 transition-colors"></i>
+                        </button>
+                 </div>
+                <p class="text-xs text-gray-500 mt-1 mb-3">Ticari Elektronik İleti Açık Rıza ve Bilgilendirme Metni sayfanızın linkini girin</p>
+                <div class="space-y-2 mt-4">
+                  <input type="checkbox" name="legalTextsAccepted" class="rounded border-gray-300 text-primary focus:ring-primary">
+                  <span class="ml-2 text-sm text-gray-700">ETK ve KVKK metinlerinin eksiksiz ve mevzuata uygun şekilde doldurulması müşterinin sorumluluğundadır.</span>
+                </div>
+              </form>
+            </div>
+
+            <!-- Status Mapping Tab -->
+            <div id="status-mapping-tab-content" class="ticimax-tab-content hidden">
+              <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                <div class="flex items-start">
+                  <svg class="w-5 h-5 text-gray-500 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                  </svg>
+                  <div>
+                    <h4 class="text-sm font-medium text-gray-900">Sipariş Durumu Eşleştirme</h4>
+                    <p class="text-sm text-gray-700 mt-1">Ticimax'tan gelen sipariş durumlarını kendi sistem durumlarınızla eşleştirin. Bu sayede bildirimler doğru durumlar için gönderilir.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div id="status-mapping-container">
+                <!-- Status mappings will be loaded here -->
+              </div>
+            </div>
+          `;
+        } else if (integrationName === 'IKAS' || integrationName === 'Ideasoft' || integrationName === 'Tsoft') {
+          // Diğer e-ticaret entegrasyonu formu
+          formContent = `
+            <form id="integration-settings-form" data-integration-id="${integrationId}">
+              <label class="block text-sm font-medium text-gray-700 mb-1">API URL</label>
+              <input type="text" name="apiUrl" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="https://api.example.com/v1/">
+              <label class="block text-sm font-medium text-gray-700 mb-1">API Anahtarı</label>
+              <input type="password" name="apiKey" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="API anahtarınızı girin">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Mağaza ID</label>
+              <input type="text" name="storeId" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Mağaza ID'nizi girin">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Senkronizasyon Sıklığı (dakika)</label>
+              <select name="syncFrequency" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                <option value="15">Her 15 dakikada bir</option>
+                <option value="30">Her 30 dakikada bir</option>
+                <option value="60">Her saatte bir</option>
+                <option value="120">Her 2 saatte bir</option>
+                <option value="1440">Günde bir kez</option>
+              </select>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Senkronizasyon Seçenekleri</label>
+              <div class="space-y-2">
+                <input type="checkbox" name="syncProducts" class="rounded border-gray-300 text-primary focus:ring-primary" checked>
+                <span class="ml-2 text-sm text-gray-700">Ürünleri senkronize et</span>
+                <input type="checkbox" name="syncOrders" class="rounded border-gray-300 text-primary focus:ring-primary" checked>
+                <span class="ml-2 text-sm text-gray-700">Siparişleri senkronize et</span>
+                <input type="checkbox" name="syncCustomers" class="rounded border-gray-300 text-primary focus:ring-primary" checked>
+                <span class="ml-2 text-sm text-gray-700">Müşterileri senkronize et</span>
+              </div>
+              
+              <label class="block text-sm font-medium text-gray-700 mb-2 mt-6 pt-4 border-t">Yasal Metin Linkleri:</label>
+              
+              <label class="block text-sm font-medium text-gray-700 mb-1">KVKK Aydınlatma Metni Linki</label>
+              <div class="flex gap-2">
+                <input type="text" name="kvkkLink" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="https://siteniz.com/kvkk-aydinlatma-metni">
+                <button type="button" onclick="openLegalTextsModal('kvkk')" title="Örnek Metni Al"
+                        class="group relative inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:border-gray-200 transition-all duration-200 whitespace-nowrap">
+                    <i class="fas fa-file-contract text-gray-500 group-hover:text-gray-700 transition-colors"></i>
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-1 mb-3">Kişisel Verilerin Korunması Kanunu (KVKK) Aydınlatma Metni sayfanızın linkini girin</p>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Ticari Elektronik İleti Metni Linki</label>
+              <div class="flex gap-2">
+                  <input type="text" name="ticariElektronikIletiLink" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="https://siteniz.com/ticari-elektronik-iletisim">
+                  <button type="button" onclick="openLegalTextsModal('etk')" title="Örnek Metni Al"
+                            class="group relative inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:border-gray-200 transition-all duration-200 whitespace-nowrap">
+                             <i class="fas fa-file-contract text-gray-500 group-hover:text-gray-700 transition-colors"></i>
+                        </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-1 mb-3">Ticari Elektronik İleti Açık Rıza ve Bilgilendirme Metni sayfanızın linkini girin</p>
+              <div class="space-y-2 mt-4">
+                <input type="checkbox" name="legalTextsAccepted" class="rounded border-gray-300 text-primary focus:ring-primary">
+                <span class="ml-2 text-sm text-gray-700">ETK ve KVKK metinlerinin eksiksiz ve mevzuata uygun şekilde doldurulması müşterinin sorumluluğundadır.</span>
+              </div>
+            </form>
+          `;
+          } else if (integrationName === 'WhatsApp') {
+          // WhatsApp entegrasyonu formu (Gupshup)
+          formContent = `
+            <div id="whatsapp-integration-container" class="mb-6">
+                <!-- Durum kontrolü yapılıyor -->
+                <div class="text-center py-4">
+                     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                     <p class="mt-2 text-gray-500">WhatsApp durumu kontrol ediliyor...</p>
+                </div>
+            </div>
+
+            <form id="integration-settings-form" data-integration-id="${integrationId}" class="hidden">
+              <input type="hidden" name="appId">
+              <input type="hidden" name="token" value="partner_managed">
+            </form>
+          `;
+        } else if (integrationName === 'Telegram') {
+          // Telegram entegrasyonu formu
+          formContent = `
+            <form id="integration-settings-form" data-integration-id="${integrationId}">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Bot Token</label>
+                <input type="password" name="botToken" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Bot token'ınızı girin">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Chat ID</label>
+                <input type="text" name="chatId" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Chat ID'nizi girin">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Webhook URL</label>
+                <input type="url" name="webhookUrl" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="https://yourapp.com/webhook">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Ayarlar</label>
+                <div class="space-y-2">
+                    <input type="checkbox" name="enableCommands" class="rounded border-gray-300 text-primary focus:ring-primary" checked>
+                    <span class="ml-2 text-sm text-gray-700">Bot komutlarını etkinleştir</span>
+                </div>
+            </form>
+          `;
+        } else if (integrationName === 'Email SMTP') {
+          // Email SMTP entegrasyonu formu
+          formContent = `
+            <form id="integration-settings-form" data-integration-id="${integrationId}">
+                <label class="block text-sm font-medium text-gray-700 mb-1">SMTP Sunucusu</label>
+                <input type="text" name="smtpServer" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="smtp.gmail.com">
+                <label class="block text-sm font-medium text-gray-700 mb-1">SMTP Port</label>
+                <input type="number" name="smtpPort" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="587" value="587">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Kullanıcı Adı</label>
+                <input type="email" name="username" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="email@example.com">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
+                <input type="password" name="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Email şifrenizi girin">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Gönderen Email</label>
+                <input type="email" name="fromEmail" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="noreply@example.com">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Gönderen Adı</label>
+                <input type="text" name="fromName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Şirket Adı">
+                  <input type="checkbox" name="enableSsl" class="rounded border-gray-300 text-primary focus:ring-primary" checked>
+                  <span class="ml-2 text-sm text-gray-700">SSL/TLS kullan</span>
+            </form>
+          `;
+        } else if (integrationName === 'SMS') {
+          // SMS (NetGSM) entegrasyonu formu
+          formContent = `
+            <form id="integration-settings-form" data-integration-id="${integrationId}">
+              <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                <div class="flex items-start">
+                  <svg class="w-5 h-5 text-gray-400 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                  </svg>
+                  <div>
+                    <h4 class="text-sm font-medium text-gray-900">NetGSM SMS Servisi</h4>
+                    <p class="text-sm text-gray-600 mt-1">Bu ayarlar NetGSM hesabınızdan alınmalıdır. NetGSM hesabınız yoksa <a href="https://www.netgsm.com.tr" target="_blank" class="underline">buradan</a> oluşturabilirsiniz.</p>
+                  </div>
+                </div>
+              </div>
+
+              <label class="block text-sm font-medium text-gray-700 mb-1">NetGSM Kullanıcı Adı</label>
+              <input type="text" name="username" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent mb-3" placeholder="NetGSM kullanıcı adınız">
+              <p class="text-xs text-gray-500 mt-1 mb-3">NetGSM panelinden aldığınız kullanıcı adı</p>
+
+              <label class="block text-sm font-medium text-gray-700 mb-1">NetGSM Şifre</label>
+              <input type="password" name="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent mb-3" placeholder="NetGSM şifreniz">
+              <p class="text-xs text-gray-500 mt-1 mb-3">NetGSM API şifreniz</p>
+
+              <label class="block text-sm font-medium text-gray-700 mb-1">Gönderen Başlığı (Header)</label>
+              <input type="text" name="senderName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent mb-3" placeholder="MUSTERI" maxlength="11">
+              <p class="text-xs text-gray-500 mt-1 mb-3">SMS'lerde görünecek gönderen adı (maksimum 11 karakter)</p>
+            </form>
+          `;
+        }
+
+        // Script bölümünü sadece Ticimax için hazırla
+        let scriptSection = '';
+        if (integrationName === 'Ticimax') {
+          scriptSection = `
+          <!-- Script Kodu Bölümü -->
+          <div class="mt-8 pt-6 border-t border-gray-200">
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+              <div class="flex items-start">
+                <svg class="w-6 h-6 text-gray-500 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                </svg>
+                <div class="flex-1">
+                  <h4 class="text-lg font-semibold text-gray-900 mb-2">Modül Entegrasyon Kodu</h4>
+                  <p class="text-sm text-gray-700 mb-3">
+                    Dijitaldesin'in tüm modüllerini kullanabilmek için bu entegrasyonun yapılması gerekmektedir.<br>
+                    Lütfen kodu Ticimax panelinizde <strong>Anasayfa > Modüller > Script Yönetimi > Tüm Sayfalar</strong> alanına ekleyiniz.
+                  </p>
+
+                  <div class="bg-white border border-gray-200 rounded-md p-3 mb-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">Embed Kodu</span>
+                     <button type="button" onclick="copyEmbedCode(event)" class="inline-flex items-center px-2 py-1 text-xs font-medium text-primary bg-primary-100 rounded hover:bg-primary-200 transition-colors">   <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                        Kopyala
+                      </button>
+                    </div>
+                    <pre id="embed-code-display" class="text-xs text-gray-800 bg-gray-50 p-2 rounded border overflow-x-auto whitespace-pre-wrap font-mono leading-relaxed">Kod yükleniyor...</pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>`;
+        }
+
+        // Form ve butonları ekle
+        drawerContent.innerHTML = `
+          ${formContent}
+          ${scriptSection}
+        `;
+
+        if (integrationSettingsDialog) {
+            let footerContent = '';
+
+            if (integrationName === 'Telegram') {
+                footerContent = `
+                    <div class="w-full flex items-center justify-between sm:justify-end gap-2">
+                         <span class="text-sm text-orange-500 italic hidden sm:inline mr-auto">* Test desteği yakında eklenecektir.</span>
+                         <button type="button" onclick="closeDrawer()" class="inline-flex justify-center rounded-md border border-gray-300 px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:border-gray-200 sm:text-sm">
+                          İptal
+                        </button>
+                        <button type="button" onclick="saveIntegrationSettings(${integrationId})" class="inline-flex justify-center rounded-md border border-transparent px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:text-sm">
+                          Kaydet
+                        </button>
+                    </div>
+                    <div class="sm:hidden mt-2 text-center text-sm text-orange-500 italic">* Test desteği yakında eklenecektir.</div>
+                `;
+            } else {
+                footerContent = `
+                <button type="button" onclick="saveIntegrationSettings(${integrationId})" class="w-full inline-flex justify-center rounded-md border border-transparent px-4 py-2 bg-gray-400 text-base font-medium text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm cursor-not-allowed" disabled>
+                  Kaydet (Önce Bağlantıyı Test Edin)
+                </button>
+                <button type="button" onclick="testIntegration(${integrationId})" class="w-full inline-flex justify-center rounded-md border border-transparent px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm">
+                  Bağlantıyı Test Et
+                </button>
+                 <button type="button" onclick="closeDrawer()" class="w-full inline-flex justify-center rounded-md border border-gray-300 px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm">
+                  İptal
+                </button>
+                `;
+            }
+            integrationSettingsDialog.setFooter(footerContent);
+        }
+
+        // Mevcut ayarları yükle
+        await loadCurrentSettings(integrationId);
+
+        // Embed kodunu yükle
+        await loadEmbedCode();
+
+        // Ticimax için tab functionality ekle
+        if (integrationName === 'Ticimax') {
+          initializeTicimaxTabs(integrationId);
+        }
+      }
+
+      // Dialog'ı kapatma fonksiyonu
+      function closeDrawer() {
+        if (integrationSettingsDialog) {
+          integrationSettingsDialog.close();
+        }
+      }
+
+
+
+      // Mevcut ayarları yükle
+      async function loadCurrentSettings(integrationId) {
+        try {
+          const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+          const response = await axios.get(`/Integration/GetSettings?integrationid=${integrationId}`, {
+            headers: {
+              'RequestVerificationToken': token
+            }
+          });
+
+          if (response.data.success && response.data.settings) {
+            const settings = response.data.settings;
+            const form = document.getElementById('integration-settings-form');
+
+            if (form) {
+              // WhatsApp özel UI güncellemesi
+              if (document.getElementById('whatsapp-integration-container')) {
+                  updateWhatsAppUI(settings);
+              }
+
+              // Form alanlarını doldur
+              Object.keys(settings).forEach(key => {
+                const input = form.querySelector(`[name="${key}"]`);
+                if (input) {
+                  if (input.type === 'checkbox') {
+                    input.checked = settings[key] === true || settings[key] === 'true';
+                  } else {
+                    input.value = settings[key] || '';
+                  }
+                }
+              });
+            } else {
+                 // Form yoksa (WhatsApp senaryosunda dinamik yükleniyor olabilir veya form hidden değilse)
+                 // Ancak formContent içinde form tanımlı, loadIntegrationSettings insert ediyor.
+                 // document.getElementById('integration-settings-form') her zaman olmalı.
+            }
+          }
+        } catch (error) {
+          console.error('Error loading current settings:', error);
+          const container = document.getElementById('whatsapp-integration-container');
+          if (container) {
+              container.innerHTML = `
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <strong class="font-bold">Hata!</strong>
+                    <span class="block sm:inline">Ayarlar yüklenirken bir sorun oluştu.</span>
+                </div>
+              `;
+          }
+        }
+      }
+
+      function updateWhatsAppUI(settings) {
+          const container = document.getElementById('whatsapp-integration-container');
+          const form = document.getElementById('integration-settings-form');
+          
+          if (!container || !form) return;
+
+          if (settings.appId) {
+              // App ID var, onboarding veya yönetim modu
+              form.classList.remove('hidden');
+              
+              container.innerHTML = `
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-center mb-2">
+                        <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <h3 class="text-lg font-medium text-green-800">Entegrasyon Aktif</h3>
+                    </div>
+                    <p class="text-sm text-green-700 mb-2">WhatsApp entegrasyonunuz oluşturuldu.</p>
+                    <div class="bg-white p-2 rounded border border-green-100 mb-3">
+                        <p class="text-xs text-gray-500 uppercase">App ID</p>
+                        <p class="font-mono text-sm text-gray-800">${settings.appId}</p>
+                    </div>
+                    
+                    <button type="button" onclick="openWhatsAppOnboarding('${settings.appId}')" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543 .826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                         Onboarding Panelini Aç
+                    </button>
+                    <p class="text-xs text-green-600 mt-2">Telefon numarası eklemek, şablonları yönetmek ve ayarları yapılandırmak için onboarding panelini kullanın.</p>
+                </div>
+              `;
+          } else {
+              // App ID yok, entegrasyon başlatma
+              form.classList.add('hidden');
+              
+              container.innerHTML = `
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-4 text-center">
+                    <div class="mb-4">
+                        <span class="inline-block p-3 rounded-full bg-primary-100 text-primary">
+                             <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                        </span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">WhatsApp Entegrasyonunu Başlat</h3>
+                    <p class="text-gray-600 mb-6">Müşterilerinizle WhatsApp üzerinden iletişim kurmak için entegrasyonu başlatın. Meta altyapısı kullanılarak hesabınız oluşturulacaktır.</p>
+                    
+                    <button type="button" onclick="startGupshupIntegration(${currentIntegrationId})" class="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-6 rounded-lg transition duration-200 transform hover:scale-105 flex items-center justify-center mx-auto">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        Entegrasyonu Başlat
+                    </button>
+                    <p class="text-xs text-gray-400 mt-4">Devam ederek hizmet şartlarını kabul etmiş olursunuz.</p>
+                </div>
+              `;
+          }
+      }
+
+      async function startGupshupIntegration(integrationId) {
+          try {
+              showNotification('WhatsApp hesabı oluşturuluyor...', 'info');
+              const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+              
+              const response = await axios.post('/Integration/CreateGupshupApp', {
+                  integrationId: parseInt(integrationId)
+              }, {
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'RequestVerificationToken': token
+                  }
+              });
+
+              if (response.data.success) {
+                  showNotification('Hesap oluşturuldu! Ayarlar güncelleniyor...', 'success');
+                  // Reload settings to update UI
+                  await loadIntegrationSettings(integrationId, 'WhatsApp');
+              } else {
+                  showNotification(response.data.message || 'Hesap oluşturulurken hata oluştu.', 'error');
+              }
+          } catch (error) {
+              console.error('Start integration error:', error);
+              showNotification('İşlem sırasında bir hata oluştu.', 'error');
+          }
+      }
+
+      async function openWhatsAppOnboarding(appId) {
+          try {
+              
+              // Get URL
+              const response = await axios.get('/Integration/GetGupshupOnboardingUrl?appId=' + appId);
+              
+              if (response.data.success && response.data.url) {
+                  window.open(response.data.url, "_blank");
+              } else {
+                  showNotification(response.data.message || 'Onboarding linki alınamadı.', 'error');
+                  document.body.removeChild(modal);
+              }
+              
+          } catch (error) {
+              console.error('Onboarding error:', error);
+              showNotification('Onboarding açılırken hata oluştu.', 'error');
+          }
+      }
+
+      // Entegrasyon ayarlarını kaydet
+      async function saveIntegrationSettings(integrationId) {
+        try {
+          const form = document.getElementById('integration-settings-form');
+          if (!form) return;
+
+          // Form verilerini topla
+          const formData = new FormData(form);
+          const settings = {};
+
+          for (let [key, value] of formData.entries()) {
+            const input = form.querySelector(`[name="${key}"]`);
+            if (input && input.type === 'checkbox') {
+              settings[key] = input.checked;
+            } else {
+              settings[key] = value;
+            }
+          }
+
+          // Checkbox'ları ayrıca kontrol et (unchecked olanlar FormData'ya eklenmez)
+          const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+          checkboxes.forEach(checkbox => {
+            if (!settings.hasOwnProperty(checkbox.name)) {
+              settings[checkbox.name] = false;
+            }
+          });
+
+          if (!connectionTestPassed) {
+            showNotification('Lütfen önce bağlantıyı test edin ve başarılı olduğundan emin olun.', 'error');
+            return;
+          }
+
+          const kvkkLinkInput = form.querySelector('input[name="kvkkLink"]');
+          const ticariElektronikIletiLinkInput = form.querySelector('input[name="ticariElektronikIletiLink"]');
+          const legalTextsAcceptedInput = form.querySelector('input[name="legalTextsAccepted"]');
+
+          if (kvkkLinkInput && ticariElektronikIletiLinkInput && legalTextsAcceptedInput) {
+            const kvkkLink = settings.kvkkLink?.toString().trim() || '';
+            const ticariElektronikIletiLink = settings.ticariElektronikIletiLink?.toString().trim() || '';
+            const legalTextsAccepted = settings.legalTextsAccepted === true || settings.legalTextsAccepted === 'true';
+
+            const isValidUrl = (url) => {
+              try {
+                new URL(url);
+                return true;
+              } catch (_) {
+                return false;
+              }
+            };
+
+            if (!kvkkLink) {
+              showNotification('KVKK Aydınlatma Metni Linki boş bırakılamaz.', 'error');
+              return;
+            }
+
+            if (!isValidUrl(kvkkLink)) {
+              showNotification('KVKK Aydınlatma Metni Linki geçerli bir URL olmalıdır (http:// veya https:// ile başlamalıdır).', 'error');
+              return;
+            }
+
+            if (!ticariElektronikIletiLink) {
+              showNotification('Ticari Elektronik İleti Metni Linki boş bırakılamaz.', 'error');
+              return;
+            }
+
+            if (!isValidUrl(ticariElektronikIletiLink)) {
+              showNotification('Ticari Elektronik İleti Metni Linki geçerli bir URL olmalıdır (http:// veya https:// ile başlamalıdır).', 'error');
+              return;
+            }
+
+            if (!legalTextsAccepted) {
+              showNotification('ETK ve KVKK metinlerinin eksiksiz ve mevzuata uygun şekilde doldurulması müşterinin sorumluluğundadır. Devam etmek için sorumluluk bildirimini onaylamanız gerekmektedir.', 'error');
+              return;
+            }
+          }
+
+          showNotification('Ayarlar kaydediliyor...', 'info');
+
+          const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+          const response = await axios.post('/Integration/SaveSettings', {
+            integrationId: parseInt(integrationId),
+            settings: settings
+          }, {
+            headers: {
+              'Content-Type': 'application/json',
+              'RequestVerificationToken': token
+            }
+          });
+
+          if (response.data.success) {
+            showNotification('Ayarlar başarıyla kaydedildi!', 'success');
+            closeDrawer();
+
+            // Sayfayı yenile
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } else {
+            showNotification(response.data.message || 'Ayarlar kaydedilirken hata oluştu.', 'error');
+          }
+
+        } catch (error) {
+          console.error('Error saving settings:', error);
+          let errorMsg = 'Ayarlar kaydedilirken hata oluştu.';
+          
+          if (error.response && error.response.data && error.response.data.message) {
+             errorMsg = error.response.data.message;
+          }
+          
+          showNotification(errorMsg, 'error');
+        }
+      }
+
+      // Entegrasyon bağlantısını test et
+      async function testIntegration(integrationId) {
+        try {
+          const form = document.getElementById('integration-settings-form');
+          if (!form) return;
+
+          // Form verilerini topla
+          const formData = new FormData(form);
+          const settings = {};
+
+          for (let [key, value] of formData.entries()) {
+            const input = form.querySelector(`[name="${key}"]`);
+            if (input && input.type === 'checkbox') {
+              settings[key] = input.checked;
+            } else {
+              settings[key] = value;
+            }
+          }
+
+          showNotification('Bağlantı test ediliyor...', 'info');
+
+          const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+          const response = await axios.post('/Integration/TestConnection', {
+            integrationId: parseInt(integrationId),
+            settings: settings
+          }, {
+            headers: {
+              'Content-Type': 'application/json',
+              'RequestVerificationToken': token
+            }
+          });
+
+          if (response.data.success) {
+            connectionTestPassed = true;
+            showNotification('Bağlantı testi başarılı! Artık ayarları kaydedebilirsiniz.', 'success');
+
+            // Update save button to indicate test passed
+            const saveButton = document.querySelector('button[onclick*="saveIntegrationSettings"]');
+            if (saveButton) {
+              saveButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
+              saveButton.classList.add('bg-primary', 'hover:bg-primary-dark');
+              saveButton.disabled = false;
+              saveButton.innerHTML = '✓ Kaydet (Önce Bağlantıyı Test Edin) (Test Başarılı)';
+            }
+          } else {
+            connectionTestPassed = false;
+            showNotification(response.data.message || 'Bağlantı testi başarısız. Lütfen ayarları kontrol edin.', 'error');
+
+            // Update save button to indicate test failed
+            const saveButton = document.querySelector('button[onclick*="saveIntegrationSettings"]');
+            if (saveButton) {
+              saveButton.classList.remove('bg-primary', 'hover:bg-primary-dark');
+              saveButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+              saveButton.disabled = true;
+              saveButton.innerHTML = 'Kaydet (Önce Bağlantıyı Test Edin) (Test Başarısız)';
+            }
+          }
+        } catch (error) {
+          showNotification('Bağlantı test edilirken hata oluştu.', 'error');
+        }
+      }
+
+      // Sync Integration function
+      async function syncIntegration(integrationId, integrationName, button) {
+         // CSRF token kontrolü
+          const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]');
+        if (!csrfToken) {
+          showNotification('Güvenlik token\'ı bulunamadı. Sayfayı yenileyin.', 'error');
+          return;
+        }
+
+        // Butonu devre dışı bırak
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = `
+          <svg class="animate-spin inline-block w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Senkronize ediliyor...
+        `;
+
+        try {
+          const response = await axios.post('/Integration/SyncIntegration', {
+            integrationId: parseInt(integrationId)
+          }, {
+            headers: {
+              'Content-Type': 'application/json',
+              'RequestVerificationToken': csrfToken.value
+            }
+          });
+
+          if (response.data.success) {
+            showNotification(`${integrationName} senkronizasyonu başarılı! ${response.data.message}`, 'success');
+
+            // Sayfayı yenile
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000);
+          } else {
+            showNotification(`Hata: ${response.data.message}`, 'error');
+          }
+        } catch (error) {
+          const errorMessage = error.response?.data?.message || error.message || 'Bilinmeyen hata';
+          showNotification(`Senkronizasyon hatası: ${errorMessage}`, 'error');
+        } finally {
+          // Butonu tekrar aktif et
+          button.disabled = false;
+          button.innerHTML = originalText;
+        }
+      }
+
+      // Ticimax tab functionality
+      function initializeTicimaxTabs(integrationId) {
+        // Tab switching
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.ticimax-tab-content');
+
+        tabButtons.forEach(button => {
+          button.addEventListener('click', function() {
+            const targetTab = this.getAttribute('data-tab');
+
+            // Update button states
+            tabButtons.forEach(btn => {
+              btn.classList.remove('active', 'border-primary', 'text-primary');
+              btn.classList.add('border-transparent', 'text-gray-500');
+            });
+
+            this.classList.add('active', 'border-primary', 'text-primary');
+            this.classList.remove('border-transparent', 'text-gray-500');
+
+            // Update content visibility
+            tabContents.forEach(content => {
+              content.classList.add('hidden');
+            });
+
+            document.getElementById(targetTab + '-tab' + (targetTab === 'connection' ? '' : '-content')).classList.remove('hidden');
+
+            // Load status mappings if status-mapping tab is selected
+            if (targetTab === 'status-mapping') {
+              loadStatusMappings(integrationId);
+            }
+          });
+        });
+
+        // Check if user has Order Status Notifications module
+        checkOrderStatusModule(integrationId);
+      }
+
+      // Check if user has Order Status Notifications module
+      async function checkOrderStatusModule(integrationId) {
+        try {
+          const response = await fetch('/Integration/CheckOrderStatusModule');
+          const result = await response.json();
+
+          if (result.success && result.hasModule) {
+            // Show status mapping tab
+            document.getElementById('status-mapping-tab').style.display = 'block';
+          } else {
+            // Hide status mapping tab
+            document.getElementById('status-mapping-tab').style.display = 'none';
+          }
+        } catch (error) {
+          document.getElementById('status-mapping-tab').style.display = 'none';
+        }
+      }
+
+      // Load status mappings
+      async function loadStatusMappings(integrationId) {
+        try {
+          const container = document.getElementById('status-mapping-container');
+          container.innerHTML = '<div class="text-center py-4">Yükleniyor...</div>';
+
+          const response = await fetch(`/Integration/GetStatusMappings?integrationId=${integrationId}`);
+          const result = await response.json();
+
+          if (result.success) {
+            renderStatusMappings(result.data, integrationId);
+          } else {
+            container.innerHTML = `<div class="text-center py-4 text-red-600">${result.message || 'Durum eşleştirmeleri yüklenirken hata oluştu.'}</div>`;
+          }
+        } catch (error) {
+          console.error('Error loading status mappings:', error);
+          document.getElementById('status-mapping-container').innerHTML = '<div class="text-center py-4 text-red-600">Durum eşleştirmeleri yüklenirken hata oluştu.</div>';
+        }
+      }
+
+      // Render status mappings
+      function renderStatusMappings(mappings, integrationId) {
+        const container = document.getElementById('status-mapping-container');
+
+        console.log('Received mappings:', mappings);
+
+        const ticimaxStatuses = [
+          { code: '0', name: 'Yeni Sipariş', description: 'Henüz işleme alınmamış yeni sipariş' },
+          { code: '1', name: 'Beklemede', description: 'Sipariş onay bekliyor' },
+          { code: '2', name: 'Onaylandı', description: 'Sipariş onaylandı ve işleme alındı' },
+          { code: '3', name: 'Hazırlanıyor', description: 'Sipariş hazırlanıyor' },
+          { code: '4', name: 'Kargoya Verildi', description: 'Sipariş kargoya verildi' },
+          { code: '5', name: 'Teslim Edildi', description: 'Sipariş müşteriye teslim edildi' },
+          { code: '6', name: 'İptal Edildi', description: 'Sipariş iptal edildi' },
+          { code: '7', name: 'İade Edildi', description: 'Sipariş iade edildi' },
+          { code: '8', name: 'Kısmi Teslim', description: 'Siparişin bir kısmı teslim edildi' },
+          { code: '9', name: 'Ödeme Bekliyor', description: 'Ödeme onayı bekleniyor' },
+          { code: '10', name: 'Stok Bekliyor', description: 'Ürün stok bekliyor' },
+          { code: '11', name: 'Tedarikçi Onayı Bekliyor', description: 'Tedarikçi onayı bekleniyor' },
+          { code: '12', name: 'Kargo Hazırlığı', description: 'Kargo için hazırlanıyor' },
+          { code: '13', name: 'Kargoda', description: 'Kargo yolda' },
+          { code: '14', name: 'Dağıtımda', description: 'Yerel dağıtımda' },
+          { code: '15', name: 'Teslim Edilemedi', description: 'Teslim edilemedi, tekrar denenecek' },
+          { code: '16', name: 'Müşteri İptali', description: 'Müşteri tarafından iptal edildi' },
+          { code: '17', name: 'Sistem İptali', description: 'Sistem tarafından iptal edildi' },
+          { code: '18', name: 'Ödeme İptali', description: 'Ödeme problemi nedeniyle iptal' },
+          { code: '19', name: 'Stok İptali', description: 'Stok yetersizliği nedeniyle iptal' },
+          { code: '20', name: 'Kısmi İptal', description: 'Siparişin bir kısmı iptal edildi' },
+          { code: '21', name: 'İade Talebi', description: 'İade talebi oluşturuldu' },
+          { code: '22', name: 'İade Onaylandı', description: 'İade talebi onaylandı' },
+          { code: '23', name: 'İade Reddedildi', description: 'İade talebi reddedildi' },
+          { code: '24', name: 'İade Kargoda', description: 'İade ürün kargoda' },
+          { code: '25', name: 'İade Teslim Alındı', description: 'İade ürün teslim alındı' },
+          { code: '26', name: 'İade Tamamlandı', description: 'İade işlemi tamamlandı' },
+          { code: '27', name: 'Değişim Talebi', description: 'Ürün değişim talebi' },
+          { code: '28', name: 'Değişim Onaylandı', description: 'Değişim talebi onaylandı' },
+          { code: '29', name: 'Değişim Kargoda', description: 'Değişim ürünü kargoda' },
+          { code: '30', name: 'Değişim Tamamlandı', description: 'Değişim işlemi tamamlandı' }
+        ];
+
+        const systemStatuses = [
+          { value: '1', text: 'Beklemede' },
+          { value: '2', text: 'Onaylandı' },
+          { value: '3', text: 'Hazırlanıyor' },
+          { value: '4', text: 'Kargoya Verildi' },
+          { value: '5', text: 'Teslim Edildi' },
+          { value: '6', text: 'İptal Edildi' },
+          { value: '7', text: 'İade Edildi' }
+        ];
+
+        let html = `
+          <div class="space-y-4">
+            <div class="bg-white rounded-lg border border-gray-200">
+              <div class="p-4 border-b border-gray-200">
+                <h5 class="font-medium text-gray-900">Durum Eşleştirmeleri</h5>
+                <p class="text-sm text-gray-600 mt-1">Sol taraftaki sistem durumlarınız için sağ taraftaki Ticimax durumlarını seçin</p>
+              </div>
+              <div class="p-4">
+        `;
+
+        systemStatuses.forEach(systemStatus => {
+          // Bu sistem durumu için hangi Ticimax durumu seçilmiş
+          const selectedTicimaxStatus = Object.keys(mappings).find(key => mappings[key] === systemStatus.value) || '';
+
+          html += `
+            <div class="flex items-center space-x-4 py-3 border-b border-gray-200 last:border-b-0">
+              <div class="flex-1">
+                <div class="font-medium text-gray-900">${systemStatus.text}</div>
+                <div class="text-sm text-gray-500">Sistem Kodu: ${systemStatus.value}</div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                        data-system-status="${systemStatus.value}"
+                        onchange="updateStatusMapping(this, ${integrationId})">
+                  <option value="">Ticimax Durumu Seçin</option>
+                  ${ticimaxStatuses.map(ticimaxStatus =>
+                    `<option value="${ticimaxStatus.code}" ${selectedTicimaxStatus === ticimaxStatus.code ? 'selected' : ''}>${ticimaxStatus.code} - ${ticimaxStatus.name}</option>`
+                  ).join('')}
+                </select>
+              </div>
+            </div>
+          `;
+        });
+
+        html += `
+              </div>
+            </div>
+            <div class="flex justify-end">
+              <button type="button" onclick="saveStatusMappings(${integrationId})" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+                Eşleştirmeleri Kaydet
+              </button>
+            </div>
+          </div>
+        `;
+
+        container.innerHTML = html;
+      }
+
+      // Update status mapping
+      function updateStatusMapping(selectElement, integrationId) {
+        // This function is called when a mapping is changed
+        // We will save all mappings when the save button is clicked
+      }
+
+      // Save status mappings
+      async function saveStatusMappings(integrationId) {
+        try {
+          // Tüm eşleştirmeleri sıfırla ve yeniden oluştur
+          const mappings = {};
+          const selects = document.querySelectorAll('select[data-system-status]');
+
+          console.log('Found selects:', selects.length);
+
+          // Her sistem durumu için eşleştirmeyi kontrol et
+          selects.forEach(select => {
+            const systemStatus = select.getAttribute('data-system-status');
+            const ticimaxStatus = select.value;
+            console.log(`System: ${systemStatus}, Ticimax: ${ticimaxStatus}`);
+
+            // Sadece seçilmiş (boş olmayan) değerleri kaydet
+            if (ticimaxStatus && ticimaxStatus !== '') {
+              mappings[ticimaxStatus] = systemStatus;
+            }
+          });
+
+          console.log('Saving mappings:', mappings);
+
+          const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+          const response = await fetch('/Integration/SaveStatusMappings', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'RequestVerificationToken': token
+            },
+            body: JSON.stringify({
+              integrationId: integrationId,
+              statusMappings: mappings
+            })
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            showNotification(result.message || 'Durum eşleştirmeleri başarıyla kaydedildi.', 'success');
+          } else {
+            showNotification(result.message || 'Durum eşleştirmeleri kaydedilirken hata oluştu.', 'error');
+          }
+        } catch (error) {
+          console.error('Error saving status mappings:', error);
+          showNotification('Durum eşleştirmeleri kaydedilirken hata oluştu.', 'error');
+        }
+      }
+
+      // Embed kod fonksiyonları
+      async function loadEmbedCode() {
+        try {
+          const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+          const response = await axios.get('/Integration/GetModuleEmbedCode', {
+            headers: {
+              'RequestVerificationToken': token
+            }
+          });
+
+          if (response.data.success) {
+            const embedCodeDisplay = document.getElementById('embed-code-display');
+            if (embedCodeDisplay) {
+              embedCodeDisplay.textContent = response.data.embedCode;
+            }
+          } else {
+            const embedCodeDisplay = document.getElementById('embed-code-display');
+            if (embedCodeDisplay) {
+              embedCodeDisplay.textContent = 'Kod yüklenirken hata oluştu: ' + response.data.message;
+            }
+          }
+        } catch (error) {
+          const embedCodeDisplay = document.getElementById('embed-code-display');
+          if (embedCodeDisplay) {
+            embedCodeDisplay.textContent = 'Kod yüklenirken hata oluştu.';
+          }
+        }
+      }
+
+          async function copyEmbedCode(e) {
+              try {
+                  const embedCodeDisplay = document.getElementById('embed-code-display');
+
+                  // 1) Element gerçekten var mı?
+                  if (!embedCodeDisplay) {
+                      console.warn('embed-code-display bulunamadı');
+                      showNotification('Kod bulunamadı.', 'error');
+                      return;
+                  }
+
+                  const embedCode = (embedCodeDisplay.textContent || '').trim();
+
+                  // 2) Yüklenmemiş veya hata aldıysa uyar
+                  if (!embedCode || embedCode === 'Kod yükleniyor...' || embedCode.includes('hata oluştu')) {
+                      showNotification('Önce kodun başarıyla yüklenmesini bekleyin.', 'warning');
+                      return;
+                  }
+
+                  // 3) Panoya yaz
+                  await navigator.clipboard.writeText(embedCode);
+
+                  // 4) Buton referansı (event üzerinden güvenli al)
+                  const copyButton = e?.currentTarget || e?.target?.closest('button');
+
+                  if (copyButton) {
+                      const originalHTML = copyButton.innerHTML;
+
+                      copyButton.innerHTML = `
+          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"></path>
+          </svg>
+          Kopyalandı!
+        `;
+                      copyButton.classList.remove('bg-primary-100', 'hover:bg-primary-200', 'text-primary');
+                      copyButton.classList.add('bg-green-100', 'text-green-600');
+
+                      setTimeout(() => {
+                          copyButton.innerHTML = originalHTML;
+                          copyButton.classList.remove('bg-green-100', 'text-green-600');
+                          copyButton.classList.add('bg-primary-100', 'hover:bg-primary-200', 'text-primary');
+                      }, 2000);
+                  }
+
+                  showNotification('Embed kodu panoya kopyalandı!', 'success');
+              } catch (error) {
+                  console.error('copyEmbedCode error:', error);
+                  showNotification('Kopyalama işlemi başarısız oldu.', 'error');
+              }
+  }
+
+    </script>
+}
+
+<main class="p-4 bg-gray-50">
+    @Html.AntiForgeryToken()
+
+    <div class="mb-6">
+      <h2 class="text-2xl font-semibold text-gray-900">Entegrasyonlar</h2>
+      <p class="text-gray-500">E-ticaret altyapıları ve iletişim kanalları entegrasyonlarını yönetin</p>
+    </div>
+
+    <!-- Entegrasyonlar Listesi -->
+    <div class="bg-white p-6 rounded-xl border border-gray-200 mb-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <h3 class="text-lg font-semibold">Mevcut Entegrasyonlar</h3>
+        <button id="sync-all-btn" class="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-lg text-sm font-medium transition-colors inline-flex items-center">
+          <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Tümünü Senkronize Et
+        </button>
+      </div>
+
+      @foreach (var category in Model.GroupedIntegrations)
+    {
+          <!-- @category.Key -->
+          <div class="mb-8">
+            <h4 class="text-md font-medium text-gray-700 mb-4">@category.Key</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          @foreach (var integration in category.Value)
+          {
+            var companyIntegration = Model.CompanyIntegrations.ContainsKey(integration.Id) ? Model.CompanyIntegrations[integration.Id] : null;
+            var isConfigured = companyIntegration?.IsConfigured ?? false;
+            var isActive = companyIntegration?.IsActive ?? false;
+            var hasIntegration = companyIntegration != null;
+            var deactivatedByService = companyIntegration?.DeactivatedByService ?? false;
+
+                  <!-- @integration.Name -->
+                 <div class="group relative flex flex-col h-full bg-white rounded-xl border border-gray-200 transition-shadow duration-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)] overflow-visible">
+                    
+                    <div class="p-6 flex flex-col h-full relative z-10">
+                        <!-- Header & Badge Row -->
+                        <div class="flex justify-between items-start mb-5 gap-4">
+                             <!-- Header (Icon & Title) -->
+                             <div class="flex items-start gap-4 flex-1 min-w-0">
+                                 <div class="flex-shrink-0 w-16 h-16 rounded-xl flex items-center justify-center text-3xl border border-gray-200 bg-gray-50 text-gray-700">
+                                    @if (!string.IsNullOrEmpty(integration.IconClass) && integration.IconClass.Length == 1)
+                                    {
+                                        <span class="@integration.IconColor font-bold text-2xl">@integration.IconClass</span>
+                                    }
+                                    else
+                                    {
+                                         <svg class="w-8 h-8 @integration.IconColor" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                                          </svg>
+                                    }
+                                </div>
+                                 <div class="flex-grow pt-1 min-w-0">
+                                     <div class="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-1 truncate">
+                                        @category.Key
+                                    </div>
+                                    <h3 class="text-xl font-bold text-gray-900 leading-tight transition-colors line-clamp-2">
+                                        @integration.Name
+                                    </h3>
+                                </div>
+                             </div>
+
+                             <!-- Status Badge -->
+                             <div class="flex-shrink-0 flex gap-2 pt-1">
+                                  @if (hasIntegration)
+                                  {
+                                    @if (isConfigured && !deactivatedByService)
+                                    {
+                                      <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-green-50 text-green-700 border border-green-100">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></span>
+                                        Aktif
+                                      </span>
+                                    }
+                                    else
+                                    {
+                                      <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-orange-50 text-orange-700 border border-orange-100">
+                                         <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                        Eksik
+                                      </span>
+                                    }
+                                  }
+                                  else 
+                                  {
+                                      <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-gray-100 text-gray-500 border border-gray-200">
+                                         Kurulmadı
+                                      </span>
+                                  }
+                             </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-6 flex-grow">
+                            <p class="text-gray-500 text-sm leading-relaxed line-clamp-3">
+                               @integration.Description
+                            </p>
+                            
+                             @{
+                                 var stats = hasIntegration && isConfigured ? companyIntegration.SyncStats : new Dictionary<string, object>();
+                                 var hasSyncedProducts = stats.ContainsKey("syncedProducts");
+                                 var hasSyncedOrders = stats.ContainsKey("syncedOrders");
+                                 var hasSentMessages = stats.ContainsKey("sentMessages");
+                                 var hasAnyStats = hasSyncedProducts || hasSyncedOrders || hasSentMessages;
+                             }
+
+                             @if (hasIntegration && isConfigured && !deactivatedByService && !string.IsNullOrEmpty(companyIntegration.SyncStatsJson) && hasAnyStats)
+                             {
+                                 <div class="mt-4 bg-gray-50 rounded-xl p-3 border border-gray-200">
+                                    <div class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">İstatistikler</div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                      @if (hasSyncedProducts)
+                                      {
+                                         <div class="flex flex-col">
+                                            <span class="text-[10px] text-gray-400">Ürün</span>
+                                            <span class="font-semibold text-gray-900">@stats["syncedProducts"]</span>
+                                         </div>
+                                      }
+                                      @if (hasSyncedOrders)
+                                      {
+                                          <div class="flex flex-col">
+                                            <span class="text-[10px] text-gray-400">Sipariş</span>
+                                            <span class="font-semibold text-gray-900">@stats["syncedOrders"]</span>
+                                         </div>
+                                      }
+                                      @if (hasSentMessages)
+                                      {
+                                          <div class="flex flex-col">
+                                            <span class="text-[10px] text-gray-400">Mesaj</span>
+                                            <span class="font-semibold text-gray-900">@stats["sentMessages"]</span>
+                                         </div>
+                                      }
+                                   </div>
+                                 </div>
+                             }
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="mt-auto pt-2">
+                            <div class="flex gap-2">
+                                @if (hasIntegration)
+                                {
+                                    <div class="w-full flex flex-col gap-3">
+                                         <div class="flex items-center justify-between gap-2">
+                                            <button class="flex-1 flex items-center justify-center px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium settings-btn"
+                                                    data-integration-name="@integration.Name"
+                                                    data-integration-id="@integration.Id">
+                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                                Ayarlar
+                                            </button>
+                                            
+                                            @if (integration.Type == "ecommerce" && isConfigured && !deactivatedByService)
+                                            {
+                                                <button class="flex-1 flex items-center justify-center px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-all text-sm font-medium sync-integration-btn"
+                                                        data-integration-id="@integration.Id"
+                                                        data-integration-name="@integration.Name">
+                                                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg>
+                                                    Senkronize
+                                                </button>
+                                            }
+                                            else if (integration.Type == "communication" && isConfigured)
+                                            {
+                                                if (integration.Name == "SMS")
+                                                {
+                                                  <a href="/SmsTemplate" class="flex-1 flex items-center justify-center px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-all text-sm font-medium">Şablonlar</a>
+                                                }
+                                                else if (integration.Name == "WhatsApp")
+                                                {
+                                                  <a href="/WhatsAppTemplate" class="flex-1 flex items-center justify-center px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-all text-sm font-medium">Şablonlar</a>
+                                                }
+                                                else if (integration.Name == "Email SMTP")
+                                                {
+                                                  <a href="/EmailTemplate" class="flex-1 flex items-center justify-center px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-all text-sm font-medium">Şablonlar</a>
+                                                }
+                                            }
+                                            else if (!isConfigured)
+                                            {
+                                                <div class="hidden"></div> <!-- Placeholder for alignment -->
+                                            }
+                                            else
+                                            {
+                                                <button class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-all text-sm font-medium">Test Gönder</button>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <button onclick="addIntegration('@integration.Id', '@integration.Name')" class="w-full px-4 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg transition-all text-sm font-medium">
+                                        Entegrasyonu Başlat
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                 </div>
+          }
+            </div>
+          </div>
+    }
+    </div>
+</main>
+
+@functions {
+  private string GetTimeAgo(DateTime dateTime)
+  {
+    var timeSpan = DateTime.Now - dateTime;
+
+    if (timeSpan.TotalMinutes < 1)
+      return "Az önce";
+    else if (timeSpan.TotalMinutes < 60)
+      return $"{(int)timeSpan.TotalMinutes} dakika önce";
+    else if (timeSpan.TotalHours < 24)
+      return $"{(int)timeSpan.TotalHours} saat önce";
+    else
+      return $"{(int)timeSpan.TotalDays} gün önce";
+  }
+}
+@await Html.PartialAsync("~/Views/GiftWheel/Partials/_LegalTextsModal.cshtml")

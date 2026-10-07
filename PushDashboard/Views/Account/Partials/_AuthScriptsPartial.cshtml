@@ -1,0 +1,169 @@
+
+<script>
+  // Şifre göster/gizle işlevselliği
+  document.addEventListener('DOMContentLoaded', function() {
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+
+    if (togglePassword && passwordInput) {
+      togglePassword.addEventListener('click', function() {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        // İkon değiştir
+        const icon = this.querySelector('svg');
+        if (type === 'password') {
+          icon.innerHTML = `
+            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          `;
+        } else {
+          icon.innerHTML = `
+            <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
+            <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+            <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+            <line x1="2" x2="22" y1="2" y2="22"></line>
+          `;
+        }
+      });
+    }
+  });
+
+  // Form validation
+  function validateForm(formId) {
+    const form = document.getElementById(formId);
+    if (!form) return true;
+
+    const inputs = form.querySelectorAll('input[required]');
+    let isValid = true;
+
+    inputs.forEach(input => {
+      const errorSpan = form.querySelector(`[data-valmsg-for="${input.name}"]`);
+      
+      if (!input.value.trim()) {
+        isValid = false;
+        if (errorSpan) {
+          errorSpan.textContent = 'Bu alan zorunludur.';
+          errorSpan.classList.add('text-red-500');
+        }
+        input.classList.add('border-red-500');
+      } else {
+        if (errorSpan) {
+          errorSpan.textContent = '';
+          errorSpan.classList.remove('text-red-500');
+        }
+        input.classList.remove('border-red-500');
+      }
+    });
+
+    return isValid;
+  }
+
+  // Email validation
+  function validateEmail(email) {
+    const re = /^[a-zA-Z0-9._%+-]+@@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return re.test(email);
+  }
+
+  // Password strength checker
+  function checkPasswordStrength(password) {
+    let strength = 0;
+    const checks = {
+      length: password.length >= 8,
+      lowercase: /[a-z]/.test(password),
+      uppercase: /[A-Z]/.test(password),
+      numbers: /\d/.test(password),
+      special: /[!@@#$%^&*(),.?":{}|<>]/.test(password)
+    };
+
+    Object.values(checks).forEach(check => {
+      if (check) strength++;
+    });
+
+    return {
+      score: strength,
+      checks: checks,
+      level: strength < 2 ? 'weak' : strength < 4 ? 'fair' : strength < 5 ? 'good' : 'strong'
+    };
+  }
+
+  // Show password strength indicator
+  function showPasswordStrength(password, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const strength = checkPasswordStrength(password);
+    const colors = {
+      weak: 'bg-red-500',
+      fair: 'bg-orange-500', 
+      good: 'bg-yellow-500',
+      strong: 'bg-green-500'
+    };
+
+    const widths = {
+      weak: 'w-1/4',
+      fair: 'w-2/4',
+      good: 'w-3/4',
+      strong: 'w-full'
+    };
+
+    container.innerHTML = `
+      <div class="mt-2">
+        <div class="flex justify-between text-xs text-gray-600 mb-1">
+          <span>Şifre Gücü</span>
+          <span class="capitalize">${strength.level === 'weak' ? 'Zayıf' : 
+                                   strength.level === 'fair' ? 'Orta' :
+                                   strength.level === 'good' ? 'İyi' : 'Güçlü'}</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div class="h-2 rounded-full transition-all duration-300 ${colors[strength.level]} ${widths[strength.level]}"></div>
+        </div>
+        <div class="mt-2 text-xs text-gray-600">
+          <div class="grid grid-cols-2 gap-1">
+            <span class="${strength.checks.length ? 'text-green-600' : 'text-gray-400'}">✓ En az 8 karakter</span>
+            <span class="${strength.checks.lowercase ? 'text-green-600' : 'text-gray-400'}">✓ Küçük harf</span>
+            <span class="${strength.checks.uppercase ? 'text-green-600' : 'text-gray-400'}">✓ Büyük harf</span>
+            <span class="${strength.checks.numbers ? 'text-green-600' : 'text-gray-400'}">✓ Rakam</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Loading state for forms
+  function setFormLoading(formId, loading) {
+    const form = document.getElementById(formId);
+    const submitButton = form?.querySelector('button[type="submit"]');
+    
+    if (!submitButton) return;
+
+    if (loading) {
+      submitButton.disabled = true;
+      submitButton.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        İşleniyor...
+      `;
+    } else {
+      submitButton.disabled = false;
+      // Restore original text based on form type
+      if (formId.includes('login')) {
+        submitButton.innerHTML = 'Giriş Yap';
+      } else if (formId.includes('register')) {
+        submitButton.innerHTML = 'Kayıt Ol';
+      } else {
+        submitButton.innerHTML = 'Gönder';
+      }
+    }
+  }
+
+  // Export functions for global use
+  window.validateForm = validateForm;
+  window.validateEmail = validateEmail;
+  window.checkPasswordStrength = checkPasswordStrength;
+  window.showPasswordStrength = showPasswordStrength;
+  window.setFormLoading = setFormLoading;
+
+</script>

@@ -1,0 +1,115 @@
+﻿
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@ViewData["Title"] | Dijitaldesin E-Ticaret Büyüme Platformu</title>
+  <link rel="icon" type="image/x-icon" href="~/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="~/favicon-32x32.png" />
+  <link rel="apple-touch-icon" href="~/apple-touch-icon.png" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    :root {
+      /* Theme Color Palette based on #02379c */
+      --theme-50: #eff6ff;
+      --theme-100: #dbeafe;
+      --theme-200: #bfdbfe;
+      --theme-300: #93c5fd;
+      --theme-400: #60a5fa;
+      --theme-500: #3b82f6;
+      --theme-600: #02379c; /* Main Theme Color */
+      --theme-700: #002c81;
+      --theme-800: #001e64; /* Theme Dark */
+      --theme-900: #00154a;
+
+      --theme-color: var(--theme-600);
+      --theme-color-rgb: 2, 55, 156;
+      --theme-color-dark: var(--theme-800);
+      --theme-color-light: var(--theme-100);
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: 'var(--theme-50)',
+              100: 'var(--theme-100)',
+              200: 'var(--theme-200)',
+              300: 'var(--theme-300)',
+              400: 'var(--theme-400)',
+              500: 'var(--theme-500)',
+              600: 'var(--theme-600)',
+              700: 'var(--theme-700)',
+              800: 'var(--theme-800)',
+              900: 'var(--theme-900)',
+              DEFAULT: 'var(--theme-600)',
+              dark: 'var(--theme-800)',
+              light: 'var(--theme-100)',
+            },
+            green: {
+              light: '#dcfce7',
+              DEFAULT: '#22c55e',
+            },
+            blue: {
+              50: 'var(--theme-50)',
+              100: 'var(--theme-100)',
+              200: 'var(--theme-200)',
+              300: 'var(--theme-300)',
+              400: 'var(--theme-400)',
+              500: 'var(--theme-500)',
+              600: 'var(--theme-600)',
+              700: 'var(--theme-700)',
+              800: 'var(--theme-800)',
+              900: 'var(--theme-900)',
+              light: 'var(--theme-100)',
+              DEFAULT: 'var(--theme-600)',
+            },
+            indigo: {
+              50: 'var(--theme-50)',
+              100: 'var(--theme-100)',
+              200: 'var(--theme-200)',
+              300: 'var(--theme-300)',
+              400: 'var(--theme-400)',
+              500: 'var(--theme-500)',
+              600: 'var(--theme-600)',
+              700: 'var(--theme-700)',
+              800: 'var(--theme-800)',
+              900: 'var(--theme-900)',
+              DEFAULT: 'var(--theme-600)',
+            },
+            purple: {
+              light: '#f3e8ff',
+              DEFAULT: '#a855f7',
+            },
+            yellow: {
+              light: '#fef9c3',
+              DEFAULT: '#eab308',
+            },
+            red: {
+              light: '#fee2e2',
+              DEFAULT: '#ef4444',
+            },
+            orange: {
+              light: '#fed7aa',
+              DEFAULT: '#f97316',
+            },
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+  @RenderBody()
+
+  <partial name="_Toast" />
+  <script src="~/js/toast.js" asp-append-version="true"></script>
+  <script src="~/js/site.js"></script>
+  @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

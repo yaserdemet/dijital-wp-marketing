@@ -1,0 +1,207 @@
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize dashboard
+    initializeDashboard();
+    
+    // Set up real-time updates
+    setupRealTimeUpdates();
+    
+    // Set up refresh button
+    setupRefreshButton();
+    
+    // Set up quick actions
+    setupQuickActions();
+});
+
+function initializeDashboard() {
+    console.log('Dashboard initialized');
+    updateLastUpdateTime();
+}
+
+function setupRealTimeUpdates() {
+    // Update dashboard data every 30 seconds
+    setInterval(function() {
+        refreshDashboardData();
+    }, 30000);
+}
+
+function setupRefreshButton() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            refreshDashboardData();
+        });
+    }
+}
+
+function setupQuickActions() {
+    // Birthday notifications
+    window.sendBirthdayNotifications = async function() {
+        const button = event.target;
+        const originalText = button.innerHTML;
+        
+        try {
+            // Show loading state
+            button.disabled = true;
+            button.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Gönderiliyor...
+            `;
+
+            const response = await fetch('/Birthday/SendNotifications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showNotification('Doğum günü bildirimleri başarıyla gönderildi!', 'success');
+                // Refresh dashboard data to show updated stats
+                refreshDashboardData();
+            } else {
+                showNotification('Hata: ' + result.message, 'error');
+            }
+        } catch (error) {
+            console.error('Error sending birthday notifications:', error);
+            showNotification('Bildirimler gönderilirken bir hata oluştu.', 'error');
+        } finally {
+            // Restore button state
+            button.disabled = false;
+            button.innerHTML = originalText;
+        }
+    };
+}
+
+async function refreshDashboardData() {
+    try {
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.classList.add('animate-spin');
+        }
+
+        const response = await fetch('/Home/GetRealTimeData');
+        const result = await response.json();
+
+        if (result.success) {
+            updateDashboardElements(result.data);
+            updateLastUpdateTime();
+        } else {
+            console.error('Failed to refresh dashboard data:', result.message);
+        }
+    } catch (error) {
+        console.error('Error refreshing dashboard data:', error);
+    } finally {
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.classList.remove('animate-spin');
+        }
+    }
+}
+
+function updateDashboardElements(data) {
+    // Update credit balance
+    const creditBalance = document.getElementById('creditBalance');
+    if (creditBalance && data.creditBalance) {
+        creditBalance.textContent = data.creditBalance;
+    }
+
+    // Update active modules
+    const activeModules = document.getElementById('activeModules');
+    if (activeModules && data.activeModules !== undefined) {
+        activeModules.textContent = data.activeModules;
+    }
+
+    // Update notifications today
+    const notificationsToday = document.getElementById('notificationsToday');
+    if (notificationsToday && data.notificationsToday !== undefined) {
+        notificationsToday.textContent = data.notificationsToday;
+    }
+
+    // Update real-time indicator
+    const realTimeIndicator = document.getElementById('realTimeIndicator');
+    if (realTimeIndicator) {
+        realTimeIndicator.innerHTML = `
+            <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+            Canlı
+        `;
+    }
+}
+
+function updateLastUpdateTime() {
+    const lastUpdate = document.getElementById('lastUpdate');
+    if (lastUpdate) {
+        const now = new Date();
+        lastUpdate.textContent = now.toLocaleTimeString('tr-TR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+    }
+}
+
+// Chart interactions
+function toggleChartType(chartType) {
+    console.log('Toggling chart type:', chartType);
+    // This could be expanded to switch between different chart views
+}
+
+// Error handling for integration status
+function showErrorDetails(integrationName, errorMessage) {
+    // This function is defined in the integration status partial
+    console.log('Showing error details for:', integrationName, errorMessage);
+}
+
+function closeErrorModal() {
+    // This function is defined in the integration status partial
+    console.log('Closing error modal');
+}
+
+// Notification metrics refresh
+function refreshMetrics() {
+    console.log('Refreshing notification metrics...');
+    
+    // Show loading state
+    const refreshBtn = event.target.closest('button');
+    if (refreshBtn) {
+        refreshBtn.classList.add('animate-spin');
+        
+        // Simulate API call
+        setTimeout(() => {
+            refreshBtn.classList.remove('animate-spin');
+            showNotification('Metrikler güncellendi', 'success');
+        }, 1000);
+    }
+}
+
+// Utility functions
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('tr-TR', {
+        style: 'currency',
+        currency: 'TRY'
+    }).format(amount);
+}
+
+function formatNumber(number) {
+    return new Intl.NumberFormat('tr-TR').format(number);
+}
+
+function formatDate(date) {
+    return new Date(date).toLocaleDateString('tr-TR', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// Export functions for global access
+window.refreshDashboardData = refreshDashboardData;
+window.toggleChartType = toggleChartType;
+window.refreshMetrics = refreshMetrics;
+</script>

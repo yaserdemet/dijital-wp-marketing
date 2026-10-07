@@ -1,0 +1,140 @@
+@{
+    ViewData["Title"] = "Sayfa Bulunamadı - 404";
+    Layout = "~/Views/Shared/_BlankLayout.cshtml";
+}
+
+<style>
+    /* Gentle floating animation for the illustration */
+    @@keyframes float-slow {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-15px); }
+        100% { transform: translateY(0px); }
+    }
+
+    /* Subtle fade-in up animation for content */
+    @@keyframes fade-in-up {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Rocket Launch Animation */
+    @@keyframes launch {
+        0% { transform: translate(0, 0) scale(1); }
+        30% { transform: translate(-2px, 2px) scale(0.95); } /* Rumble */
+        100% { transform: translate(6px, -6px) scale(1.1); } /* Fly */
+    }
+
+    .animate-float { animation: float-slow 6s ease-in-out infinite; }
+    .animate-fade-in { animation: fade-in-up 0.6s ease-out forwards; }
+    
+    /* Trigger rocket on button hover */
+    .group:hover .rocket-launch {
+        animation: launch 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    .delay-100 { animation-delay: 100ms; }
+    .delay-200 { animation-delay: 200ms; }
+    .delay-300 { animation-delay: 300ms; }
+</style>
+
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 overflow-hidden">
+    
+    <div class="max-w-2xl w-full text-center animate-fade-in">
+        
+        <div class="mb-8 relative z-10 animate-float lg:mb-12">
+            <svg class="mx-auto h-64 w-auto sm:h-80 lg:h-96" viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#02379c;stop-opacity:0.2" />
+                        <stop offset="100%" style="stop-color:#A855F7;stop-opacity:0.1" />
+                    </linearGradient>
+                    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="15" result="coloredBlur" />
+                        <feMerge>
+                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+                <circle cx="100" cy="80" r="40" fill="#E5E7EB" opacity="0.5"/>
+                <circle cx="500" cy="300" r="60" fill="#E5E7EB" opacity="0.3"/>
+                <circle cx="50" cy="250" r="10" fill="#FCD34D"/>
+                <circle cx="550" cy="50" r="15" fill="#FCD34D"/>
+                <path d="M450 150 L470 130 L490 150 L470 170 Z" fill="#60A5FA" opacity="0.6"/>
+                <circle cx="300" cy="420" r="180" fill="url(#grad1)" />
+                <path d="M150 420 Q 300 300 450 420" stroke="#CBD5E1" stroke-width="4" stroke-dasharray="10 10" fill="none"/>
+                <g filter="url(#glow)">
+                    <rect x="260" y="160" width="80" height="100" rx="20" fill="#E5E7EB"/>
+                    <rect x="275" y="175" width="50" height="80" rx="15" fill="white"/>
+                    <circle cx="300" cy="150" r="40" fill="white" stroke="#E5E7EB" stroke-width="4"/>
+                    <ellipse cx="300" cy="150" rx="30" ry="25" fill="#1E293B"/>
+                    <ellipse cx="300" cy="150" rx="25" ry="20" fill="#0F172A"/>
+                    <circle cx="310" cy="140" r="5" fill="white" opacity="0.8"/>
+                    <path d="M275 190 C 250 190, 240 220, 250 240" stroke="white" stroke-width="12" stroke-linecap="round" fill="none"/>
+                    <path d="M325 190 C 350 190, 360 220, 350 240" stroke="white" stroke-width="12" stroke-linecap="round" fill="none"/>
+                    <path d="M285 255 L 285 290" stroke="white" stroke-width="14" stroke-linecap="round"/>
+                    <path d="M315 255 L 315 290" stroke="white" stroke-width="14" stroke-linecap="round"/>
+                    <g transform="translate(360, 120) rotate(15)">
+                        <rect x="0" y="0" width="40" height="50" fill="#FCD34D" rx="4"/>
+                        <text x="20" y="35" font-family="sans-serif" font-size="30" font-weight="bold" fill="#B45309" text-anchor="middle">?</text>
+                    </g>
+                </g>
+                 <text x="300" y="350" font-family="sans-serif" font-size="60" font-weight="900" fill="#02379c" text-anchor="middle" letter-spacing="4" opacity="0.2">404</text>
+            </svg>
+        </div>
+        
+        <div class="relative z-20 animate-fade-in delay-100">
+            <div class="inline-block bg-primary-50 text-primary px-4 py-1.5 text-sm font-semibold rounded-full mb-4 shadow-sm">
+                Sayfa Bulunamadı - Hata 404
+            </div>
+
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight">
+                Bir sorunumuz var!
+            </h1>
+            
+            <p class="mt-6 text-lg text-gray-600 max-w-md mx-auto">
+                Oops! Aradığınız sayfa uzay boşluğunda kaybolmuş gibi görünüyor. Silinmiş, taşınmış veya URL yanlış olabilir.
+            </p>
+            
+            <div class="mt-10 flex flex-col sm:flex-row justify-center gap-4 animate-fade-in delay-200">
+                <a href="/" class="group inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200 transform hover:-translate-y-1 active:translate-y-0">
+                    <i class="fas fa-rocket mr-2 rocket-launch transition-transform"></i>
+                    Ana Sayfaya Dön
+                </a>
+                
+                <button onclick="history.back()" class="inline-flex items-center justify-center px-6 py-3 border border-gray-200 shadow-sm text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Önceki Sayfaya Git
+                </button>
+            </div>
+        </div>
+    </div>
+    @* ileride açılabilir *@
+
+    @* <div class="mt-16 w-full max-w-2xl animate-fade-in delay-300">
+        <div class="relative">
+            <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                <div class="w-full border-t border-gray-200"></div>
+            </div>
+            <div class="relative flex justify-center">
+                <span class="px-4 bg-gray-50 text-sm text-gray-500 font-medium">
+                    Hâlâ bulamadınız mı?
+                </span>
+            </div>
+        </div>
+        <div class="mt-6 flex justify-center gap-8">
+            <a href="/iletisim" class="text-gray-400 hover:text-primary transition-colors duration-300 flex flex-col items-center gap-1 group">
+                <span class="p-2 rounded-full group-hover:bg-primary-50 transition-colors">
+                     <i class="fas fa-life-ring fa-lg"></i>
+                </span>
+                <span class="text-xs">Destek Merkezi</span>
+            </a>
+             <a href="/iletisim" class="text-gray-400 hover:text-primary transition-colors duration-300 flex flex-col items-center gap-1 group">
+                <span class="p-2 rounded-full group-hover:bg-primary-50 transition-colors">
+                    <i class="fas fa-envelope fa-lg"></i>
+                </span>
+                <span class="text-xs">Bize Ulaşın</span>
+            </a>
+        </div>
+    </div> *@
+</div>

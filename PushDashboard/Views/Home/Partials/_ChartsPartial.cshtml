@@ -1,0 +1,80 @@
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white p-6 rounded-lg shadow-sm">
+        <h3 class="text-lg font-semibold mb-4">Sepet Durumu Dağılımı</h3>
+        <div class="h-64 flex items-center justify-center relative" id="chartContainer">
+            <div class="w-full h-full flex items-end justify-around">
+                <div class="flex flex-col items-center relative bar-column" data-day="Pzt" data-count="42" data-value="18500">
+                    <div class="w-16 bg-primary rounded-t-md transition-all duration-200 cursor-pointer hover:bg-primary-dark bar" style="height: 120px;"></div>
+                    <span class="mt-2 text-xs text-gray-600">Pzt</span>
+                </div>
+                <div class="flex flex-col items-center relative bar-column" data-day="Sal" data-count="56" data-value="22400">
+                    <div class="w-16 bg-primary rounded-t-md transition-all duration-200 cursor-pointer hover:bg-primary-dark bar" style="height: 160px;"></div>
+                    <span class="mt-2 text-xs text-gray-600">Sal</span>
+                </div>
+                <div class="flex flex-col items-center relative bar-column" data-day="Çar" data-count="38" data-value="15200">
+                    <div class="w-16 bg-primary rounded-t-md transition-all duration-200 cursor-pointer hover:bg-primary-dark bar" style="height: 108px;"></div>
+                    <span class="mt-2 text-xs text-gray-600">Çar</span>
+                </div>
+                <div class="flex flex-col items-center relative bar-column" data-day="Per" data-count="71" data-value="28900">
+                    <div class="w-16 bg-primary rounded-t-md transition-all duration-200 cursor-pointer hover:bg-primary-dark bar" style="height: 202px;"></div>
+                    <span class="mt-2 text-xs text-gray-600">Per</span>
+                </div>
+                <div class="flex flex-col items-center relative bar-column" data-day="Cum" data-count="49" data-value="19600">
+                    <div class="w-16 bg-primary rounded-t-md transition-all duration-200 cursor-pointer hover:bg-primary-dark bar" style="height: 140px;"></div>
+                    <span class="mt-2 text-xs text-gray-600">Cum</span>
+                </div>
+                <div class="flex flex-col items-center relative bar-column" data-day="Cmt" data-count="63" data-value="25200">
+                    <div class="w-16 bg-primary rounded-t-md transition-all duration-200 cursor-pointer hover:bg-primary-dark bar" style="height: 180px;"></div>
+                    <span class="mt-2 text-xs text-gray-600">Cmt</span>
+                </div>
+                <div class="flex flex-col items-center relative bar-column" data-day="Paz" data-count="35" data-value="14000">
+                    <div class="w-16 bg-primary rounded-t-md transition-all duration-200 cursor-pointer hover:bg-primary-dark bar" style="height: 100px;"></div>
+                    <span class="mt-2 text-xs text-gray-600">Paz</span>
+                </div>
+            </div>
+            
+            <!-- Tooltip -->
+            <div id="tooltip" class="absolute bg-gray-800 text-white p-2 rounded shadow-lg opacity-0 pointer-events-none transition-opacity duration-200 z-10">
+                <div class="text-sm">
+                    <div id="tooltipTitle" class="font-semibold"></div>
+                    <div id="tooltipCount" class="text-xs"></div>
+                    <div id="tooltipValue" class="text-xs text-gray-300"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-sm">
+        <h3 class="text-lg font-semibold mb-4">Haftalık Performans</h3>
+        <div class="h-64 flex items-center justify-center">
+            <div class="w-48 h-48 relative">
+                <!-- Donut Chart -->
+                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <!-- Background circle -->
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="#f3f4f6" stroke-width="8"></circle>
+                    <!-- Progress circle -->
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="#02379c" stroke-width="8" 
+                            stroke-dasharray="251.2" stroke-dashoffset="62.8" stroke-linecap="round"></circle>
+                </svg>
+                <!-- Center text -->
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-gray-900">75%</div>
+                        <div class="text-sm text-gray-500">Hedef</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 space-y-2">
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Tamamlanan</span>
+                <span class="text-sm font-medium">356 / 475</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Kalan</span>
+                <span class="text-sm font-medium">119</span>
+            </div>
+        </div>
+    </div>
+</div>

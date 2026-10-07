@@ -1,0 +1,143 @@
+﻿<!-- Preview Modal -->
+<div id="previewModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden overflow-y-auto">
+    <div class="flex items-start justify-center min-h-screen p-2 sm:p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl my-2 sm:my-4">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-3 sm:p-4 border-b border-gray-200 sticky top-0 bg-white z-10 rounded-t-lg">
+                <h3 class="text-lg sm:text-xl font-semibold text-gray-900">Çark Önizlemesi</h3>
+                <div class="flex items-center space-x-2 sm:space-x-4">
+                    <!-- Device Toggle -->
+                    <div class="flex bg-gray-100 rounded-lg p-1">
+                        <button id="desktopPreview" class="px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium rounded-md bg-white shadow-sm text-gray-900">
+                            Masaüstü
+                        </button>
+                        <button id="mobilePreview" class="px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium rounded-md text-gray-600">
+                            Mobil
+                        </button>
+                    </div>
+                    <button id="closePreviewModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-3 sm:p-4">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                    <!-- Preview Container -->
+                    <div id="previewContainer" class="bg-gray-100 rounded-lg p-3 sm:p-4 transition-all duration-300 flex items-center justify-center">
+                        <div id="modalPreviewWidget" class="w-full max-w-sm">
+                            <!-- The widget will be rendered here by the module -->
+                        </div>
+                    </div>
+
+                    <!-- Controls Panel -->
+                    <div class="space-y-4">
+                        <!-- Test Controls -->
+                        <div class="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
+                            <h4 class="text-base sm:text-lg font-semibold text-gray-900 mb-3">Test Kontrolleri</h4>
+                            <div class="space-y-3">
+                                <div class="flex space-x-2 sm:space-x-3">
+                                    <button id="testSpinBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-medium text-sm transition-colors">
+                                        Test Çevirme
+                                    </button>
+                                    <button id="resetPreviewBtn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-medium text-sm transition-colors">
+                                        Sıfırla
+                                    </button>
+                                </div>
+                                <div class="flex justify-between items-center text-xs sm:text-sm text-gray-600 bg-gray-50 p-2 sm:p-3 rounded-lg">
+                                    <span><span id="previewPrizeCount">0</span> ödül • <span id="previewTotalProbability">0</span>% şans</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Responsive wheel canvas */
+    .wheel-canvas-container {
+        width: 220px;
+        height: 220px;
+    }
+    .wheel-canvas {
+        display: block;
+        width: 220px;
+        height: 220px;
+    }
+
+    /* Larger screens */
+    @@media (min-width: 640px) {
+        .wheel-canvas-container {
+            width: 260px;
+            height: 260px;
+        }
+        .wheel-canvas {
+            width: 260px;
+            height: 260px;
+        }
+    }
+
+    /* Even larger screens */
+    @@media (min-width: 1024px) {
+        .wheel-canvas-container {
+            width: 280px;
+            height: 280px;
+        }
+        .wheel-canvas {
+            width: 280px;
+            height: 280px;
+        }
+    }
+</style>
+
+<script>
+// Simple and working preview modal script
+(function() {
+    console.log('Preview modal script loading...');
+
+    // Initialize when DOM is ready
+    function initPreview() {
+        console.log('Initializing preview...');
+        return true;
+    }
+    
+    // Update preview with data
+    function updatePreview(data) {
+        console.log('updatePreview called with data:', data);
+    }
+
+    // Event listeners
+    function setupEventListeners() {
+        // Close button
+        const closeButton = document.getElementById('closePreviewModal');
+        if (closeButton) {
+            closeButton.addEventListener('click', function() {
+                document.getElementById('previewModal').classList.add('hidden');
+            });
+        }
+    }
+
+    // Make updatePreview globally accessible
+    window.updatePreview = updatePreview;
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Preview modal DOM ready');
+            initPreview();
+            setupEventListeners();
+        });
+    } else {
+        console.log('Preview modal DOM already ready');
+        initPreview();
+        setupEventListeners();
+    }
+
+})(); // End of IIFE
+</script>

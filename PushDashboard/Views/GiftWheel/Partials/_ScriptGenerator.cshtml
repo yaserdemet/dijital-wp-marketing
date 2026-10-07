@@ -1,0 +1,391 @@
+﻿@using PushDashboard.ViewModels
+@model GiftWheelViewModel
+
+<div class="space-y-8">
+    <!-- Header -->
+    <div>
+        <h3 class="text-lg font-medium text-gray-900">Entegrasyon Kodu</h3>
+        <p class="text-sm text-gray-600">Hediye çarkını web sitenize entegre etmek için aşağıdaki kodu kullanın</p>
+    </div>
+
+    <!-- Integration Steps -->
+    <div class="bg-blue-50 rounded-lg p-6">
+        <h4 class="text-md font-medium text-blue-900 mb-4">
+            <i class="fas fa-info-circle mr-2"></i>
+            Entegrasyon Adımları
+        </h4>
+        <div class="space-y-3 text-sm text-blue-800">
+            <div class="flex items-start">
+                <span class="bg-blue-200 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">1</span>
+                <div>
+                    <p class="font-medium">HTML Kodu Ekleyin</p>
+                    <p>Çarkın görüntülenmesini istediğiniz sayfaya HTML kodunu ekleyin</p>
+                </div>
+            </div>
+            <div class="flex items-start">
+                <span class="bg-blue-200 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">2</span>
+                <div>
+                    <p class="font-medium">JavaScript Kodunu Dahil Edin</p>
+                    <p>Sayfanızın &lt;/body&gt; etiketinden önce JavaScript kodunu ekleyin</p>
+                </div>
+            </div>
+            <div class="flex items-start">
+                <span class="bg-blue-200 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">3</span>
+                <div>
+                    <p class="font-medium">Test Edin</p>
+                    <p>Çarkın düzgün çalıştığından emin olmak için test edin</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HTML Code -->
+    <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h4 class="text-md font-medium text-gray-900">
+                <i class="fab fa-html5 mr-2 text-orange-600"></i>
+                HTML Kodu
+            </h4>
+            <button id="copyHtmlBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors">
+                <i class="fas fa-copy mr-1"></i>
+                Kopyala
+            </button>
+        </div>
+        <div class="p-6">
+            <pre id="htmlCode" class="bg-gray-100 rounded-lg p-4 text-sm overflow-x-auto"><code>&lt;!-- Hediye Çarkı Container --&gt;
+&lt;div id="gift-wheel-container"&gt;
+    &lt;div class="text-center p-8"&gt;
+        &lt;div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"&gt;&lt;/div&gt;
+        &lt;p class="mt-4 text-gray-600"&gt;Hediye çarkı yükleniyor...&lt;/p&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+        </div>
+    </div>
+
+    <!-- JavaScript Code -->
+    <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h4 class="text-md font-medium text-gray-900">
+                <i class="fab fa-js-square mr-2 text-yellow-600"></i>
+                JavaScript Kodu
+            </h4>
+            <div class="flex items-center space-x-2">
+                <button id="refreshScriptBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors">
+                    <i class="fas fa-sync-alt mr-1"></i>
+                    Yenile
+                </button>
+                <button id="copyJsBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors">
+                    <i class="fas fa-copy mr-1"></i>
+                    Kopyala
+                </button>
+            </div>
+        </div>
+        <div class="p-6">
+            <div class="mb-4">
+                <div class="flex items-center space-x-4">
+                    <label class="flex items-center">
+                        <input type="radio" name="scriptType" value="inline" checked class="mr-2">
+                        <span class="text-sm">Inline Script</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="scriptType" value="external" class="mr-2">
+                        <span class="text-sm">External Script</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Inline Script -->
+            <div id="inlineScript">
+                <pre id="jsCode" class="bg-gray-100 rounded-lg p-4 text-sm overflow-x-auto max-h-96"><code id="jsCodeContent">// Hediye çarkı yükleniyor...</code></pre>
+            </div>
+            
+            <!-- External Script -->
+            <div id="externalScript" class="hidden">
+                <pre class="bg-gray-100 rounded-lg p-4 text-sm overflow-x-auto"><code>&lt;script src="https://admin.pushonica.com/api/gift-wheel/@Model.CompanyId/script"&gt;&lt;/script&gt;</code></pre>
+                <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div class="flex items-start">
+                        <i class="fas fa-exclamation-triangle text-yellow-500 mt-1 mr-3"></i>
+                        <div class="text-sm text-yellow-800">
+                            <p class="font-medium">Önemli Not:</p>
+                            <p>External script kullanırken CORS ayarlarının doğru yapılandırıldığından emin olun.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CSS Customization -->
+    <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h4 class="text-md font-medium text-gray-900">
+                <i class="fab fa-css3-alt mr-2 text-blue-600"></i>
+                CSS Özelleştirme (Opsiyonel)
+            </h4>
+            <button id="copyCssBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors">
+                <i class="fas fa-copy mr-1"></i>
+                Kopyala
+            </button>
+        </div>
+        <div class="p-6">
+            <p class="text-sm text-gray-600 mb-4">Çarkın görünümünü özelleştirmek için aşağıdaki CSS kodunu kullanabilirsiniz:</p>
+            <pre id="cssCode" class="bg-gray-100 rounded-lg p-4 text-sm overflow-x-auto"><code>/* Hediye Çarkı Özel Stilleri */
+.gift-wheel-container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+    font-family: 'Arial', sans-serif;
+}
+
+.gift-wheel-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.gift-wheel-subtitle {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.gift-wheel-canvas {
+    margin: 20px 0;
+}
+
+.gift-wheel-button {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.gift-wheel-button:hover {
+    transform: scale(1.05);
+}
+
+.gift-wheel-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.gift-wheel-form {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.gift-wheel-input {
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+.gift-wheel-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* Responsive Design */
+@@media (max-width: 768px) {
+    .gift-wheel-container {
+        padding: 10px;
+    }
+    
+    .gift-wheel-title {
+        font-size: 20px;
+    }
+    
+    .gift-wheel-button {
+        padding: 12px 24px;
+        font-size: 16px;
+    }
+}</code></pre>
+        </div>
+    </div>
+
+    <!-- Preview Section -->
+    <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h4 class="text-md font-medium text-gray-900">
+                <i class="fas fa-eye mr-2 text-indigo-600"></i>
+                Önizleme
+            </h4>
+        </div>
+        <div class="p-6">
+            <div class="bg-gray-50 rounded-lg p-8 text-center">
+                <div class="max-w-md mx-auto">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">@(Model.Settings?.WheelTitle ?? "Çarkı Çevir, Hediyeni Kazan!")</h3>
+                    <p class="text-gray-600 mb-6">@(Model.Settings?.WheelSubtitle ?? "Şansını dene ve harika hediyeler kazan")</p>
+                    
+                    <!-- Wheel Preview -->
+                    <div class="wheel-preview mb-6">
+                        <div class="wheel-center"></div>
+                    </div>
+                    
+                    <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-full font-medium transition-colors mb-4">
+                        @(Model.Settings?.ButtonText ?? "Çarkı Çevir")
+                    </button>
+                    
+                    <div class="space-y-3">
+                        <input type="text" placeholder="Adınız" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        <input type="tel" placeholder="Telefon Numaranız" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        @if (Model.Settings?.RequireEmail == true)
+                        {
+                            <input type="email" placeholder="E-posta Adresiniz" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        }
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-center mt-6">
+                <button id="fullPreviewBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                    <i class="fas fa-external-link-alt mr-2"></i>
+                    Tam Ekran Önizleme
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Testing Tools -->
+    <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h4 class="text-md font-medium text-gray-900">
+                <i class="fas fa-tools mr-2 text-indigo-600"></i>
+                Test Araçları
+            </h4>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button id="testApiBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                    <i class="fas fa-plug mr-2"></i>
+                    API Test
+                </button>
+                <button id="validateConfigBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    Konfigürasyon Doğrula
+                </button>
+                <button id="debugModeBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                    <i class="fas fa-bug mr-2"></i>
+                    Debug Modu
+                </button>
+            </div>
+            
+            <!-- Test Results -->
+            <div id="testResults" class="mt-4 hidden">
+                <div class="bg-gray-100 rounded-lg p-4">
+                    <h5 class="font-medium text-gray-900 mb-2">Test Sonuçları:</h5>
+                    <div id="testResultsContent" class="text-sm text-gray-700"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documentation Links -->
+    <div class="bg-gray-50 rounded-lg p-6">
+        <h4 class="text-md font-medium text-gray-900 mb-4">
+            <i class="fas fa-book mr-2 text-indigo-600"></i>
+            Yardım ve Dokümantasyon
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <a href="#" class="flex items-center text-indigo-600 hover:text-indigo-800">
+                <i class="fas fa-question-circle mr-2"></i>
+                Sık Sorulan Sorular
+            </a>
+            <a href="#" class="flex items-center text-indigo-600 hover:text-indigo-800">
+                <i class="fas fa-code mr-2"></i>
+                API Dokümantasyonu
+            </a>
+            <a href="#" class="flex items-center text-indigo-600 hover:text-indigo-800">
+                <i class="fas fa-video mr-2"></i>
+                Video Eğitimler
+            </a>
+            <a href="#" class="flex items-center text-indigo-600 hover:text-indigo-800">
+                <i class="fas fa-life-ring mr-2"></i>
+                Teknik Destek
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Script type toggle
+    const scriptTypeRadios = document.querySelectorAll('input[name="scriptType"]');
+    const inlineScript = document.getElementById('inlineScript');
+    const externalScript = document.getElementById('externalScript');
+    
+    scriptTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'inline') {
+                inlineScript.classList.remove('hidden');
+                externalScript.classList.add('hidden');
+            } else {
+                inlineScript.classList.add('hidden');
+                externalScript.classList.remove('hidden');
+            }
+        });
+    });
+    
+    // Load JavaScript code
+    loadJavaScriptCode();
+    
+    function loadJavaScriptCode() {
+        // This will be implemented in the main gift-wheel-admin.js
+        if (window.loadEmbedScript) {
+            window.loadEmbedScript();
+        }
+    }
+    
+    // Refresh script button
+    document.getElementById('refreshScriptBtn').addEventListener('click', loadJavaScriptCode);
+    
+    // Copy buttons
+    setupCopyButtons();
+    
+    function setupCopyButtons() {
+        const copyButtons = [
+            { id: 'copyHtmlBtn', targetId: 'htmlCode' },
+            { id: 'copyJsBtn', targetId: 'jsCodeContent' },
+            { id: 'copyCssBtn', targetId: 'cssCode' }
+        ];
+        
+        copyButtons.forEach(({ id, targetId }) => {
+            document.getElementById(id).addEventListener('click', function() {
+                const target = document.getElementById(targetId);
+                const text = target.textContent || target.innerText;
+                
+                navigator.clipboard.writeText(text).then(() => {
+                    // Show success feedback
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-check mr-1"></i>Kopyalandı!';
+                    this.classList.remove('bg-gray-600', 'hover:bg-gray-700');
+                    this.classList.add('bg-green-600');
+                    
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.classList.remove('bg-green-600');
+                        this.classList.add('bg-gray-600', 'hover:bg-gray-700');
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Kopyalama hatası:', err);
+                    showNotification('Kopyalama başarısız. Lütfen manuel olarak kopyalayın.', 'error');
+                });
+            });
+        });
+    }
+});
+</script>

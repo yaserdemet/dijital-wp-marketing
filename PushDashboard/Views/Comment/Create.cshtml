@@ -1,0 +1,354 @@
+﻿@model PushDashboard.ViewModels.CommentRequestCreateViewModel
+@{
+    ViewData["Title"] = "Yeni Yorum İsteği";
+}
+
+<style>
+    .form-container {
+        max-width: 42rem;
+        margin: 0 auto;
+        background-color: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+        padding: 2rem;
+    }
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+    }
+    .form-input:focus {
+        outline: none;
+        ring: 2px;
+        ring-color: #3b82f6;
+        border-color: transparent;
+    }
+    .form-select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        background-color: white;
+        transition: all 0.2s;
+    }
+    .form-select:focus {
+        outline: none;
+        ring: 2px;
+        ring-color: #3b82f6;
+        border-color: transparent;
+    }
+    .form-help {
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    .form-error {
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+        color: #dc2626;
+    }
+    .btn-primary {
+        width: 100%;
+        background-color: #3b82f6;
+        color: white;
+        font-weight: 500;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+    .btn-primary:hover {
+        background-color: #2563eb;
+    }
+    .btn-primary:focus {
+        outline: none;
+        ring: 2px;
+        ring-offset: 2px;
+        ring-color: #3b82f6;
+    }
+    .btn-secondary {
+        width: 100%;
+        background-color: #f3f4f6;
+        color: #374151;
+        font-weight: 500;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+    .btn-secondary:hover {
+        background-color: #e5e7eb;
+    }
+    .btn-secondary:focus {
+        outline: none;
+        ring: 2px;
+        ring-offset: 2px;
+        ring-color: #6b7280;
+    }
+</style>
+
+<main class="w-full py-6 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Yeni Yorum İsteği</h1>
+                <p class="mt-2 text-sm text-gray-600">Tek bir ürün için yorum çekme isteği oluşturun</p>
+            </div>
+            <a href="@Url.Action("Index")" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Geri Dön
+            </a>
+        </div>
+    </div>
+
+    <!-- Info Card -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800">Yeni Sistem Hakkında</h3>
+                <div class="mt-2 text-sm text-blue-700">
+                    <p>Artık mağaza bazlı toplu yorum çekme sistemi kullanabilirsiniz! Ana sayfadaki "Mağaza Yönetimi" sekmesinden:</p>
+                    <ul class="list-disc list-inside mt-2 space-y-1">
+                        <li>Trendyol mağazanızı ekleyin</li>
+                        <li>Ürünleri otomatik olarak senkronize edin</li>
+                        <li>Birden fazla ürün seçerek toplu yorum transferi yapın</li>
+                    </ul>
+                    <p class="mt-2">Bu form sadece tek ürün için yorum çekmek istediğinizde kullanın.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="form-container">
+        <form asp-action="Create" method="post" id="commentRequestForm">
+            @Html.AntiForgeryToken()
+            
+            <!-- Product URL -->
+            <div class="form-group">
+                <label asp-for="Request.ProductUrl" class="form-label">Ürün URL'si</label>
+                <input asp-for="Request.ProductUrl" class="form-input" 
+                       placeholder="https://www.trendyol.com/product-name-p-123456"
+                       required>
+                <div class="form-help">
+                    Trendyol ürün sayfasının tam URL'sini giriniz. Örnek: https://www.trendyol.com/product-name-p-123456
+                </div>
+                <span asp-validation-for="Request.ProductUrl" class="form-error"></span>
+            </div>
+
+            <!-- External Product ID -->
+            <div class="form-group">
+                <label asp-for="Request.ExternalProductId" class="form-label">Ürün ID'si</label>
+                <input asp-for="Request.ExternalProductId" class="form-input" 
+                       placeholder="123456"
+                       required>
+                <div class="form-help">
+                    Ürün URL'sindeki ID kısmını giriniz. URL'den otomatik olarak çıkarılacaktır.
+                </div>
+                <span asp-validation-for="Request.ExternalProductId" class="form-error"></span>
+            </div>
+
+            <!-- External Product URL (Optional) -->
+            <div class="form-group">
+                <label asp-for="Request.ExternalProductUrl" class="form-label">Harici Ürün URL'si (Opsiyonel)</label>
+                <input asp-for="Request.ExternalProductUrl" class="form-input" 
+                       placeholder="https://example.com/product">
+                <div class="form-help">
+                    Ürünün kendi sitenizde veya başka bir platformdaki URL'si (opsiyonel)
+                </div>
+                <span asp-validation-for="Request.ExternalProductUrl" class="form-error"></span>
+            </div>
+
+            <!-- Review Source -->
+            <div class="form-group">
+                <label asp-for="Request.ReviewSource" class="form-label">Yorum Kaynağı</label>
+                <select asp-for="Request.ReviewSource" class="form-select" required>
+                    <option value="Trendyol">Trendyol</option>
+                </select>
+                <div class="form-help">
+                    Yorumların çekileceği platform. Şu anda sadece Trendyol desteklenmektedir.
+                </div>
+                <span asp-validation-for="Request.ReviewSource" class="form-error"></span>
+            </div>
+
+            <!-- Requested Comments Count -->
+            <div class="form-group">
+                <label asp-for="Request.RequestedCommentsCount" class="form-label">İstenilen Yorum Sayısı</label>
+                <input asp-for="Request.RequestedCommentsCount" type="number" class="form-input" 
+                       min="20" max="1000" value="1000" required>
+                <div class="form-help">
+                    Çekilmek istenen maksimum yorum sayısı (20-1000 arası)
+                </div>
+                <span asp-validation-for="Request.RequestedCommentsCount" class="form-error"></span>
+            </div>
+
+            <!-- Balance Check -->
+            <div class="form-group">
+                <div id="balanceCheck" class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="text-sm text-gray-600">Bakiye kontrol ediliyor...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="form-group">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <a href="@Url.Action("Index")" class="btn-secondary text-center">
+                        İptal Et
+                    </a>
+                    <button type="submit" class="btn-primary" id="submitButton" disabled>
+                        <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Yorum İsteği Oluştur
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</main>
+
+@section Scripts {
+<script>
+$(document).ready(function() {
+    // Auto-extract product ID from URL
+    $('#Request_ProductUrl').on('input', function() {
+        const url = $(this).val();
+        const productId = extractProductIdFromUrl(url);
+        if (productId) {
+            $('#Request_ExternalProductId').val(productId);
+        }
+        checkBalance();
+    });
+
+    // Check balance when comment count changes
+    $('#Request_RequestedCommentsCount').on('input', checkBalance);
+
+    // Initial balance check
+    checkBalance();
+
+    // Form submission
+    $('#commentRequestForm').on('submit', function(e) {
+        const submitButton = $('#submitButton');
+        if (submitButton.prop('disabled')) {
+            e.preventDefault();
+            return false;
+        }
+
+        submitButton.prop('disabled', true);
+        submitButton.html(`
+            <svg class="animate-spin -ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            İşleniyor...
+        `);
+    });
+});
+
+function extractProductIdFromUrl(url) {
+    try {
+        if (!url) return '';
+
+        // Trendyol URL format: /product-name-p-123456
+        const match = url.match(/-p-(\d+)/);
+        return match ? match[1] : '';
+    } catch (e) {
+        return '';
+    }
+}
+
+function checkBalance() {
+    const commentCount = parseInt($('#Request_RequestedCommentsCount').val()) || 0;
+
+    if (commentCount < 20) {
+        updateBalanceDisplay('Minimum 20 yorum seçilmelidir.', 'warning');
+        return;
+    }
+
+    $.ajax({
+        url: '@Url.Action("CheckBalance")',
+        type: 'GET',
+        data: { commentCount: commentCount },
+        success: function(response) {
+            if (response.success) {
+                if (response.hasBalance) {
+                    updateBalanceDisplay(
+                        `✓ Bakiye yeterli. ${commentCount} yorum için ${response.requiredAmount.toFixed(2)} TL harcanacak. Mevcut bakiye: ${response.currentBalance.toFixed(2)} TL`,
+                        'success'
+                    );
+                    $('#submitButton').prop('disabled', false);
+                } else {
+                    updateBalanceDisplay(
+                        `⚠ Yetersiz bakiye. ${commentCount} yorum için ${response.requiredAmount.toFixed(2)} TL gerekli. Mevcut bakiye: ${response.currentBalance.toFixed(2)} TL. Eksik: ${response.missingAmount.toFixed(2)} TL`,
+                        'error'
+                    );
+                    $('#submitButton').prop('disabled', true);
+                }
+            } else {
+                updateBalanceDisplay('Bakiye kontrol edilemedi.', 'error');
+                $('#submitButton').prop('disabled', true);
+            }
+        },
+        error: function() {
+            updateBalanceDisplay('Bakiye kontrol edilirken hata oluştu.', 'error');
+            $('#submitButton').prop('disabled', true);
+        }
+    });
+}
+
+function updateBalanceDisplay(message, type) {
+    const colors = {
+        'success': 'bg-green-50 border-green-200 text-green-800',
+        'warning': 'bg-yellow-50 border-yellow-200 text-yellow-800',
+        'error': 'bg-red-50 border-red-200 text-red-800',
+        'info': 'bg-blue-50 border-blue-200 text-blue-800'
+    };
+
+    const icons = {
+        'success': '✓',
+        'warning': '⚠',
+        'error': '✗',
+        'info': 'ℹ'
+    };
+
+    $('#balanceCheck').html(`
+        <div class="flex items-start ${colors[type]} border rounded-lg p-4">
+            <span class="text-lg mr-3">${icons[type]}</span>
+            <span class="text-sm">${message}</span>
+        </div>
+    `);
+}
+</script>
+}

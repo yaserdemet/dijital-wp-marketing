@@ -1,0 +1,305 @@
+@model PushDashboard.Models.ViewModels.AllResponsesViewModel
+
+@{
+    ViewData["Title"] = "Anket Yanıtları";
+    ViewData["PageHeader"] = "Anket Yanıtları";
+    ViewData["PageDescription"] = "Ziyaretçilerinizin verdiği tüm yanıtları görüntüleyin";
+}
+
+<main class="min-h-screen bg-gray-50/50 pb-20">
+    <!-- Sticky Header -->
+    <div class="sticky top-2 lg:top-4 z-20 px-2 lg:px-6 mb-4 lg:mb-6">
+        <div class="max-w-[1200px] mx-auto bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm px-4 py-3 lg:px-6 lg:py-4">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-3">
+                <div class="flex items-center gap-3 lg:gap-4 w-full md:w-auto">
+                    <a href="@Url.Action("Edit", new { id = ViewBag.SurveyId })" class="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all flex-shrink-0">
+                        <i class="fas fa-arrow-left text-lg"></i>
+                    </a>
+                    <div class="min-w-0">
+                        <h2 class="text-lg lg:text-xl font-bold text-gray-900 truncate">Anket Yanıtları</h2>
+                        <div class="flex items-center gap-2 text-xs lg:text-sm text-gray-500">
+                            <span class="font-medium text-blue-600">@Model.TotalSessions</span> oturum
+                            <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
+                            <span class="font-medium text-blue-600">@Model.TotalResponses</span> yanıt
+                            @if (Model.TotalPages > 1)
+                            {
+                                <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
+                                <span>Sayfa @Model.CurrentPage / @Model.TotalPages</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <form method="get" action="@Url.Action("AllResponses", new { id = ViewBag.SurveyId })" class="flex items-center gap-2 w-full md:w-auto flex-shrink-0" id="dateFilterForm">
+                    <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5" id="startDateWrap">
+                        <i class="fas fa-calendar-alt text-gray-400 text-xs"></i>
+                        <input type="date" name="startDate" id="filterStartDate" value="@(Model.StartDate?.ToString("yyyy-MM-dd"))"
+                               class="bg-transparent border-none outline-none text-sm text-gray-700 w-[120px] cursor-pointer" placeholder="Başlangıç">
+                    </div>
+                    <span class="text-gray-300 text-xs">—</span>
+                    <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5" id="endDateWrap">
+                        <i class="fas fa-calendar-alt text-gray-400 text-xs"></i>
+                        <input type="date" name="endDate" id="filterEndDate" value="@(Model.EndDate?.ToString("yyyy-MM-dd"))"
+                               class="bg-transparent border-none outline-none text-sm text-gray-700 w-[120px] cursor-pointer" placeholder="Bitiş">
+                    </div>
+                    <button type="submit" class="p-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-sm flex-shrink-0" title="Filtrele">
+                        <i class="fas fa-search text-xs"></i>
+                    </button>
+                    @if (Model.StartDate.HasValue || Model.EndDate.HasValue)
+                    {
+                        <a href="@Url.Action("AllResponses", new { id = ViewBag.SurveyId })" class="p-2 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all flex-shrink-0" title="Filtreyi Temizle">
+                            <i class="fas fa-times text-xs"></i>
+                        </a>
+                    }
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-[1200px] mx-auto px-2 lg:px-6">
+        @if (Model.SessionGroups.Any())
+        {
+            <div class="space-y-4">
+                @foreach (var session in Model.SessionGroups)
+                {
+                    var localTime = session.CreatedAt;
+                    var isMobile = !string.IsNullOrEmpty(session.UserAgent) && System.Text.RegularExpressions.Regex.IsMatch(session.UserAgent, @"Android|iPhone|iPad|iPod|Mobile", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    var pageUrl = session.Responses.FirstOrDefault()?.PageUrl;
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group hover:shadow-md transition-all">
+                        <!-- Session Header -->
+                        <div class="px-5 py-3.5 bg-gray-50/70 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl @(isMobile ? "bg-green-50" : "bg-blue-50") flex items-center justify-center flex-shrink-0">
+                                    <i class="fas @(isMobile ? "fa-mobile-alt text-green-600" : "fa-desktop text-blue-600") text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-semibold text-gray-900">@localTime.ToString("dd MMM yyyy", new System.Globalization.CultureInfo("tr-TR"))</span>
+                                        <span class="text-xs text-gray-400">@localTime.ToString("HH:mm")</span>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(pageUrl))
+                                    {
+                                        <p class="text-[11px] text-gray-400 truncate max-w-[300px]" title="@pageUrl">
+                                            <i class="fas fa-link mr-1"></i>@pageUrl
+                                        </p>
+                                    }
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-100 px-2 py-1 rounded-md">
+                                    @session.Responses.Count yanıt
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Yanıtlar -->
+                        <div class="divide-y divide-gray-50">
+                            @foreach (var response in session.Responses.OrderBy(r => r.Question.SortOrder))
+                            {
+                                var qType = response.Question.QuestionType;
+                                var typeIcon = qType switch {
+                                    PushDashboard.Models.ExitSurveyQuestionType.SingleChoice => "fa-check-circle",
+                                    PushDashboard.Models.ExitSurveyQuestionType.TextArea => "fa-align-left",
+                                    PushDashboard.Models.ExitSurveyQuestionType.Boolean => "fa-toggle-on",
+                                    PushDashboard.Models.ExitSurveyQuestionType.NpsRating => "fa-star",
+                                    PushDashboard.Models.ExitSurveyQuestionType.MultiChoice => "fa-check-square",
+                                    PushDashboard.Models.ExitSurveyQuestionType.EmojiRating => "fa-smile",
+                                    _ => "fa-question"
+                                };
+                                var typeColor = qType switch {
+                                    PushDashboard.Models.ExitSurveyQuestionType.SingleChoice => "text-blue-500",
+                                    PushDashboard.Models.ExitSurveyQuestionType.TextArea => "text-emerald-500",
+                                    PushDashboard.Models.ExitSurveyQuestionType.Boolean => "text-purple-500",
+                                    PushDashboard.Models.ExitSurveyQuestionType.NpsRating => "text-amber-500",
+                                    PushDashboard.Models.ExitSurveyQuestionType.MultiChoice => "text-indigo-500",
+                                    PushDashboard.Models.ExitSurveyQuestionType.EmojiRating => "text-pink-500",
+                                    _ => "text-gray-500"
+                                };
+
+                                <div class="px-5 py-3.5 flex items-start gap-3">
+                                    <div class="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <i class="fas @typeIcon @typeColor text-xs"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-xs text-gray-500 mb-1">@response.Question.QuestionText</p>
+                                        @if (qType == PushDashboard.Models.ExitSurveyQuestionType.NpsRating && response.RatingValue.HasValue)
+                                        {
+                                            <div class="flex items-center gap-1.5">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    <i class="fas fa-star text-sm @(i <= response.RatingValue ? "text-amber-400" : "text-gray-200")"></i>
+                                                }
+                                                <span class="text-sm font-bold text-gray-800 ml-1">@response.RatingValue/5</span>
+                                            </div>
+                                        }
+                                        else if (qType == PushDashboard.Models.ExitSurveyQuestionType.EmojiRating && response.RatingValue.HasValue)
+                                        {
+                                            var emoji = response.RatingValue switch { 1 => "😞", 2 => "😐", 3 => "😊", _ => "❓" };
+                                            var emojiLabel = response.RatingValue switch { 1 => "Üzgün", 2 => "Nötr", 3 => "Mutlu", _ => "" };
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-2xl">@emoji</span>
+                                                <span class="text-sm font-medium text-gray-700">@emojiLabel</span>
+                                            </div>
+                                        }
+                                        else if (qType == PushDashboard.Models.ExitSurveyQuestionType.Boolean)
+                                        {
+                                            var isYes = response.ResponseText == "Evet";
+                                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium @(isYes ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700")">
+                                                <i class="fas @(isYes ? "fa-check" : "fa-times") text-xs"></i>
+                                                @response.ResponseText
+                                            </span>
+                                        }
+                                        else if (qType == PushDashboard.Models.ExitSurveyQuestionType.TextArea)
+                                        {
+                                            <p class="text-sm text-gray-800 bg-gray-50 rounded-lg px-3 py-2 italic">@response.ResponseText</p>
+                                        }
+                                        else
+                                        {
+                                            <span class="inline-flex items-center px-3 py-1 rounded-lg bg-blue-50 text-blue-800 text-sm font-medium">@response.ResponseText</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 lg:p-20 text-center">
+                <div class="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-comments text-gray-300 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Henüz yanıt yok</h3>
+                <p class="text-sm text-gray-500 max-w-sm mx-auto">Ziyaretçileriniz anketi yanıtladıkça sonuçlar burada görünecek.</p>
+            </div>
+        }
+
+        <!-- Sayfalama -->
+        @if (Model.TotalPages > 1)
+        {
+            var sd = Model.StartDate?.ToString("yyyy-MM-dd") ?? "";
+            var ed = Model.EndDate?.ToString("yyyy-MM-dd") ?? "";
+
+            <div class="mt-6 flex items-center justify-center">
+                <nav class="flex items-center gap-1 bg-white rounded-xl shadow-sm border border-gray-100 px-2 py-1.5">
+                    @if (Model.HasPreviousPage)
+                    {
+                        <a href="@Url.Action("AllResponses", new { id = ViewBag.SurveyId, page = Model.CurrentPage - 1, pageSize = Model.PageSize, startDate = sd, endDate = ed })"
+                           class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-all">
+                            <i class="fas fa-chevron-left text-xs"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="p-2 rounded-lg text-gray-300 cursor-not-allowed">
+                            <i class="fas fa-chevron-left text-xs"></i>
+                        </span>
+                    }
+
+                    @{
+                        var startPage = Math.Max(1, Model.CurrentPage - 2);
+                        var endPage = Math.Min(Model.TotalPages, Model.CurrentPage + 2);
+                    }
+
+                    @if (startPage > 1)
+                    {
+                        <a href="@Url.Action("AllResponses", new { id = ViewBag.SurveyId, page = 1, pageSize = Model.PageSize, startDate = sd, endDate = ed })"
+                           class="w-9 h-9 flex items-center justify-center rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-all">1</a>
+                        @if (startPage > 2)
+                        {
+                            <span class="w-6 text-center text-gray-400 text-xs">...</span>
+                        }
+                    }
+
+                    @for (int i = startPage; i <= endPage; i++)
+                    {
+                        @if (i == Model.CurrentPage)
+                        {
+                            <span class="w-9 h-9 flex items-center justify-center rounded-lg text-sm font-bold text-white bg-blue-600 shadow-sm">@i</span>
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("AllResponses", new { id = ViewBag.SurveyId, page = i, pageSize = Model.PageSize, startDate = sd, endDate = ed })"
+                               class="w-9 h-9 flex items-center justify-center rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-all">@i</a>
+                        }
+                    }
+
+                    @if (endPage < Model.TotalPages)
+                    {
+                        @if (endPage < Model.TotalPages - 1)
+                        {
+                            <span class="w-6 text-center text-gray-400 text-xs">...</span>
+                        }
+                        <a href="@Url.Action("AllResponses", new { id = ViewBag.SurveyId, page = Model.TotalPages, pageSize = Model.PageSize, startDate = sd, endDate = ed })"
+                           class="w-9 h-9 flex items-center justify-center rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-all">@Model.TotalPages</a>
+                    }
+
+                    @if (Model.HasNextPage)
+                    {
+                        <a href="@Url.Action("AllResponses", new { id = ViewBag.SurveyId, page = Model.CurrentPage + 1, pageSize = Model.PageSize, startDate = sd, endDate = ed })"
+                           class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-all">
+                            <i class="fas fa-chevron-right text-xs"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="p-2 rounded-lg text-gray-300 cursor-not-allowed">
+                            <i class="fas fa-chevron-right text-xs"></i>
+                        </span>
+                    }
+                </nav>
+            </div>
+        }
+    </div>
+</main>
+
+<script>
+(function() {
+    const startEl = document.getElementById('filterStartDate');
+    const endEl = document.getElementById('filterEndDate');
+    const startWrap = document.getElementById('startDateWrap');
+    const endWrap = document.getElementById('endDateWrap');
+    const form = document.getElementById('dateFilterForm');
+
+    function clearError() {
+        startWrap.classList.remove('border-red-400', 'bg-red-50');
+        endWrap.classList.remove('border-red-400', 'bg-red-50');
+        startWrap.classList.add('border-gray-200', 'bg-gray-50');
+        endWrap.classList.add('border-gray-200', 'bg-gray-50');
+    }
+
+    function validate() {
+        clearError();
+        if (startEl.value && endEl.value && endEl.value < startEl.value) {
+            startWrap.classList.remove('border-gray-200', 'bg-gray-50');
+            endWrap.classList.remove('border-gray-200', 'bg-gray-50');
+            startWrap.classList.add('border-red-400', 'bg-red-50');
+            endWrap.classList.add('border-red-400', 'bg-red-50');
+            return false;
+        }
+        return true;
+    }
+
+    startEl.addEventListener('change', function() {
+        if (endEl.value && startEl.value) {
+            endEl.min = startEl.value;
+            if (endEl.value < startEl.value) endEl.value = startEl.value;
+        }
+        validate();
+    });
+
+    endEl.addEventListener('change', function() {
+        if (startEl.value && endEl.value) {
+            startEl.max = endEl.value;
+            if (startEl.value > endEl.value) startEl.value = endEl.value;
+        }
+        validate();
+    });
+
+    form.addEventListener('submit', function(e) {
+        if (!validate()) e.preventDefault();
+    });
+})();
+</script>

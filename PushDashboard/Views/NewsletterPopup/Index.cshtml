@@ -1,0 +1,1571 @@
+@model PushDashboard.Models.NewsletterPopupSettings
+@{
+    ViewData["Title"] = "E-Bülten Ayarları";
+    ViewData["PageHeader"] = "E-Bülten Ayarları";
+    var isActive = Model.IsActive;
+}
+
+@functions {
+    /// <summary>
+    /// [hl]...[/hl] tag'larını HTML span'a çevirir (editör için)
+    /// </summary>
+    string sloganTagsToHtml(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return "";
+        var result = System.Net.WebUtility.HtmlEncode(text);
+        result = result.Replace("[hl]", "<span class=\"slogan-hl\">").Replace("[/hl]", "</span>");
+        result = result.Replace("&#10;", "\n").Replace("&#13;", "");
+        return result;
+    }
+}
+
+@section Styles {
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap" rel="stylesheet">
+    <style>
+        .np-color-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .np-color-input-wrapper input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            padding: 0;
+            background: none;
+            flex-shrink: 0;
+        }
+        .np-color-input-wrapper input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        .np-color-input-wrapper input[type="color"]::-webkit-color-swatch {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+        }
+        /* Toggle Switch */
+        .np-toggle {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .np-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .np-toggle .np-slider {
+            width: 36px; height: 20px;
+            background: #d1d5db;
+            border-radius: 999px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .np-toggle .np-slider::after {
+            content: '';
+            position: absolute;
+            top: 2px; left: 2px;
+            width: 16px; height: 16px;
+            background: white;
+            border-radius: 50%;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+        .np-toggle input:checked + .np-slider {
+            background: #3b82f6;
+        }
+        .np-toggle input:checked + .np-slider::after {
+            transform: translateX(16px);
+            border-color: transparent;
+        }
+        /* Collapsible Section */
+        .np-section-header {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+        .np-section-header:hover {
+            background: rgba(59, 130, 246, 0.03);
+        }
+        .np-section-body {
+            max-height: 2000px;
+            overflow: hidden;
+            transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+            opacity: 1;
+        }
+        .np-section-body.collapsed {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+        .np-section-chevron {
+            transition: transform 0.25s ease;
+        }
+        .np-section-chevron.collapsed {
+            transform: rotate(-90deg);
+        }
+        /* Slogan Editor */
+        #npSloganEditor .slogan-hl {
+            color: #c8a96e;
+            font-style: italic;
+            font-weight: 700;
+        }
+        #npSloganEditor:focus {
+            border-color: #3b82f6;
+            outline: 3px solid rgba(59,130,246,0.15);
+            outline-offset: -1px;
+        }
+        /* Range Input */
+        input[type="range"].np-range {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 999px;
+            outline: none;
+        }
+        input[type="range"].np-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px; height: 18px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        input[type="range"].np-range::-moz-range-thumb {
+            width: 18px; height: 18px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        /* Preview popup styling */
+        .np-preview-popup {
+            font-family: system-ui, -apple-system, sans-serif;
+            transition: all 0.3s ease;
+        }
+        /* Image Position Selector */
+        .np-img-pos-btn {
+            border-color: #e5e7eb;
+            background: #f9fafb;
+            cursor: pointer;
+        }
+        .np-img-pos-btn:hover {
+            border-color: #93c5fd;
+            background: #eff6ff;
+        }
+        .np-img-pos-btn.np-img-pos-active {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+        .np-img-pos-btn.np-img-pos-active span {
+            color: #2563eb;
+        }
+        .np-input {
+            display: block;
+            width: 100%;
+            min-width: 0;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #fff;
+            outline: none;
+            transition: border-color 0.2s, outline-color 0.2s;
+            box-sizing: border-box;
+        }
+        .np-input:focus {
+            border-color: #3b82f6;
+            outline: 3px solid rgba(59,130,246,0.15);
+            outline-offset: -1px;
+        }
+        /* Phone Mockup */
+        .np-phone-mockup {
+            position: relative;
+            width: 280px;
+            min-height: 520px;
+            background: #f3f4f6;
+            border-radius: 36px;
+            border: 8px solid #1f2937;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.1);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .np-phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 20px;
+            background: #1f2937;
+            border-radius: 0 0 16px 16px;
+            z-index: 10;
+        }
+    </style>
+}
+
+@Html.AntiForgeryToken()
+
+<main class="min-h-screen bg-gray-50/50 pb-20">
+    <!-- Sticky Header -->
+    <div class="sticky top-2 lg:top-4 z-20 px-2 lg:px-6 mb-4 lg:mb-6">
+        <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm px-4 py-3 lg:px-6 lg:py-4">
+            <div class="flex items-center gap-3 lg:gap-4 w-full md:w-auto">
+                <a href="/Customer" class="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-50 shadow-sm transition-all" title="Müşterilere Dön">
+                    <i class="fas fa-arrow-left text-lg"></i>
+                </a>
+                <div class="p-2.5 bg-gradient-to-br from-red-400 to-rose-600 rounded-xl text-white shadow-sm">
+                    <i class="fas fa-envelope-open-text text-lg"></i>
+                </div>
+                <div class="min-w-0">
+                    <h2 class="text-lg lg:text-xl font-bold text-gray-900 truncate">E-Bülten</h2>
+                    <div class="flex items-center gap-2 text-xs lg:text-sm text-gray-500 truncate">
+                        <span class="truncate">Abone Toplama</span>
+                        <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
+                        <span class="text-rose-600 font-medium flex-shrink-0">Yapılandırma</span>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:flex md:items-center gap-2 lg:gap-3 w-full md:w-auto mt-2 md:mt-0 justify-end">
+                <!-- Status Toggle -->
+                <input type="hidden" id="isActive" value="@(isActive ? "true" : "false")">
+                <button type="button" onclick="togglePopupStatus()" id="statusBtn"
+                        class="@(isActive ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-600 border-gray-200") px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium rounded-lg flex items-center justify-center gap-2 border shadow-sm whitespace-nowrap transition-all w-full md:w-auto">
+                    <span id="statusIndicator" class="w-2.5 h-2.5 rounded-full @(isActive ? "bg-green-500 animate-pulse" : "bg-gray-400")"></span>
+                    <span id="statusText">@(isActive ? "Aktif" : "Pasif")</span>
+                </button>
+                <!-- Preview Button -->
+                <button type="button" id="openPreviewBtn" onclick="openNewsletterPreviewModal()" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    <span class="hidden sm:inline">Önizleme</span><span class="inline sm:hidden">Önizle</span>
+                </button>
+                <!-- Export Button -->
+                <button type="button" id="exportToSiteBtn" onclick="exportToR2()" class="px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg hover:from-green-700 hover:to-emerald-700 shadow-sm transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <i class="fas fa-upload"></i> <span class="hidden sm:inline">Siteye Aktar</span><span class="inline sm:hidden">Aktar</span>
+                </button>
+                <!-- Save Button -->
+                <button type="button" id="saveSettingsBtn" onclick="saveSettings()" class="px-4 lg:px-6 py-2 text-xs lg:text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm hover:shadow transition-all flex items-center justify-center md:justify-start gap-2 whitespace-nowrap w-full md:w-auto">
+                    <i class="fas fa-save"></i> Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-[1600px] mx-auto px-2 lg:px-6 py-4 lg:py-8">
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 items-start">
+
+        <!-- Sol Panel - Ayarlar -->
+        <div class="lg:col-span-6 xl:col-span-7 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-4 lg:px-6 py-3 border-b border-gray-100 bg-gray-50/50">
+                <h3 class="font-semibold text-gray-900 text-lg">Genel Ayarlar</h3>
+            </div>
+
+            <div class="p-4 lg:p-6 pt-4 space-y-6 lg:space-y-8">
+                <form id="newsletterSettingsForm" class="space-y-6 lg:space-y-10">
+
+                    <!-- SECTION 1: İçerik -->
+                    <div class="settings-section" data-section="content">
+                        <div class="np-section-header flex items-center justify-between gap-3 mb-6" onclick="toggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-blue-50 text-blue-600 rounded-lg"><i class="fas fa-file-alt"></i></div>
+                                <h4 class="text-base font-bold text-gray-900">İçerik</h4>
+                            </div>
+                            <i class="fas fa-chevron-down np-section-chevron text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="np-section-body space-y-5">
+                            <div>
+                                <label for="npTitle" class="block text-sm font-semibold text-gray-800 mb-2">Başlık</label>
+                                <input type="text" id="npTitle" value="@Model.Title" required
+                                       class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none">
+                            </div>
+                            <div>
+                                <label for="npDescription" class="block text-sm font-semibold text-gray-800 mb-2">Açıklama</label>
+                                <textarea id="npDescription" rows="3" required
+                                          class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm resize-none transition-all focus:shadow-md outline-none">@Model.Description</textarea>
+                            </div>
+                            <div>
+                                <label for="npSubmitButtonText" class="block text-sm font-semibold text-gray-800 mb-2">Buton Yazısı</label>
+                                <input type="text" id="npSubmitButtonText" value="@Model.SubmitButtonText" required
+                                       class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- SECTION: Fotoğraf (Opsiyonel) -->
+                    <div class="settings-section" data-section="image">
+                        <div class="np-section-header flex items-center justify-between gap-3 mb-6" onclick="toggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-pink-50 text-pink-600 rounded-lg"><i class="fas fa-image"></i></div>
+                                <h4 class="text-base font-bold text-gray-900">Fotoğraf <span class="text-xs font-normal text-gray-400">(Opsiyonel)</span></h4>
+                            </div>
+                            <i class="fas fa-chevron-down np-section-chevron text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="np-section-body space-y-5">
+                            <p class="text-xs text-gray-500 leading-relaxed">Popup'ta bir fotoğraf göstermek için bir görsel yükleyin veya URL girin. Fotoğraf eklenmezse popup yalnızca form olarak gösterilir.</p>
+                            
+                            <!-- Hidden field for image URL -->
+                            <input type="hidden" id="npImageUrl" value="@(Model.ImageUrl ?? "")">
+
+                            <!-- Image Position Selector (shown only when image exists) -->
+                            <div id="npImagePositionArea" class="@(string.IsNullOrEmpty(Model.ImageUrl) ? "hidden" : "")">
+                                <label class="block text-sm font-semibold text-gray-800 mb-3">Fotoğraf Konumu</label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button type="button" onclick="setImagePosition('left')" id="npImgPosLeft"
+                                            class="np-img-pos-btn @(Model.ImagePosition == "right" || Model.ImagePosition == "top" ? "" : "np-img-pos-active") flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all">
+                                        <div class="flex items-center gap-1 w-full">
+                                            <div class="w-5 h-8 bg-pink-200 rounded"></div>
+                                            <div class="flex-1 space-y-1">
+                                                <div class="h-1.5 bg-gray-300 rounded w-full"></div>
+                                                <div class="h-1.5 bg-gray-300 rounded w-3/4"></div>
+                                                <div class="h-1.5 bg-gray-200 rounded w-full"></div>
+                                            </div>
+                                        </div>
+                                        <span class="text-xs font-medium">Sol</span>
+                                    </button>
+                                    <button type="button" onclick="setImagePosition('top')" id="npImgPosTop"
+                                            class="np-img-pos-btn @(Model.ImagePosition == "top" ? "np-img-pos-active" : "") flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all">
+                                        <div class="flex flex-col items-center gap-1 w-full">
+                                            <div class="w-full h-4 bg-pink-200 rounded"></div>
+                                            <div class="w-full space-y-1">
+                                                <div class="h-1.5 bg-gray-300 rounded w-full"></div>
+                                                <div class="h-1.5 bg-gray-300 rounded w-3/4"></div>
+                                                <div class="h-1.5 bg-gray-200 rounded w-full"></div>
+                                            </div>
+                                        </div>
+                                        <span class="text-xs font-medium">Üst</span>
+                                    </button>
+                                    <button type="button" onclick="setImagePosition('right')" id="npImgPosRight"
+                                            class="np-img-pos-btn @(Model.ImagePosition == "right" ? "np-img-pos-active" : "") flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all">
+                                        <div class="flex items-center gap-1 w-full">
+                                            <div class="flex-1 space-y-1">
+                                                <div class="h-1.5 bg-gray-300 rounded w-full"></div>
+                                                <div class="h-1.5 bg-gray-300 rounded w-3/4"></div>
+                                                <div class="h-1.5 bg-gray-200 rounded w-full"></div>
+                                            </div>
+                                            <div class="w-5 h-8 bg-pink-200 rounded"></div>
+                                        </div>
+                                        <span class="text-xs font-medium">Sağ</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Current Image Preview (shown if image exists) -->
+                            <div id="npImagePreview" class="@(string.IsNullOrEmpty(Model.ImageUrl) ? "hidden" : "") mb-4">
+                                <div class="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50" style="max-width: 280px;">
+                                    <img id="npImagePreviewImg" src="@(Model.ImageUrl ?? "")" alt="Popup Fotoğrafı" 
+                                         class="w-full h-auto object-cover" style="max-height: 300px;">
+                                    <button type="button" onclick="deleteNewsletterImage()" 
+                                            class="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg" 
+                                            title="Fotoğrafı Sil">
+                                        <i class="fas fa-trash-alt text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Tab Switcher (hidden when image already set) -->
+                            <div id="npImageInputArea" class="@(!string.IsNullOrEmpty(Model.ImageUrl) ? "hidden" : "")">
+                                <!-- Tabs -->
+                                <div class="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1">
+                                    <button type="button" onclick="switchImageTab('upload')" id="npTabUpload"
+                                            class="flex-1 py-2 px-3 text-xs font-semibold rounded-md transition-all bg-white text-gray-900 shadow-sm">
+                                        <i class="fas fa-cloud-upload-alt mr-1.5"></i>Dosya Yükle
+                                    </button>
+                                    <button type="button" onclick="switchImageTab('url')" id="npTabUrl"
+                                            class="flex-1 py-2 px-3 text-xs font-semibold rounded-md transition-all text-gray-500 hover:text-gray-700">
+                                        <i class="fas fa-link mr-1.5"></i>URL Gir
+                                    </button>
+                                </div>
+
+                                <!-- Upload Tab -->
+                                <div id="npImageUploadArea">
+                                    <label for="npImageFile" class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-blue-400 transition-all">
+                                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-3"></i>
+                                            <p class="mb-1 text-sm text-gray-600 font-medium">Fotoğraf yüklemek için tıklayın</p>
+                                            <p class="text-xs text-gray-400">PNG, JPG, WebP veya GIF (Maks. 5MB)</p>
+                                        </div>
+                                        <input type="file" id="npImageFile" class="hidden" accept="image/jpeg,image/png,image/webp,image/gif" onchange="uploadNewsletterImage(this)">
+                                    </label>
+                                </div>
+
+                                <!-- URL Tab -->
+                                <div id="npImageUrlArea" class="hidden">
+                                    <div class="space-y-3">
+                                        <div class="flex gap-2">
+                                            <input type="text" id="npImageUrlInput" placeholder="https://ornek.com/gorsel.jpg"
+                                                   class="flex-1 np-input text-sm" />
+                                            <button type="button" onclick="applyImageUrl()" 
+                                                    class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap">
+                                                <i class="fas fa-check mr-1"></i>Uygula
+                                            </button>
+                                        </div>
+                                        <p class="text-xs text-gray-400">Harici bir görsel URL'si girin (JPEG, PNG, WebP, GIF)</p>
+                                    </div>
+                                </div>
+
+                                <!-- Upload Progress -->
+                                <div id="npImageUploadProgress" class="hidden mt-3">
+                                    <div class="flex items-center gap-3">
+                                        <i class="fas fa-spinner fa-spin text-blue-500"></i>
+                                        <span class="text-sm text-gray-600">Fotoğraf yükleniyor...</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mobile Image Settings (shown only when main image is set) -->
+                            <div id="npMobileImageSettings" class="@(string.IsNullOrEmpty(Model.ImageUrl) ? "hidden" : "") border-t border-gray-100 pt-5 mt-5">
+                                <h5 class="text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-mobile-alt mr-1.5 text-gray-400"></i>Mobil Görünüm</h5>
+                                
+                                <!-- Hide on mobile toggle -->
+                                <div class="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-700">Mobilde fotoğrafı gizle</span>
+                                        <p class="text-xs text-gray-400 mt-0.5">Mobil cihazlarda fotoğraf gösterilmez, sadece form görünür</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="npHideImageOnMobile" class="sr-only peer" @(Model.HideImageOnMobile ? "checked" : "") onchange="toggleMobileImageOptions()">
+                                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+
+                                <!-- Mobile specific image (shown only when NOT hiding on mobile) -->
+                                <div id="npMobileImageSection" class="@(Model.HideImageOnMobile ? "hidden" : "")">
+                                    <p class="text-xs text-gray-500 mb-3">Mobil için farklı bir görsel kullanmak isterseniz aşağıya ekleyin. Boş bırakırsanız masaüstü görseli kullanılır.</p>
+                                    
+                                    <input type="hidden" id="npMobileImageUrl" value="@(Model.MobileImageUrl ?? "")">
+
+                                    <!-- Mobile Image Preview -->
+                                    <div id="npMobileImagePreview" class="@(string.IsNullOrEmpty(Model.MobileImageUrl) ? "hidden" : "") mb-3">
+                                        <div class="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50" style="max-width: 200px;">
+                                            <img id="npMobileImagePreviewImg" src="@(Model.MobileImageUrl ?? "")" alt="Mobil Fotoğraf" 
+                                                 class="w-full h-auto object-cover" style="max-height: 200px;">
+                                            <button type="button" onclick="deleteMobileImage()" 
+                                                    class="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg" 
+                                                    title="Mobil Fotoğrafı Sil">
+                                                <i class="fas fa-trash-alt text-xs"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Mobile Image Input -->
+                                    <div id="npMobileImageInputArea" class="@(!string.IsNullOrEmpty(Model.MobileImageUrl) ? "hidden" : "")">
+                                        <div class="flex gap-2">
+                                            <input type="text" id="npMobileImageUrlInput" placeholder="https://ornek.com/mobil-gorsel.jpg"
+                                                   class="flex-1 np-input text-sm" />
+                                            <button type="button" onclick="applyMobileImageUrl()" 
+                                                    class="px-3 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap">
+                                                <i class="fas fa-check mr-1"></i>Uygula
+                                            </button>
+                                        </div>
+                                        <p class="text-xs text-gray-400 mt-1">Veya dosya yükleyin:</p>
+                                        <label for="npMobileImageFile" class="mt-2 flex items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-blue-400 transition-all">
+                                            <div class="text-center">
+                                                <i class="fas fa-cloud-upload-alt text-xl text-gray-400 mb-1"></i>
+                                                <p class="text-xs text-gray-500">Mobil görsel yükle</p>
+                                            </div>
+                                            <input type="file" id="npMobileImageFile" class="hidden" accept="image/jpeg,image/png,image/webp,image/gif" onchange="uploadMobileImage(this)">
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- SECTION: Slogan (Opsiyonel - Fotoğraf üzerinde) -->
+                    <div class="settings-section" data-section="slogan">
+                        <div class="np-section-header flex items-center justify-between gap-3 mb-6" onclick="toggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-amber-50 text-amber-600 rounded-lg"><i class="fas fa-quote-left"></i></div>
+                                <h4 class="text-base font-bold text-gray-900">Slogan <span class="text-xs font-normal text-gray-400">(Opsiyonel — Fotoğraf Üzeri)</span></h4>
+                            </div>
+                            <i class="fas fa-chevron-down np-section-chevron text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="np-section-body space-y-5">
+                            <p class="text-xs text-gray-500 leading-relaxed">Fotoğraf üzerinde bir slogan gösterin. Metni yazıp vurgulamak istediğiniz kelimeleri seçerek öne çıkarın.</p>
+
+                            <!-- Slogan Toggle -->
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                <div>
+                                    <span class="text-sm font-medium text-gray-700">Sloganı Etkinleştir</span>
+                                    <p class="text-xs text-gray-400 mt-0.5">Fotoğraf eklendiğinde görsel üzerinde gösterilir</p>
+                                </div>
+                                <label class="np-toggle">
+                                    <input type="checkbox" id="npSloganEnabled" @(Model.SloganEnabled ? "checked" : "") onchange="toggleSloganFields(); updatePreview();">
+                                    <span class="np-slider"></span>
+                                </label>
+                            </div>
+
+                            <!-- Slogan Fields (shown when enabled) -->
+                            <div id="npSloganFields" class="@(Model.SloganEnabled ? "" : "hidden") space-y-5">
+                                <!-- Badge Text -->
+                                <div>
+                                    <label for="npSloganBadgeText" class="block text-sm font-semibold text-gray-800 mb-2">
+                                        Rozet Metni <span class="text-xs font-normal text-gray-400">(opsiyonel, örn: "✦ YENİ KOLEKSİYON")</span>
+                                    </label>
+                                    <input type="text" id="npSloganBadgeText" value="@(Model.SloganBadgeText ?? "")" placeholder="✦ YENİ KOLEKSİYON"
+                                           class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none"
+                                           oninput="updatePreview()">
+                                </div>
+
+                                <!-- Slogan Text Editor -->
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-800 mb-2">
+                                        Slogan Metni
+                                    </label>
+                                    <p class="text-xs text-gray-500 mb-3">Metni yazın, ardından vurgulamak istediğiniz kelime(leri) seçip <strong>"Vurgula"</strong> butonuna tıklayın. Her satır için <code>Enter</code> kullanın.</p>
+                                    
+                                    <!-- Toolbar -->
+                                    <div class="flex items-center gap-2 mb-2 p-2 bg-gray-50 rounded-t-xl border border-b-0 border-gray-300">
+                                        <button type="button" id="npSloganHighlightBtn" onclick="toggleSloganHighlight()" 
+                                                class="px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all bg-white border-gray-300 text-gray-700 hover:bg-amber-50 hover:border-amber-400 hover:text-amber-700"
+                                                title="Seçili metni vurgula/vurguyu kaldır">
+                                            <i class="fas fa-highlighter mr-1"></i> Vurgula
+                                        </button>
+                                        <button type="button" onclick="clearSloganHighlights()" 
+                                                class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-all bg-white border-gray-300 text-gray-500 hover:bg-red-50 hover:border-red-300 hover:text-red-600"
+                                                title="Tüm vurguları kaldır">
+                                            <i class="fas fa-eraser mr-1"></i> Temizle
+                                        </button>
+                                        <div class="ml-auto flex items-center gap-2">
+                                            <span class="text-xs text-gray-400">Önizleme:</span>
+                                            <div id="npSloganMiniPreview" class="text-xs text-gray-600 max-w-[200px] truncate italic"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Editable Area -->
+                                    <div id="npSloganEditor" contenteditable="true" 
+                                         class="block w-full min-h-[100px] px-4 py-3 rounded-b-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none bg-white leading-relaxed"
+                                         style="white-space: pre-wrap; word-wrap: break-word;"
+                                         oninput="onSloganEditorInput()" onmouseup="updateSloganToolbar()" onkeyup="updateSloganToolbar()">@(Model.SloganText != null ? Html.Raw(sloganTagsToHtml(Model.SloganText)) : "")</div>
+
+                                    <!-- Hidden field to store the tag format -->
+                                    <input type="hidden" id="npSloganText" value="@(Model.SloganText ?? "")">
+                                </div>
+
+                                <!-- Colors -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-800 mb-2">Metin Rengi</label>
+                                        <div class="np-color-input-wrapper">
+                                            <input type="color" id="npSloganTextColor" value="@Model.SloganTextColor" onchange="updateSloganEditorColors(); updatePreview();">
+                                            <input type="text" id="npSloganTextColorHex" value="@Model.SloganTextColor" maxlength="7" 
+                                                   class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white outline-none"
+                                                   oninput="syncSloganColor('text', this.value)">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-800 mb-2">Vurgu Rengi</label>
+                                        <div class="np-color-input-wrapper">
+                                            <input type="color" id="npSloganHighlightColor" value="@Model.SloganHighlightColor" onchange="updateSloganEditorColors(); updatePreview();">
+                                            <input type="text" id="npSloganHighlightColorHex" value="@Model.SloganHighlightColor" maxlength="7" 
+                                                   class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white outline-none"
+                                                   oninput="syncSloganColor('highlight', this.value)">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- SECTION 2: Form Alanları -->
+                    <div class="settings-section" data-section="fields">
+                        <div class="np-section-header flex items-center justify-between gap-3 mb-6" onclick="toggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><i class="fas fa-list-alt"></i></div>
+                                <h4 class="text-base font-bold text-gray-900">Form Alanları & Placeholder'lar</h4>
+                            </div>
+                            <i class="fas fa-chevron-down np-section-chevron text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="np-section-body space-y-5">
+                            <!-- Toggles -->
+                            <div class="space-y-3">
+                                <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-500 flex items-center justify-center"><i class="fas fa-user"></i></div>
+                                            <span class="text-sm font-medium text-gray-700">Ad Soyad Alanlarını Göster</span>
+                                        </div>
+                                        <label class="np-toggle">
+                                            <input type="checkbox" id="npShowNameFields" @(Model.ShowNameFields ? "checked" : "")>
+                                            <span class="np-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-lg bg-green-100 text-green-500 flex items-center justify-center"><i class="fas fa-phone"></i></div>
+                                            <span class="text-sm font-medium text-gray-700">Telefon Alanını Göster</span>
+                                        </div>
+                                        <label class="np-toggle">
+                                            <input type="checkbox" id="npShowPhoneField" @(Model.ShowPhoneField ? "checked" : "")>
+                                            <span class="np-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-500 flex items-center justify-center"><i class="fas fa-check-circle"></i></div>
+                                            <span class="text-sm font-medium text-gray-700">Onay Checkbox'ı Göster</span>
+                                        </div>
+                                        <label class="np-toggle">
+                                            <input type="checkbox" id="npShowConsentCheckbox" @(Model.ShowConsentCheckbox ? "checked" : "")>
+                                            <span class="np-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Placeholders -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="npNamePlaceholder" class="block text-sm font-semibold text-gray-800 mb-2">Ad Placeholder</label>
+                                    <input type="text" id="npNamePlaceholder" value="@Model.NamePlaceholder"
+                                           class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none">
+                                </div>
+                                <div>
+                                    <label for="npSurnamePlaceholder" class="block text-sm font-semibold text-gray-800 mb-2">Soyad Placeholder</label>
+                                    <input type="text" id="npSurnamePlaceholder" value="@Model.SurnamePlaceholder"
+                                           class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="npPhonePlaceholder" class="block text-sm font-semibold text-gray-800 mb-2">Telefon Placeholder</label>
+                                <input type="text" id="npPhonePlaceholder" value="@Model.PhonePlaceholder"
+                                       class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm transition-all focus:shadow-md outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- SECTION 3: Tasarım -->
+                    <div class="settings-section" data-section="design">
+                        <div class="np-section-header flex items-center justify-between gap-3 mb-6" onclick="toggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-purple-50 text-purple-600 rounded-lg"><i class="fas fa-palette"></i></div>
+                                <h4 class="text-base font-bold text-gray-900">Tasarım & Görünüm</h4>
+                            </div>
+                            <i class="fas fa-chevron-down np-section-chevron text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="np-section-body space-y-6">
+                            <!-- Colors Grid -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">Arka Plan Rengi</label>
+                                    <div class="np-color-input-wrapper flex items-center gap-2">
+                                        <input type="color" id="npBackgroundColorPicker" value="@Model.BackgroundColor"
+                                               class="h-10 w-10 rounded cursor-pointer border-0 p-0"
+                                               oninput="document.getElementById('npBackgroundColor').value = this.value; updatePreview()">
+                                        <input type="text" id="npBackgroundColor" value="@Model.BackgroundColor"
+                                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase"
+                                               oninput="document.getElementById('npBackgroundColorPicker').value = this.value; updatePreview()">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">Metin Rengi</label>
+                                    <div class="np-color-input-wrapper flex items-center gap-2">
+                                        <input type="color" id="npTextColorPicker" value="@Model.TextColor"
+                                               class="h-10 w-10 rounded cursor-pointer border-0 p-0"
+                                               oninput="document.getElementById('npTextColor').value = this.value; updatePreview()">
+                                        <input type="text" id="npTextColor" value="@Model.TextColor"
+                                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase"
+                                               oninput="document.getElementById('npTextColorPicker').value = this.value; updatePreview()">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">Buton Rengi</label>
+                                    <div class="np-color-input-wrapper flex items-center gap-2">
+                                        <input type="color" id="npButtonColorPicker" value="@Model.ButtonColor"
+                                               class="h-10 w-10 rounded cursor-pointer border-0 p-0"
+                                               oninput="document.getElementById('npButtonColor').value = this.value; updatePreview()">
+                                        <input type="text" id="npButtonColor" value="@Model.ButtonColor"
+                                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase"
+                                               oninput="document.getElementById('npButtonColorPicker').value = this.value; updatePreview()">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-2">Buton Metin Rengi</label>
+                                    <div class="np-color-input-wrapper flex items-center gap-2">
+                                        <input type="color" id="npButtonTextColorPicker" value="@Model.ButtonTextColor"
+                                               class="h-10 w-10 rounded cursor-pointer border-0 p-0"
+                                               oninput="document.getElementById('npButtonTextColor').value = this.value; updatePreview()">
+                                        <input type="text" id="npButtonTextColor" value="@Model.ButtonTextColor"
+                                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm font-mono uppercase"
+                                               oninput="document.getElementById('npButtonTextColorPicker').value = this.value; updatePreview()">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Border Radius -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-sm font-semibold text-gray-800">Köşe Yuvarlaklığı</label>
+                                    <span id="borderRadiusValue" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">@Model.BorderRadius</span>
+                                </div>
+                                <input type="range" id="npBorderRadius" min="0" max="24" step="2"
+                                       value="@(int.TryParse(Model.BorderRadius?.Replace("px",""), out var br) ? br : 12)"
+                                       class="np-range w-full"
+                                       oninput="document.getElementById('borderRadiusValue').textContent = this.value + 'px'; updatePreview()">
+                            </div>
+
+                            <!-- Animation Toggle -->
+                            <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-500 flex items-center justify-center"><i class="fas fa-magic"></i></div>
+                                        <span class="text-sm font-medium text-gray-700">Animasyon Efektleri</span>
+                                    </div>
+                                    <label class="np-toggle">
+                                        <input type="checkbox" id="npEnableAnimation" @(Model.EnableAnimation ? "checked" : "")>
+                                        <span class="np-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- SECTION 4: Davranış -->
+                    <div class="settings-section" data-section="behavior">
+                        <div class="np-section-header flex items-center justify-between gap-3 mb-6" onclick="toggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-amber-50 text-amber-600 rounded-lg"><i class="fas fa-cog"></i></div>
+                                <h4 class="text-base font-bold text-gray-900">Davranış & Zamanlama</h4>
+                            </div>
+                            <i class="fas fa-chevron-down np-section-chevron text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="np-section-body space-y-5">
+                            <!-- Delay Seconds -->
+                            <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-clock text-gray-400"></i>
+                                        <span class="text-sm font-medium text-gray-700">Gecikme Süresi</span>
+                                    </div>
+                                    <span class="text-xs text-gray-500 font-bold bg-white px-1.5 py-0.5 rounded border border-gray-200">saniye</span>
+                                </div>
+                                <div class="flex items-center gap-2 border-t border-gray-200 pt-2 mt-2">
+                                    <input type="number" id="npDelaySeconds" value="@Model.DelaySeconds" min="0" max="60"
+                                           class="flex-1 bg-transparent border-0 p-0 text-sm text-gray-800 focus:ring-0 font-medium placeholder-gray-300 outline-none">
+                                    <span class="text-xs text-gray-400">Sayfa açıldıktan kaç saniye sonra popup gösterilsin</span>
+                                </div>
+                            </div>
+
+                            <!-- Show Frequency Days -->
+                            <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-calendar-alt text-gray-400"></i>
+                                        <span class="text-sm font-medium text-gray-700">Tekrar Gösterim Süresi</span>
+                                    </div>
+                                    <span class="text-xs text-gray-500 font-bold bg-white px-1.5 py-0.5 rounded border border-gray-200">gün</span>
+                                </div>
+                                <div class="flex items-center gap-2 border-t border-gray-200 pt-2 mt-2">
+                                    <input type="number" id="npShowFrequencyDays" value="@Model.ShowFrequencyDays" min="0" max="365"
+                                           class="flex-1 bg-transparent border-0 p-0 text-sm text-gray-800 focus:ring-0 font-medium placeholder-gray-300 outline-none">
+                                    <span class="text-xs text-gray-400">Popup kapatıldıktan kaç gün sonra tekrar gösterilsin</span>
+                                </div>
+                            </div>
+
+                            <!-- Device Toggles -->
+                            <div class="space-y-3">
+                                <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-500 flex items-center justify-center"><i class="fas fa-mobile-alt"></i></div>
+                                            <span class="text-sm font-medium text-gray-700">Mobilde Göster</span>
+                                        </div>
+                                        <label class="np-toggle">
+                                            <input type="checkbox" id="npShowOnMobile" @(Model.ShowOnMobile ? "checked" : "")>
+                                            <span class="np-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 hover:border-blue-200 transition-colors">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-500 flex items-center justify-center"><i class="fas fa-desktop"></i></div>
+                                            <span class="text-sm font-medium text-gray-700">Masaüstünde Göster</span>
+                                        </div>
+                                        <label class="np-toggle">
+                                            <input type="checkbox" id="npShowOnDesktop" @(Model.ShowOnDesktop ? "checked" : "")>
+                                            <span class="np-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="border-gray-100"/>
+                    <!-- SECTION: Yasal Metinler -->
+                    <div class="settings-section" data-section="legal">
+                        <div class="np-section-header flex items-center justify-between gap-3 mb-6" onclick="toggleSection(this)">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><i class="fas fa-file-contract"></i></div>
+                                <h4 class="text-base font-bold text-gray-900">Yasal Metinler</h4>
+                            </div>
+                            <i class="fas fa-chevron-down np-section-chevron text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="np-section-body space-y-5">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-800 mb-2">Kişisel Verilerin Korunması İzni Metni Linki</label>
+                                <input type="url" id="npKvkkLink" value="@ViewBag.KvkkLink"
+                                       placeholder="Entegrasyon ayarlarından yönetilmektedir"
+                                       class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-100 cursor-not-allowed text-gray-500 text-sm" disabled>
+                                <p class="text-xs text-blue-600 mt-1"><i class="fas fa-info-circle mr-1"></i> Bu alan Entegrasyon > Ayarlar sayfasından otomatik olarak çekilmektedir.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-800 mb-2">Ticari Elektronik İleti İzni Metni Linki</label>
+                                <input type="url" id="npEtkLink" value="@ViewBag.EtkLink"
+                                       placeholder="Entegrasyon ayarlarından yönetilmektedir"
+                                       class="block w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-100 cursor-not-allowed text-gray-500 text-sm" disabled>
+                                <p class="text-xs text-blue-600 mt-1"><i class="fas fa-info-circle mr-1"></i> Bu alan Entegrasyon > Ayarlar sayfasından otomatik olarak çekilmektedir.</p>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sağ Panel - Anlık Mini Önizleme -->
+        <div class="lg:col-span-6 xl:col-span-5 space-y-4 lg:space-y-6 lg:sticky lg:top-24">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-4 lg:px-6 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                        <i class="fas fa-eye text-blue-500"></i> Önizleme
+                    </h3>
+                    <span class="text-xs text-gray-400">Anlık güncellenir</span>
+                </div>
+                <div class="p-4 lg:p-6">
+
+                    <!-- Phone Mockup -->
+                    <div class="flex justify-center py-4" id="npPhoneMockupWrapper">
+                        <div class="np-phone-mockup">
+                            <div class="np-phone-notch"></div>
+
+                            <!-- Phone Screen -->
+                            <div style="width:100%; height:100%; background:#f3f4f6; padding-top:28px; position:relative; min-height:504px; overflow:hidden;">
+                                <!-- Dummy shopping page content -->
+                                <div style="padding:12px;">
+                                    <div style="background:#e5e7eb; height:130px; border-radius:8px; margin-bottom:8px;"></div>
+                                    <div style="background:#e5e7eb; height:12px; border-radius:4px; width:70%; margin-bottom:6px;"></div>
+                                    <div style="background:#e5e7eb; height:10px; border-radius:4px; width:40%; margin-bottom:6px;"></div>
+                                    <div style="background:#e5e7eb; height:10px; border-radius:4px; width:55%;"></div>
+                                </div>
+
+                                <!-- Popup Preview Area -->
+                                <div id="npPreviewContainer" style="position:absolute; bottom:0; left:0; right:0;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="text-center text-xs text-gray-400 mt-3">Ayarları değiştirdikçe önizleme otomatik güncellenir</p>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+    </div>
+</main>
+
+@section Scripts {
+<script>
+    // Prevent auto-init of newsletter module on admin page
+    window.__PUSHONICA_ADMIN__ = true;
+</script>
+<script src="~/js/modules/newsletter-popup-module.js"></script>
+<script>
+    // ─── Section toggle ─────────────────────────────────────────
+    function toggleSection(header) {
+        const body = header.nextElementSibling;
+        const chevron = header.querySelector('.np-section-chevron');
+        body.classList.toggle('collapsed');
+        chevron.classList.toggle('collapsed');
+    }
+
+    // ─── Status toggle ──────────────────────────────────────────
+    function togglePopupStatus() {
+        const input = document.getElementById('isActive');
+        const btn = document.getElementById('statusBtn');
+        const indicator = document.getElementById('statusIndicator');
+        const text = document.getElementById('statusText');
+
+        const newVal = input.value !== 'true';
+        input.value = newVal ? 'true' : 'false';
+
+        if (newVal) {
+            btn.className = btn.className.replace(/bg-gray-50 text-gray-600 border-gray-200/g, 'bg-green-50 text-green-700 border-green-200');
+            indicator.className = indicator.className.replace('bg-gray-400', 'bg-green-500 animate-pulse');
+            text.textContent = 'Aktif';
+        } else {
+            btn.className = btn.className.replace(/bg-green-50 text-green-700 border-green-200/g, 'bg-gray-50 text-gray-600 border-gray-200');
+            indicator.className = indicator.className.replace('bg-green-500 animate-pulse', 'bg-gray-400');
+            text.textContent = 'Pasif';
+        }
+    }
+
+    // ─── Slogan Editor Functions ────────────────────────────────
+    function toggleSloganFields() {
+        const enabled = document.getElementById('npSloganEnabled').checked;
+        const fields = document.getElementById('npSloganFields');
+        if (enabled) {
+            fields.classList.remove('hidden');
+        } else {
+            fields.classList.add('hidden');
+        }
+    }
+
+    function getSloganEditorContent() {
+        // Convert editor HTML to tag format: <span class="slogan-hl">text</span> → [hl]text[/hl]
+        const editor = document.getElementById('npSloganEditor');
+        if (!editor) return '';
+        
+        let html = editor.innerHTML;
+        // Normalize <br> to newlines
+        html = html.replace(/<br\s*\/?>/gi, '\n');
+        // Replace <div> blocks (contenteditable line breaks) with newlines
+        html = html.replace(/<\/div>\s*<div>/gi, '\n');
+        html = html.replace(/<\/?div>/gi, '');
+        // Convert highlight spans to tags
+        html = html.replace(/<span[^>]*class="slogan-hl"[^>]*>(.*?)<\/span>/gi, '[hl]$1[/hl]');
+        // Remove any remaining HTML tags
+        html = html.replace(/<[^>]+>/g, '');
+        // Decode HTML entities
+        const txt = document.createElement('textarea');
+        txt.innerHTML = html;
+        return txt.value.trim();
+    }
+
+    function onSloganEditorInput() {
+        // Sync to hidden field
+        document.getElementById('npSloganText').value = getSloganEditorContent();
+        // Update mini preview
+        updateSloganMiniPreview();
+        updatePreview();
+    }
+
+    function updateSloganMiniPreview() {
+        const text = getSloganEditorContent();
+        const mini = document.getElementById('npSloganMiniPreview');
+        if (mini) {
+            mini.textContent = text.replace(/\[hl\]/g, '').replace(/\[\/hl\]/g, '').substring(0, 40);
+        }
+    }
+
+    function updateSloganToolbar() {
+        // Could highlight the button when selection is inside a highlight
+        // For now, simply update mini preview
+        updateSloganMiniPreview();
+    }
+
+    function toggleSloganHighlight() {
+        const editor = document.getElementById('npSloganEditor');
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+            Toast.warning && Toast.warning('Vurgulamak için önce metin seçin.') || Toast.error('Vurgulamak için önce metin seçin.');
+            return;
+        }
+
+        const range = sel.getRangeAt(0);
+        
+        // Check if selection is within editor
+        if (!editor.contains(range.commonAncestorContainer)) return;
+
+        // Check if already highlighted
+        let parentHl = null;
+        let node = range.commonAncestorContainer;
+        while (node && node !== editor) {
+            if (node.nodeType === 1 && node.classList && node.classList.contains('slogan-hl')) {
+                parentHl = node;
+                break;
+            }
+            node = node.parentNode;
+        }
+
+        if (parentHl) {
+            // Remove highlight: unwrap the span
+            const parent = parentHl.parentNode;
+            while (parentHl.firstChild) {
+                parent.insertBefore(parentHl.firstChild, parentHl);
+            }
+            parent.removeChild(parentHl);
+        } else {
+            // Apply highlight
+            const hlColor = document.getElementById('npSloganHighlightColor').value || '#c8a96e';
+            const span = document.createElement('span');
+            span.className = 'slogan-hl';
+            span.style.color = hlColor;
+            span.style.fontStyle = 'italic';
+            span.style.fontWeight = '700';
+            
+            try {
+                range.surroundContents(span);
+            } catch (e) {
+                // If surroundContents fails (partial selection across elements), use extractContents
+                const fragment = range.extractContents();
+                span.appendChild(fragment);
+                range.insertNode(span);
+            }
+        }
+
+        // Cleanup and sync
+        sel.removeAllRanges();
+        onSloganEditorInput();
+    }
+
+    function clearSloganHighlights() {
+        const editor = document.getElementById('npSloganEditor');
+        const hls = editor.querySelectorAll('.slogan-hl');
+        hls.forEach(hl => {
+            const parent = hl.parentNode;
+            while (hl.firstChild) {
+                parent.insertBefore(hl.firstChild, hl);
+            }
+            parent.removeChild(hl);
+        });
+        onSloganEditorInput();
+    }
+
+    function updateSloganEditorColors() {
+        const hlColor = document.getElementById('npSloganHighlightColor').value;
+        const txtColor = document.getElementById('npSloganTextColor').value;
+        
+        // Update hex inputs
+        document.getElementById('npSloganHighlightColorHex').value = hlColor;
+        document.getElementById('npSloganTextColorHex').value = txtColor;
+        
+        // Update editor highlight spans
+        const editor = document.getElementById('npSloganEditor');
+        editor.querySelectorAll('.slogan-hl').forEach(hl => {
+            hl.style.color = hlColor;
+        });
+        
+        // Update CSS variable for editor
+        const styleEl = document.getElementById('npSloganEditorStyle');
+        if (styleEl) styleEl.remove();
+        const style = document.createElement('style');
+        style.id = 'npSloganEditorStyle';
+        style.textContent = `#npSloganEditor .slogan-hl { color: ${hlColor} !important; }`;
+        document.head.appendChild(style);
+    }
+
+    function syncSloganColor(type, value) {
+        if (!/^#[0-9a-fA-F]{6}$/.test(value)) return;
+        if (type === 'text') {
+            document.getElementById('npSloganTextColor').value = value;
+        } else {
+            document.getElementById('npSloganHighlightColor').value = value;
+        }
+        updateSloganEditorColors();
+        updatePreview();
+    }
+
+    // ─── Collect form data ──────────────────────────────────────
+    function collectFormData() {
+        // Determine current image position from active button
+        let imagePosition = 'left';
+        if (document.getElementById('npImgPosTop').classList.contains('np-img-pos-active')) imagePosition = 'top';
+        else if (document.getElementById('npImgPosRight').classList.contains('np-img-pos-active')) imagePosition = 'right';
+
+        return {
+            title: document.getElementById('npTitle').value,
+            description: document.getElementById('npDescription').value,
+            submitButtonText: document.getElementById('npSubmitButtonText').value,
+            kvkkLink: (document.getElementById('npKvkkLink') || {}).value || '',
+            etkLink: (document.getElementById('npEtkLink') || {}).value || '',
+            namePlaceholder: document.getElementById('npNamePlaceholder').value,
+            surnamePlaceholder: document.getElementById('npSurnamePlaceholder').value,
+            phonePlaceholder: document.getElementById('npPhonePlaceholder').value,
+            backgroundColor: document.getElementById('npBackgroundColor').value,
+            textColor: document.getElementById('npTextColor').value,
+            buttonColor: document.getElementById('npButtonColor').value,
+            buttonTextColor: document.getElementById('npButtonTextColor').value,
+            borderRadius: document.getElementById('npBorderRadius').value + 'px',
+            imageUrl: document.getElementById('npImageUrl').value || '',
+            imagePosition: imagePosition,
+            hideImageOnMobile: document.getElementById('npHideImageOnMobile').checked,
+            mobileImageUrl: document.getElementById('npMobileImageUrl').value || '',
+            sloganEnabled: document.getElementById('npSloganEnabled').checked,
+            sloganBadgeText: (document.getElementById('npSloganBadgeText') || {}).value || '',
+            sloganText: getSloganEditorContent(),
+            sloganHighlightColor: document.getElementById('npSloganHighlightColor').value || '#c8a96e',
+            sloganTextColor: document.getElementById('npSloganTextColor').value || '#ffffff',
+            showNameFields: document.getElementById('npShowNameFields').checked,
+            showPhoneField: document.getElementById('npShowPhoneField').checked,
+            showConsentCheckbox: document.getElementById('npShowConsentCheckbox').checked,
+            delaySeconds: parseInt(document.getElementById('npDelaySeconds').value) || 5,
+            showFrequencyDays: isNaN(parseInt(document.getElementById('npShowFrequencyDays').value)) ? 30 : parseInt(document.getElementById('npShowFrequencyDays').value),
+            showOnMobile: document.getElementById('npShowOnMobile').checked,
+            showOnDesktop: document.getElementById('npShowOnDesktop').checked,
+            enableAnimation: document.getElementById('npEnableAnimation').checked,
+            isActive: document.getElementById('isActive').value === 'true'
+        };
+    }
+
+    // ─── Save settings ──────────────────────────────────────────
+    async function saveSettings() {
+        const btn = document.getElementById('saveSettingsBtn');
+        const origHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+        btn.disabled = true;
+
+        try {
+            const data = collectFormData();
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            const resp = await fetch('/NewsletterPopup/SaveSettings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await resp.json();
+            if (result.success) {
+                Toast.success(result.message);
+            } else {
+                Toast.error(result.message);
+            }
+        } catch (err) {
+            Toast.error('Ayarlar kaydedilirken bir hata oluştu.');
+        } finally {
+            btn.innerHTML = origHTML;
+            btn.disabled = false;
+        }
+    }
+
+    // ─── Image Tab Switching ────────────────────────────────────
+    function switchImageTab(tab) {
+        const tabUpload = document.getElementById('npTabUpload');
+        const tabUrl = document.getElementById('npTabUrl');
+        const areaUpload = document.getElementById('npImageUploadArea');
+        const areaUrl = document.getElementById('npImageUrlArea');
+
+        const activeClasses = 'bg-white text-gray-900 shadow-sm';
+        const inactiveClasses = 'text-gray-500 hover:text-gray-700';
+
+        if (tab === 'upload') {
+            tabUpload.className = `flex-1 py-2 px-3 text-xs font-semibold rounded-md transition-all ${activeClasses}`;
+            tabUrl.className = `flex-1 py-2 px-3 text-xs font-semibold rounded-md transition-all ${inactiveClasses}`;
+            areaUpload.classList.remove('hidden');
+            areaUrl.classList.add('hidden');
+        } else {
+            tabUrl.className = `flex-1 py-2 px-3 text-xs font-semibold rounded-md transition-all ${activeClasses}`;
+            tabUpload.className = `flex-1 py-2 px-3 text-xs font-semibold rounded-md transition-all ${inactiveClasses}`;
+            areaUrl.classList.remove('hidden');
+            areaUpload.classList.add('hidden');
+        }
+    }
+
+    // ─── Image Position ─────────────────────────────────────────
+    function setImagePosition(pos) {
+        document.querySelectorAll('.np-img-pos-btn').forEach(btn => btn.classList.remove('np-img-pos-active'));
+        const btnId = pos === 'left' ? 'npImgPosLeft' : pos === 'top' ? 'npImgPosTop' : 'npImgPosRight';
+        document.getElementById(btnId).classList.add('np-img-pos-active');
+        updatePreview();
+    }
+
+    // ─── Apply Image URL ──────────────────────────────────────────
+    function applyImageUrl() {
+        const input = document.getElementById('npImageUrlInput');
+        const url = (input.value || '').trim();
+
+        if (!url) {
+            Toast.error('Lütfen bir URL girin.');
+            return;
+        }
+
+        // Basic URL validation
+        try {
+            new URL(url);
+        } catch {
+            Toast.error('Geçerli bir URL girin (https://... ile başlamalı).');
+            return;
+        }
+
+        // Set the URL and show the preview
+        document.getElementById('npImageUrl').value = url;
+        document.getElementById('npImagePreviewImg').src = url;
+        document.getElementById('npImagePreview').classList.remove('hidden');
+        document.getElementById('npImageInputArea').classList.add('hidden');
+        document.getElementById('npMobileImageSettings').classList.remove('hidden');
+        document.getElementById('npImagePositionArea').classList.remove('hidden');
+        input.value = '';
+        Toast.success('Fotoğraf URL\'si uygulandı.');
+        updatePreview();
+    }
+
+    // ─── Image Upload ──────────────────────────────────────────
+    async function uploadNewsletterImage(input) {
+        if (!input.files || !input.files[0]) return;
+        
+        const file = input.files[0];
+        
+        // Validate file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            Toast.error('Dosya boyutu 5MB\'dan büyük olamaz.');
+            input.value = '';
+            return;
+        }
+        
+        const uploadArea = document.getElementById('npImageUploadArea');
+        const progress = document.getElementById('npImageUploadProgress');
+        const preview = document.getElementById('npImagePreview');
+        
+        uploadArea.classList.add('hidden');
+        progress.classList.remove('hidden');
+        
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            
+            const resp = await fetch('/NewsletterPopup/UploadImage', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': token
+                },
+                body: formData
+            });
+            
+            const result = await resp.json();
+            if (result.success) {
+                document.getElementById('npImageUrl').value = result.imageUrl;
+                document.getElementById('npImagePreviewImg').src = result.imageUrl;
+                preview.classList.remove('hidden');
+                document.getElementById('npImageInputArea').classList.add('hidden');
+                document.getElementById('npMobileImageSettings').classList.remove('hidden');
+                document.getElementById('npImagePositionArea').classList.remove('hidden');
+                Toast.success(result.message);
+                updatePreview();
+            } else {
+                Toast.error(result.message);
+                document.getElementById('npImageInputArea').classList.remove('hidden');
+            }
+        } catch (err) {
+            Toast.error('Fotoğraf yüklenirken bir hata oluştu.');
+            document.getElementById('npImageInputArea').classList.remove('hidden');
+        } finally {
+            progress.classList.add('hidden');
+            input.value = '';
+        }
+    }
+    
+    async function deleteNewsletterImage() {
+        if (!confirm('Fotoğrafı silmek istediğinize emin misiniz?')) return;
+        
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            
+            const resp = await fetch('/NewsletterPopup/DeleteImage', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                }
+            });
+            
+            const result = await resp.json();
+            if (result.success) {
+                document.getElementById('npImageUrl').value = '';
+                document.getElementById('npImagePreview').classList.add('hidden');
+                document.getElementById('npImageInputArea').classList.remove('hidden');
+                document.getElementById('npMobileImageSettings').classList.add('hidden');
+                document.getElementById('npImagePositionArea').classList.add('hidden');
+                // Reset mobile image when main image is removed
+                document.getElementById('npMobileImageUrl').value = '';
+                document.getElementById('npHideImageOnMobile').checked = false;
+                switchImageTab('upload');
+                Toast.success(result.message);
+                updatePreview();
+            } else {
+                Toast.error(result.message);
+            }
+        } catch (err) {
+            Toast.error('Fotoğraf silinirken bir hata oluştu.');
+        }
+    }
+
+    // ─── Mobile Image Functions ──────────────────────────────────
+    function toggleMobileImageOptions() {
+        const hide = document.getElementById('npHideImageOnMobile').checked;
+        const section = document.getElementById('npMobileImageSection');
+        if (hide) {
+            section.classList.add('hidden');
+        } else {
+            section.classList.remove('hidden');
+        }
+        updatePreview();
+    }
+
+    function applyMobileImageUrl() {
+        const input = document.getElementById('npMobileImageUrlInput');
+        const url = (input.value || '').trim();
+        if (!url) { Toast.error('Lütfen bir URL girin.'); return; }
+        try { new URL(url); } catch { Toast.error('Geçerli bir URL girin.'); return; }
+
+        document.getElementById('npMobileImageUrl').value = url;
+        document.getElementById('npMobileImagePreviewImg').src = url;
+        document.getElementById('npMobileImagePreview').classList.remove('hidden');
+        document.getElementById('npMobileImageInputArea').classList.add('hidden');
+        input.value = '';
+        Toast.success('Mobil fotoğraf URL\'si uygulandı.');
+        updatePreview();
+    }
+
+    async function uploadMobileImage(input) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+        if (file.size > 5 * 1024 * 1024) { Toast.error('Dosya boyutu 5MB\'dan büyük olamaz.'); input.value = ''; return; }
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('isMobile', 'true');
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const resp = await fetch('/NewsletterPopup/UploadImage', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token },
+                body: formData
+            });
+            const result = await resp.json();
+            if (result.success) {
+                document.getElementById('npMobileImageUrl').value = result.imageUrl;
+                document.getElementById('npMobileImagePreviewImg').src = result.imageUrl;
+                document.getElementById('npMobileImagePreview').classList.remove('hidden');
+                document.getElementById('npMobileImageInputArea').classList.add('hidden');
+                Toast.success(result.message);
+                updatePreview();
+            } else {
+                Toast.error(result.message);
+            }
+        } catch (err) {
+            Toast.error('Fotoğraf yüklenirken bir hata oluştu.');
+        } finally {
+            input.value = '';
+        }
+    }
+
+    function deleteMobileImage() {
+        document.getElementById('npMobileImageUrl').value = '';
+        document.getElementById('npMobileImagePreview').classList.add('hidden');
+        document.getElementById('npMobileImageInputArea').classList.remove('hidden');
+        Toast.success('Mobil fotoğraf kaldırıldı.');
+        updatePreview();
+    }
+
+    // ─── Export to R2 ───────────────────────────────────────────
+    async function exportToR2() {
+        const btn = document.getElementById('exportToSiteBtn');
+        const origHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yayınlanıyor...';
+        btn.disabled = true;
+
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            const resp = await fetch('/NewsletterPopup/ExportToR2', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                }
+            });
+
+            const result = await resp.json();
+            if (result.success) {
+                Toast.success(result.message);
+            } else {
+                Toast.error(result.message);
+            }
+        } catch (err) {
+            Toast.error('Yayınlama sırasında bir hata oluştu.');
+        } finally {
+            btn.innerHTML = origHTML;
+            btn.disabled = false;
+        }
+    }
+
+    // ─── Preview rendering ──────────────────────────────────────
+    function _previewSloganHtml(text, hlColor) {
+        if (!text) return '';
+        // Escape HTML
+        const d = document.createElement('div');
+        d.textContent = text;
+        let s = d.innerHTML;
+        // [hl]...[/hl] → styled spans
+        s = s.replace(/\[hl\](.*?)\[\/hl\]/g, `<span style="color:${hlColor};font-style:italic;font-weight:700;">$1</span>`);
+        s = s.replace(/\n/g, '<br>');
+        return s;
+    }
+
+    function updatePreview() {
+        const data = collectFormData();
+        const target = document.getElementById('npPreviewContainer');
+
+        const borderRadius = data.borderRadius || '12px';
+
+        // Build slogan overlay for mobile preview
+        let sloganOverlayHTML = '';
+        if (data.sloganEnabled && data.imageUrl && data.sloganText && !data.hideImageOnMobile) {
+            const stc = data.sloganTextColor || '#ffffff';
+            const shc = data.sloganHighlightColor || '#c8a96e';
+            sloganOverlayHTML = `<div style="position:absolute;bottom:0;left:0;right:0;padding:10px 12px;background:linear-gradient(0deg,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0.35) 60%,transparent 100%);color:${stc};z-index:1;">`;
+            if (data.sloganBadgeText) {
+                sloganOverlayHTML += `<div style="display:inline-block;font-size:7px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;padding:2px 8px;border:1px solid ${shc};border-radius:50px;color:${shc};">${data.sloganBadgeText}</div>`;
+            }
+            sloganOverlayHTML += `<div style="font-size:13px;font-weight:400;line-height:1.25;letter-spacing:-0.3px;font-family:'Cormorant Garamond',Georgia,'Times New Roman',serif;">${_previewSloganHtml(data.sloganText, shc)}</div>`;
+            sloganOverlayHTML += `</div>`;
+        }
+
+        let fieldsHTML = '';
+
+        if (data.showNameFields) {
+            fieldsHTML += `
+                <div style="display:flex; gap:6px; margin-bottom:8px;">
+                    <input type="text" placeholder="${data.namePlaceholder || 'Adınız'}" disabled
+                           style="width:50%; min-width:0; padding:8px 0; border:none; border-bottom:1px solid rgba(0,0,0,0.3); border-radius:0; font-size:11px; outline:none; background:transparent; box-sizing:border-box; color:${data.textColor};">
+                    <input type="text" placeholder="${data.surnamePlaceholder || 'Soyadınız'}" disabled
+                           style="width:50%; min-width:0; padding:8px 0; border:none; border-bottom:1px solid rgba(0,0,0,0.3); border-radius:0; font-size:11px; outline:none; background:transparent; box-sizing:border-box; color:${data.textColor};">
+                </div>
+                <style>#npPreviewContainer input::placeholder { color: ${data.textColor}; opacity: 0.7; }</style>
+                `;
+        }
+
+        let consentHTML = '';
+        if (data.showConsentCheckbox) {
+            let legalLinksHtml = '';
+            const links = [];
+            if (data.kvkkLink) {
+                links.push(`<a href="${data.kvkkLink}" target="_blank" style="color:${data.textColor};text-decoration:underline;">KVKK Aydınlatma Metni</a>`);
+            }
+            if (data.etkLink) {
+                links.push(`<a href="${data.etkLink}" target="_blank" style="color:${data.textColor};text-decoration:underline;">Ticari Elektronik İleti İzni</a>`);
+            }
+            if (links.length > 0) {
+                legalLinksHtml = links.join(' ve ') + "'ni okudum, kabul ediyorum.";
+            } else {
+                legalLinksHtml = 'Aydınlatma metnini okudum, kabul ediyorum.';
+            }
+            consentHTML = `
+                <div style="display:flex; align-items:flex-start; gap:6px; margin-bottom:12px;">
+                    <input type="checkbox" disabled style="flex-shrink:0; width:13px; height:13px; margin-top:2px;">
+                    <span style="font-size:9px; color:${data.textColor}; opacity:0.8; line-height:1.45; text-align:left;">${legalLinksHtml}</span>
+                </div>`;
+        }
+
+        let phoneHTML = '';
+        if (data.showPhoneField) {
+            phoneHTML = `
+                <div style="margin-bottom:10px;">
+                    <div style="display:flex; align-items:stretch; border:none; border-bottom:1px solid rgba(0,0,0,0.3); border-radius:0; background:transparent; overflow:hidden; padding:4px 0;">
+                        <div style="display:flex; align-items:center; gap:2px; padding:2px 8px; border:1px solid rgba(0,0,0,0.15); border-radius:4px; background:rgba(0,0,0,0.04); flex-shrink:0; margin-right:8px;">
+                            <span style="font-size:10px; font-weight:500; opacity:0.8; color:${data.textColor};">+90</span>
+                            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="${data.textColor}" stroke-width="2">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </div>
+                        <input type="text" placeholder="${data.phonePlaceholder || '5XXXXXXXXX'}" disabled
+                               style="flex:1; min-width:0; padding:6px 0; border:none; border-radius:0; font-size:11px; outline:none; background:transparent; box-sizing:border-box; color:${data.textColor};">
+                    </div>
+                </div>`;
+        }
+
+        target.innerHTML = `
+            <div class="np-preview-popup" style="
+                background:${data.backgroundColor};
+                border-radius:${borderRadius} ${borderRadius} 0 0;
+                padding:0;
+                box-shadow:0 -8px 25px rgba(0,0,0,0.15);
+                overflow:hidden;
+                border:1px solid #fff;
+            ">
+                ${(data.imageUrl && !data.hideImageOnMobile) ? `<div style="width:100%; max-height:120px; overflow:hidden; padding:4px; position:relative;">
+                    <img src="${data.mobileImageUrl || data.imageUrl}" alt="" style="width:100%; height:120px; object-fit:cover; display:block; border-radius:inherit;">
+                    ${sloganOverlayHTML}
+                </div>` : ''}
+                <div style="padding:14px 14px 16px;">
+                <!-- Close -->
+                <div style="display:flex; justify-content:flex-end; margin-bottom:4px;">
+                    <div style="width:20px; height:20px; display:flex; align-items:center; justify-content:center; cursor:default; opacity:0.5;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${data.textColor}" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </div>
+                </div>
+                <!-- Content -->
+                <div style="text-align:left; margin-bottom:12px;">
+                    ${(!data.imageUrl || data.hideImageOnMobile) ? `<div style="width:36px; height:36px; margin:0 auto 8px; background:${data.buttonColor}; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${data.buttonTextColor}" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                    </div>` : ''}
+                    <div style="font-size:16px; font-weight:800; color:${data.textColor}; margin-bottom:4px; line-height:1.15; letter-spacing:-0.5px;">${data.title}</div>
+                    <div style="font-size:10px; color:${data.textColor}; opacity:0.9; line-height:1.5;">${data.description}</div>
+                </div>
+                <!-- Form -->
+                ${fieldsHTML}
+                ${phoneHTML}
+                ${consentHTML}
+                <button disabled style="
+                    width:100%; padding:10px; border:none; border-radius:50px; font-size:12px; font-weight:600; letter-spacing:.3px;
+                    background:${data.buttonColor}; color:${data.buttonTextColor}; cursor:default;
+                ">${data.submitButtonText}</button>
+                <p style="font-size:7px; text-align:left; line-height:1.4; color:${data.textColor}; opacity:0.6; margin-top:8px;">İletişim bilgilerinizi (ad, soyad, e-posta adresi ve telefon numarası) paylaşarak tarafınıza pazarlama, kampanya, tanıtım ve bilgilendirme amaçlı ileti gönderilmesini kabul etmiş olursunuz. Kişisel verilerinizin işlenmesine ilişkin detaylı bilgiye Gizlilik Politikamızdan ulaşabilirsiniz.</p>
+                <!-- Branding -->
+                <div style="text-align:center; margin-top:12px; padding-top:8px; font-size:8px; color:${data.textColor}; opacity:0.6;">Powered by Dijitaldesin</div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ─── Canlı Önizleme (gerçek modül) ─────────────────────────
+    function openNewsletterPreviewModal() {
+        // Remove any previous preview overlay
+        document.querySelectorAll('.pnp-overlay').forEach(el => el.remove());
+
+        const config = collectFormData();
+        config.isActive = true; // force active for preview
+
+        const testInstance = new PushonicaNewsletterPopup({
+            config: config,
+            manualInit: true
+        });
+        testInstance.isInitialized = true;
+        testInstance._injectStyles();
+        testInstance._showPopup();
+    }
+
+    // ─── Init ───────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialize slogan editor colors
+        updateSloganEditorColors();
+        updateSloganMiniPreview();
+
+        updatePreview();
+
+        // Auto-update preview when inputs change
+        document.querySelectorAll('#newsletterSettingsForm input, #newsletterSettingsForm textarea, #newsletterSettingsForm select').forEach(el => {
+            el.addEventListener('input', () => setTimeout(updatePreview, 100));
+            el.addEventListener('change', () => setTimeout(updatePreview, 100));
+        });
+    });
+</script>
+}

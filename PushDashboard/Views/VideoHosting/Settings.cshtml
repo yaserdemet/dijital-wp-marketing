@@ -1,0 +1,324 @@
+@model PushDashboard.DTOs.VideoSettingsDto
+@{
+    ViewData["Title"] = "Video Hosting Ayarları";
+}
+
+<div class="p-2 md:p-4">
+    <!-- Sticky Header -->
+    <div class="sticky top-0 z-30 mb-4 md:mb-6">
+        <div class="bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm px-4 md:px-6 py-3 md:py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <a href="@Url.Action("Index")" class="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors">
+                        <i class="fas fa-arrow-left text-sm"></i>
+                    </a>
+                    <div>
+                        <h1 class="text-lg md:text-xl font-bold text-gray-900">Video Hosting Ayarları</h1>
+                        <p class="text-xs md:text-sm text-gray-500">Video hosting modülü ayarlarını yönetin</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 md:flex md:items-center gap-2 md:gap-3 w-full md:w-auto mt-2 md:mt-0 justify-end">
+                    <button type="button" class="px-3 md:px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center md:justify-start gap-2 w-full md:w-auto" onclick="resetToDefaults()">
+                        <i class="fas fa-undo"></i>
+                        <span class="hidden sm:inline">Varsayılanlara Sıfırla</span><span class="inline sm:hidden">Sıfırla</span>
+                    </button>
+                    <button type="button" onclick="saveSettings()" class="px-4 lg:px-6 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center md:justify-start gap-2 w-full md:w-auto">
+                        <i class="fas fa-save"></i>
+                        <span>Kaydet</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Settings Form -->
+        <div class="lg:col-span-3">
+            <form id="settingsForm" class="space-y-6">
+                <!-- Upload Limits -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-cloud-upload-alt text-blue-500 mr-2"></i>
+                            Yükleme Limitleri
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label for="maxFileSizeMB" class="block text-sm font-medium text-gray-700 mb-2">Maksimum Dosya Boyutu (MB)</label>
+                                <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       id="maxFileSizeMB" name="MaxFileSizeMB"
+                                       value="@(Model?.MaxFileSizeMB ?? 500)" min="1" max="5000" required>
+                                <p class="text-xs text-gray-500 mt-1">1 MB - 5000 MB arası</p>
+                            </div>
+                            <div>
+                                <label for="maxDurationMinutes" class="block text-sm font-medium text-gray-700 mb-2">Maksimum Video Süresi (Dakika)</label>
+                                <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       id="maxDurationMinutes" name="MaxDurationMinutes"
+                                       value="@(Model?.MaxDurationMinutes ?? 60)" min="1" max="300" required>
+                                <p class="text-xs text-gray-500 mt-1">1 - 300 dakika arası</p>
+                            </div>
+                            <div>
+                                <label for="maxVideosPerCompany" class="block text-sm font-medium text-gray-700 mb-2">Maksimum Video Sayısı</label>
+                                <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       id="maxVideosPerCompany" name="MaxVideosPerCompany"
+                                       value="@(Model?.MaxVideosPerCompany ?? 100)" min="1" max="1000" required>
+                                <p class="text-xs text-gray-500 mt-1">Şirket başına maksimum video sayısı</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Player Settings -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-play-circle text-purple-500 mr-2"></i>
+                            Video Player Ayarları
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="playerTheme" class="block text-sm font-medium text-gray-700 mb-2">Player Teması</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        id="playerTheme" name="PlayerTheme">
+                                    @{
+                                        var playerTheme = Model?.PlayerTheme ?? "default";
+                                    }
+                                    <option value="default" selected="@(playerTheme == "default")">Varsayılan</option>
+                                    <option value="dark" selected="@(playerTheme == "dark")">Koyu</option>
+                                    <option value="light" selected="@(playerTheme == "light")">Açık</option>
+                                </select>
+                            </div>
+                            <div class="space-y-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Player Seçenekleri</label>
+                                <div class="flex items-center">
+                                    <input type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                           id="autoPlay" name="AutoPlay" @(Model?.AutoPlay == true ? "checked" : "")>
+                                    <label class="ml-2 text-sm text-gray-700" for="autoPlay">Otomatik oynatma</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                           id="showControls" name="ShowControls" @(Model?.ShowControls != false ? "checked" : "")>
+                                    <label class="ml-2 text-sm text-gray-700" for="showControls">Player kontrollerini göster</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                           id="allowDownload" name="AllowDownload" @(Model?.AllowDownload == true ? "checked" : "")>
+                                    <label class="ml-2 text-sm text-gray-700" for="allowDownload">Video indirmeye izin ver</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6">
+                            <label for="customPlayerCss" class="block text-sm font-medium text-gray-700 mb-2">Özel Player CSS</label>
+                            <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                                      id="customPlayerCss" name="CustomPlayerCss" rows="4"
+                                      maxlength="5000" placeholder="/* Özel CSS kodları buraya yazın... */">@Model?.CustomPlayerCss</textarea>
+                            <p class="text-xs text-gray-500 mt-1">Player görünümünü özelleştirmek için CSS kodları</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Settings -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-shield-alt text-green-500 mr-2"></i>
+                            Güvenlik ve Erişim Ayarları
+                        </h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="flex items-start">
+                            <input type="checkbox" class="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                   id="requireAuthentication" name="RequireAuthentication" @(Model?.RequireAuthentication == true ? "checked" : "")>
+                            <div class="ml-3">
+                                <label class="text-sm font-medium text-gray-700" for="requireAuthentication">Kimlik doğrulama gerektir</label>
+                                <p class="text-xs text-gray-500">Video izlemek için giriş yapma zorunluluğu</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start">
+                            <input type="checkbox" class="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                   id="allowEmbedding" name="AllowEmbedding" @(Model?.AllowEmbedding != false ? "checked" : "")>
+                            <div class="ml-3">
+                                <label class="text-sm font-medium text-gray-700" for="allowEmbedding">Embed edilmeye izin ver</label>
+                                <p class="text-xs text-gray-500">Videoların iframe ile gömülmesine izin ver</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <label for="allowedDomains" class="block text-sm font-medium text-gray-700 mb-2">İzin Verilen Domainler (JSON)</label>
+                            <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                                      id="allowedDomains" name="AllowedDomains" rows="3"
+                                      maxlength="2000" placeholder='["example.com", "subdomain.example.com"]'>@Model?.AllowedDomains</textarea>
+                            <p class="text-xs text-gray-500 mt-1">
+                                Embed için izin verilen domain listesi (JSON formatında). Boş bırakılırsa tüm domainler izinli olur.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+
+            </form>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                        Ayar Bilgileri
+                    </h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-800 mb-1">Yükleme Limitleri</h4>
+                        <p class="text-xs text-gray-500">
+                            Bu limitler şirketinizin video yükleme kapasitesini belirler.
+                            Limitler aşıldığında yeni video yüklenemez.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-800 mb-1">Player Ayarları</h4>
+                        <p class="text-xs text-gray-500">
+                            Video player'ın görünümü ve davranışını kontrol eder.
+                            Özel CSS ile tamamen özelleştirebilirsiniz.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-800 mb-1">Güvenlik</h4>
+                        <p class="text-xs text-gray-500">
+                            Video erişim kontrolü ve embed güvenlik ayarları.
+                            Domain kısıtlaması ile sadece belirli sitelerden embed edilmesine izin verebilirsiniz.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-file-video text-purple-500 mr-2"></i>
+                        Desteklenen Formatlar
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex items-center text-sm text-gray-700">
+                            <i class="fas fa-check text-green-500 mr-2"></i> MP4
+                        </div>
+                        <div class="flex items-center text-sm text-gray-700">
+                            <i class="fas fa-check text-green-500 mr-2"></i> AVI
+                        </div>
+                        <div class="flex items-center text-sm text-gray-700">
+                            <i class="fas fa-check text-green-500 mr-2"></i> MOV
+                        </div>
+                        <div class="flex items-center text-sm text-gray-700">
+                            <i class="fas fa-check text-green-500 mr-2"></i> WMV
+                        </div>
+                        <div class="flex items-center text-sm text-gray-700">
+                            <i class="fas fa-check text-green-500 mr-2"></i> FLV
+                        </div>
+                        <div class="flex items-center text-sm text-gray-700">
+                            <i class="fas fa-check text-green-500 mr-2"></i> WebM
+                        </div>
+                        <div class="flex items-center text-sm text-gray-700">
+                            <i class="fas fa-check text-green-500 mr-2"></i> MKV
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#settingsForm').on('submit', function(e) {
+                e.preventDefault();
+                saveSettings();
+            });
+
+            // JSON validation for allowed domains
+            $('#allowedDomains').on('blur', function() {
+                const value = $(this).val().trim();
+                if (value && value !== '') {
+                    try {
+                        JSON.parse(value);
+                        $(this).removeClass('border-red-500').addClass('border-green-500');
+                    } catch (e) {
+                        $(this).removeClass('border-green-500').addClass('border-red-500');
+                        showNotification('Geçersiz JSON formatı. Örnek: ["example.com", "test.com"]', 'warning');
+                    }
+                } else {
+                    $(this).removeClass('border-red-500 border-green-500');
+                }
+            });
+        });
+
+        function saveSettings() {
+            const formData = {
+                MaxFileSizeMB: parseInt($('#maxFileSizeMB').val()),
+                MaxDurationMinutes: parseInt($('#maxDurationMinutes').val()),
+                MaxVideosPerCompany: parseInt($('#maxVideosPerCompany').val()),
+                AutoPlay: $('#autoPlay').is(':checked'),
+                ShowControls: $('#showControls').is(':checked'),
+                AllowDownload: $('#allowDownload').is(':checked'),
+                PlayerTheme: $('#playerTheme').val(),
+                CustomPlayerCss: $('#customPlayerCss').val(),
+                RequireAuthentication: $('#requireAuthentication').is(':checked'),
+                AllowEmbedding: $('#allowEmbedding').is(':checked'),
+                AllowedDomains: $('#allowedDomains').val().trim()
+            };
+
+            // Validate JSON if provided
+            if (formData.AllowedDomains) {
+                try {
+                    JSON.parse(formData.AllowedDomains);
+                } catch (e) {
+                    showNotification('İzin verilen domainler geçersiz JSON formatında.', 'error');
+                    return;
+                }
+            }
+
+            $.post('@Url.Action("UpdateSettings")', formData)
+                .done(function(response) {
+                    if (response.success) {
+                        showNotification(response.message, 'success');
+                    } else {
+                        showNotification(response.message, 'error');
+                    }
+                })
+                .fail(function() {
+                    showNotification('Ayarlar kaydedilirken hata oluştu.', 'error');
+                });
+        }
+
+        function resetToDefaults() {
+            showConfirmationDialog('Varsayılanlara Dön', 'Tüm ayarları varsayılan değerlere sıfırlamak istediğinizden emin misiniz?', 'Evet', 'Hayır', () => {
+                $('#maxFileSizeMB').val(500);
+                $('#maxDurationMinutes').val(60);
+                $('#maxVideosPerCompany').val(100);
+                $('#autoPlay').prop('checked', false);
+                $('#showControls').prop('checked', true);
+                $('#allowDownload').prop('checked', false);
+                $('#playerTheme').val('default');
+                $('#customPlayerCss').val('');
+                $('#requireAuthentication').prop('checked', false);
+                $('#allowEmbedding').prop('checked', true);
+                $('#allowedDomains').val('');
+
+                showNotification('Ayarlar varsayılan değerlere sıfırlandı. Kaydetmeyi unutmayın.', 'info');
+            });
+        }
+
+
+    </script>
+}

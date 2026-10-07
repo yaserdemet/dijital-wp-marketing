@@ -1,0 +1,215 @@
+<script>
+  let activeDevices = [];
+  let devicesLoaded = false;
+
+  async function loadActiveDevices() {
+    console.log("loadActiveDevices function called");
+    try {
+      showDevicesLoading();
+
+      const response = await axios.get('/Settings/GetActiveDevicesAjax');
+      console.log('Active Devices API Response:', response.data);
+
+      if (response.data.success) {
+        activeDevices = response.data.data.devices || [];
+        devicesLoaded = true;
+
+        if (!activeDevices || activeDevices.length === 0) {
+          showDevicesEmpty();
+        } else {
+          displayActiveDevices();
+        }
+      } else {
+        showDevicesError(response.data.message);
+      }
+    } catch (error) {
+      console.error('Error loading active devices:', error);
+      if (error.response && error.response.data && error.response.data.message) {
+        showDevicesError(error.response.data.message);
+      } else {
+        showDevicesError('Cihazlar yüklenirken bir hata oluştu.');
+      }
+    }
+  }
+
+  function showDevicesLoading() {
+    document.getElementById('sessions-loading').classList.remove('hidden');
+    document.getElementById('sessions-error').classList.add('hidden');
+    document.getElementById('sessions-container').classList.add('hidden');
+    document.getElementById('sessions-empty').classList.add('hidden');
+  }
+
+  function showDevicesError(message) {
+    document.getElementById('sessions-loading').classList.add('hidden');
+    document.getElementById('sessions-error').classList.remove('hidden');
+    document.getElementById('sessions-container').classList.add('hidden');
+    document.getElementById('sessions-empty').classList.add('hidden');
+
+    const errorElement = document.getElementById('sessions-error');
+    const errorMessage = errorElement.querySelector('p');
+    if (errorMessage) {
+      errorMessage.textContent = message || 'Cihazlar yüklenirken bir hata oluştu.';
+    }
+  }
+
+  function showDevicesEmpty() {
+    document.getElementById('sessions-loading').classList.add('hidden');
+    document.getElementById('sessions-error').classList.add('hidden');
+    document.getElementById('sessions-container').classList.add('hidden');
+    document.getElementById('sessions-empty').classList.remove('hidden');
+  }
+
+  function displayActiveDevices() {
+    document.getElementById('sessions-loading').classList.add('hidden');
+    document.getElementById('sessions-error').classList.add('hidden');
+    document.getElementById('sessions-container').classList.remove('hidden');
+    document.getElementById('sessions-empty').classList.add('hidden');
+
+    const devicesList = document.getElementById('sessions-list');
+    devicesList.innerHTML = '';
+
+    activeDevices.forEach(device => {
+      const deviceElement = createDeviceElement(device);
+      devicesList.appendChild(deviceElement);
+    });
+
+    setupTerminateAllButton();
+  }
+
+  function createDeviceElement(device) {
+    const deviceDiv = document.createElement('div');
+    deviceDiv.className = 'flex items-center justify-between p-3 border rounded-lg';
+    deviceDiv.setAttribute('data-device-id', device.id);
+
+    const deviceIcon = getDeviceIcon(device.deviceType);
+    const iconColor = device.isCurrent ? 'text-emerald-600' : 'text-sky-600';
+    const iconBg = device.isCurrent ? 'bg-emerald-50' : 'bg-sky-50';
+
+    const sessionText = device.sessionCount === 1 ? 'oturum' : 'oturum';
+    const deviceTypeText = device.deviceType === 'Mobile' ? 'mobil cihaz' :
+                          device.deviceType === 'Tablet' ? 'tablet' :
+                          device.deviceType === 'Desktop' ? 'bilgisayar' : 'cihaz';
+
+    deviceDiv.innerHTML = `
+      <div class="flex items-center">
+        <div class="w-8 h-8 ${iconBg} rounded-full flex items-center justify-center mr-3">
+          <span class="text-sm">${deviceIcon}</span>
+        </div>
+        <div>
+          <p class="font-medium">${device.sessionCount} ${sessionText} ${deviceTypeText} üzerinde</p>
+          <p class="text-sm text-gray-500">${device.formattedDeviceInfo}</p>
+          <p class="text-sm text-gray-500">${device.formattedLocation} • ${device.formattedLastActivity}</p>
+          ${device.displayIpAddress ? `<p class="text-xs text-gray-400">IP: ${device.displayIpAddress}</p>` : ''}
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span class="${device.statusBadgeClass} text-sm font-medium">${device.statusBadge}</span>
+        ${!device.isCurrent ? `<button onclick="terminateDevice(${device.id}, '${device.formattedDeviceInfo}')" class="text-red-600 hover:text-red-800 text-sm ml-2">Sonlandır</button>` : ''}
+      </div>
+    `;
+
+    return deviceDiv;
+  }
+
+  function getDeviceIcon(deviceType) {
+    switch (deviceType?.toLowerCase()) {
+      case 'mobile':
+        return '📱';
+      case 'tablet':
+        return '📱';
+      case 'desktop':
+      default:
+        return '💻';
+    }
+  }
+
+  async function terminateDevice(deviceId, deviceInfo) {
+    showConfirmationDialog(
+      'Cihazı Sonlandır',
+      `"${deviceInfo}" cihazını sonlandırmak istediğinizden emin misiniz? Bu cihazdaki tüm oturumlar sonlandırılacaktır.`,
+      'Sonlandır',
+      'İptal',
+      () => performTerminateDevice(deviceId)
+    );
+  }
+
+  async function performTerminateDevice(deviceId) {
+    try {
+      const response = await axios.post('/Settings/TerminateDeviceAjax', {
+        deviceId
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'RequestVerificationToken': token
+        }
+      });
+
+      if (response.data.success) {
+        showNotification(response.data.message, 'success');
+        activeDevices = activeDevices.filter(device => device.id !== deviceId);
+        displayActiveDevices();
+      } else {
+        showNotification(response.data.message, 'error');
+      }
+    } catch (error) {
+      console.error('Error terminating device:', error);
+      if (error.response && error.response.data && error.response.data.message) {
+        showNotification(error.response.data.message, 'error');
+      } else {
+        showNotification('Cihaz sonlandırılırken bir hata oluştu.', 'error');
+      }
+    }
+  }
+
+  function setupTerminateAllButton() {
+    const terminateAllBtn = document.getElementById('terminate-all-sessions-btn');
+    if (terminateAllBtn) {
+      terminateAllBtn.onclick = function() {
+        const otherDevices = activeDevices.filter(device => !device.isCurrent);
+        if (otherDevices.length === 0) {
+          showNotification('Sonlandırılacak başka cihaz bulunmuyor.', 'info');
+          return;
+        }
+
+        showConfirmationDialog(
+          'Tüm Diğer Cihazları Sonlandır',
+          `${otherDevices.length} aktif cihazı sonlandırmak istediğinizden emin misiniz? Bu cihazlardaki tüm oturumlar sonlandırılacaktır. Bu işlem geri alınamaz.`,
+          'Tümünü Sonlandır',
+          'İptal',
+          performTerminateAllOtherDevices
+        );
+      };
+    }
+  }
+
+  async function performTerminateAllOtherDevices() {
+    try {
+      const response = await axios.post('/Settings/TerminateAllOtherDevicesAjax', {}, {
+        headers: {
+          'Content-Type': 'application/json',
+          'RequestVerificationToken': token
+        }
+      });
+
+      if (response.data.success) {
+        showNotification(response.data.message, 'success');
+        loadActiveDevices();
+      } else {
+        showNotification(response.data.message, 'error');
+      }
+    } catch (error) {
+      console.error('Error terminating all other devices:', error);
+      if (error.response && error.response.data && error.response.data.message) {
+        showNotification(error.response.data.message, 'error');
+      } else {
+        showNotification('Diğer cihazlar sonlandırılırken bir hata oluştu.', 'error');
+      }
+    }
+  }
+
+  window.loadActiveDevices = loadActiveDevices;
+  window.loadActiveSessions = loadActiveDevices;
+  window.terminateDevice = terminateDevice;
+  window.performTerminateDevice = performTerminateDevice;
+  window.performTerminateAllOtherDevices = performTerminateAllOtherDevices;
+</script>

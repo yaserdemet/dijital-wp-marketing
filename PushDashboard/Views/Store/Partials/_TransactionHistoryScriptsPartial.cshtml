@@ -1,0 +1,231 @@
+<script>
+  // Transaction History Management
+  let currentTransactionPage = 1;
+  const transactionsPerPage = 10;
+  let allTransactions = [];
+  window.transactionsLoaded = false;
+
+  async function loadTransactionHistory(page = 1) {
+    try {
+      showTransactionsLoading();
+
+      const response = await axios.get(`/Store/GetTransactionHistory?page=${page}&pageSize=${transactionsPerPage}`);
+
+      if (response.data.success) {
+        allTransactions = response.data.data.transactions;
+        currentTransactionPage = response.data.data.currentPage;
+        window.transactionsLoaded = true;
+
+        if (allTransactions.length === 0) {
+          showTransactionsEmpty();
+        } else {
+          displayTransactions(response.data.data);
+        }
+      } else {
+        showTransactionsError(response.data.message);
+      }
+    } catch (error) {
+      console.error('Error loading transaction history:', error);
+      showTransactionsError('İşlem geçmişi yüklenirken bir hata oluştu.');
+    }
+  }
+
+  function showTransactionsLoading() {
+    document.getElementById('transactions-loading').classList.remove('hidden');
+    document.getElementById('transactions-content').classList.add('hidden');
+    document.getElementById('transactions-empty').classList.add('hidden');
+    document.getElementById('transactions-error').classList.add('hidden');
+  }
+
+  function showTransactionsContent() {
+    document.getElementById('transactions-loading').classList.add('hidden');
+    document.getElementById('transactions-content').classList.remove('hidden');
+    document.getElementById('transactions-empty').classList.add('hidden');
+    document.getElementById('transactions-error').classList.add('hidden');
+  }
+
+  function showTransactionsEmpty() {
+    document.getElementById('transactions-loading').classList.add('hidden');
+    document.getElementById('transactions-content').classList.add('hidden');
+    document.getElementById('transactions-empty').classList.remove('hidden');
+    document.getElementById('transactions-error').classList.add('hidden');
+  }
+
+  function showTransactionsError(message) {
+    document.getElementById('transactions-loading').classList.add('hidden');
+    document.getElementById('transactions-content').classList.add('hidden');
+    document.getElementById('transactions-empty').classList.add('hidden');
+    document.getElementById('transactions-error').classList.remove('hidden');
+    document.getElementById('transactions-error-message').textContent = message;
+  }
+
+  function displayTransactions(data) {
+    const tableBody = document.getElementById('transactions-table-body');
+    tableBody.innerHTML = '';
+
+    data.transactions.forEach(transaction => {
+      const row = createTransactionRow(transaction);
+      tableBody.appendChild(row);
+    });
+
+    updateTransactionPagination(data);
+    showTransactionsContent();
+  }
+
+  function createTransactionRow(transaction) {
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-gray-50';
+    
+    // Format date
+    const purchaseDate = new Date(transaction.purchasedAt);
+    const formattedDate = purchaseDate.toLocaleDateString('tr-TR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    row.innerHTML = `
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 h-10 w-10">
+            <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: ${transaction.moduleBackgroundColor || '#f3f4f6'}">
+              ${transaction.moduleIcon ? 
+                `<i class="${transaction.moduleIcon} text-lg" style="color: ${transaction.moduleIconColor || '#818cf8'}"></i>` :
+                `<svg class="w-5 h-5 text-indigo-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                </svg>`
+              }
+            </div>
+          </div>
+          <div class="ml-4">
+            <div class="text-sm font-medium text-gray-900">${transaction.moduleName}</div>
+            <div class="text-sm text-gray-500">${transaction.categoryName}</div>
+          </div>
+        </div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm font-medium text-gray-900">₺${transaction.paidAmount.toFixed(2)}</div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm text-gray-900">${formattedDate}</div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm text-gray-500 font-mono">${transaction.transactionId || '-'}</div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+          ${transaction.status}
+        </span>
+      </td>
+    `;
+    
+    return row;
+  }
+
+  function updateTransactionPagination(data) {
+    // Update pagination info
+    const start = (data.currentPage - 1) * data.pageSize + 1;
+    const end = Math.min(data.currentPage * data.pageSize, data.totalItems);
+    
+    document.getElementById('pagination-start').textContent = start;
+    document.getElementById('pagination-end').textContent = end;
+    document.getElementById('pagination-total').textContent = data.totalItems;
+
+    // Update prev/next buttons
+    const prevButton = document.getElementById('prev-page');
+    const nextButton = document.getElementById('next-page');
+    
+    prevButton.disabled = data.currentPage === 1;
+    nextButton.disabled = data.currentPage === data.totalPages;
+    
+    if (data.currentPage === 1) {
+      prevButton.classList.add('opacity-50', 'cursor-not-allowed');
+    } else {
+      prevButton.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+    
+    if (data.currentPage === data.totalPages) {
+      nextButton.classList.add('opacity-50', 'cursor-not-allowed');
+    } else {
+      nextButton.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+
+    // Update page numbers
+    const pageNumbersContainer = document.getElementById('page-numbers');
+    pageNumbersContainer.innerHTML = '';
+
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, data.currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(data.totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      const pageButton = document.createElement('button');
+      pageButton.textContent = i;
+      pageButton.className = `px-3 py-2 text-sm font-medium border ${
+        i === data.currentPage
+          ? 'bg-primary text-white border-primary'
+          : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+      }`;
+      pageButton.onclick = () => goToTransactionPage(i);
+      pageNumbersContainer.appendChild(pageButton);
+    }
+  }
+
+  function goToTransactionPage(page) {
+    if (page !== currentTransactionPage) {
+      loadTransactionHistory(page);
+    }
+  }
+
+  // Event listeners
+  document.addEventListener('DOMContentLoaded', function() {
+    // Load transactions on page load
+    loadTransactionHistory();
+
+    // Refresh button
+    const refreshButton = document.getElementById('refresh-transactions');
+    if (refreshButton) {
+      refreshButton.addEventListener('click', () => {
+        loadTransactionHistory(currentTransactionPage);
+      });
+    }
+
+    // Pagination buttons
+    document.getElementById('prev-page')?.addEventListener('click', () => {
+      if (currentTransactionPage > 1) {
+        goToTransactionPage(currentTransactionPage - 1);
+      }
+    });
+
+    document.getElementById('next-page')?.addEventListener('click', () => {
+      goToTransactionPage(currentTransactionPage + 1);
+    });
+
+    // Mobile pagination
+    document.getElementById('prev-page-mobile')?.addEventListener('click', () => {
+      if (currentTransactionPage > 1) {
+        goToTransactionPage(currentTransactionPage - 1);
+      }
+    });
+
+    document.getElementById('next-page-mobile')?.addEventListener('click', () => {
+      goToTransactionPage(currentTransactionPage + 1);
+    });
+
+    // Retry button
+    document.getElementById('retry-transactions')?.addEventListener('click', () => {
+      loadTransactionHistory(currentTransactionPage);
+    });
+  });
+
+  // Make functions globally available
+  window.loadTransactionHistory = loadTransactionHistory;
+  window.goToTransactionPage = goToTransactionPage;
+</script>

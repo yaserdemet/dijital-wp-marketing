@@ -1,0 +1,519 @@
+<script>
+  let allUsers = [];  // User Management Functions
+  let currentPage = 1;
+  const usersPerPage = 10;
+  window.usersLoaded = false;
+
+  async function loadUsers() {
+    console.log("loadUsers function called");
+    console.log("loadUsers function called");
+    try {
+      showUsersLoading();
+
+      const response = await axios.get('/Settings/GetCompanyUsersAjax');
+      console.log('API Response:', response.data);
+
+      if (response.data.success) {
+        allUsers = response.data.data.users || [];
+        window.usersLoaded = true;
+
+        if (!allUsers || (allUsers?.length || 0) === 0) {
+          showUsersEmpty();
+        } else {
+          displayUsers();
+          updateUsersCount();
+        }
+      } else {
+        showUsersError(response.data.message);
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+      if (error.response && error.response.status === 403) {
+        showUsersError('Bu işlem için yetkiniz bulunmuyor. Sadece şirket sahipleri kullanıcıları yönetebilir.');
+      } else if (error.response && error.response.status === 401) {
+        showUsersError('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.');
+      } else {
+        showUsersError('Kullanıcılar yüklenirken bir hata oluştu.');
+      }
+    }
+  }
+
+  function showUsersLoading() {
+    document.getElementById('users-loading').classList.remove('hidden');
+    document.getElementById('users-content').classList.add('hidden');
+    document.getElementById('users-empty').classList.add('hidden');
+    document.getElementById('users-error').classList.add('hidden');
+  }
+
+  function showUsersContent() {
+    document.getElementById('users-loading').classList.add('hidden');
+    document.getElementById('users-content').classList.remove('hidden');
+    document.getElementById('users-empty').classList.add('hidden');
+    document.getElementById('users-error').classList.add('hidden');
+  }
+
+  function showUsersEmpty() {
+    document.getElementById('users-loading').classList.add('hidden');
+    document.getElementById('users-content').classList.add('hidden');
+    document.getElementById('users-empty').classList.remove('hidden');
+    document.getElementById('users-error').classList.add('hidden');
+  }
+
+  function showUsersError(message) {
+    document.getElementById('users-loading').classList.add('hidden');
+    document.getElementById('users-content').classList.add('hidden');
+    document.getElementById('users-empty').classList.add('hidden');
+    document.getElementById('users-error').classList.remove('hidden');
+    document.getElementById('users-error-message').textContent = message;
+  }
+
+  function updateUsersCount() {
+    document.getElementById('total-users').textContent = (allUsers?.length || 0);
+  }
+
+  function displayUsers() {
+    const startIndex = (currentPage - 1) * usersPerPage;
+    const endIndex = startIndex + usersPerPage;
+    const usersToShow = (allUsers || []).slice(startIndex, endIndex);
+
+    const tableBody = document.getElementById('users-table-body');
+    tableBody.innerHTML = '';
+
+    usersToShow.forEach(user => {
+      const row = createUserRow(user);
+      tableBody.appendChild(row);
+    });
+
+    updatePagination();
+    showUsersContent();
+  }
+
+  function createUserRow(user) {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="flex items-center">
+          <div class="ml-4">
+            <div class="text-sm font-medium text-gray-900">${user.fullName}</div>
+          </div>
+        </div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm text-gray-900">${user.email}</div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm text-gray-900">${user.phoneNumber || '-'}</div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="px-2 inline-flex text-xs leading-5 font-medium rounded-md ${user.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">
+          ${user.status}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        ${user.lastLoginDisplay}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <div class="flex space-x-2 justify-end">
+          <button onclick="toggleUserStatus('${user.id}', ${user.isActive}, '${user.fullName}')"
+                  class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md ${user.isActive ? 'text-amber-700 bg-amber-50 hover:bg-amber-100' : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'} transition-colors duration-200">
+            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            ${user.isActive ? 'Pasif Yap' : 'Aktif Yap'}
+          </button>
+          <button onclick="deleteUser('${user.id}', '${user.fullName}')"
+                  class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-rose-700 bg-rose-50 hover:bg-rose-100 transition-colors duration-200">
+            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            Sil
+          </button>
+        </div>
+      </td>
+    `;
+    return row;
+  }
+
+  function updatePagination() {
+    const totalPages = Math.ceil((allUsers?.length || 0) / usersPerPage);
+
+    // Update prev/next buttons
+    document.getElementById('prev-page').disabled = currentPage === 1;
+    document.getElementById('next-page').disabled = currentPage === totalPages;
+
+    // Update page numbers
+    const pageNumbersContainer = document.getElementById('page-numbers');
+    pageNumbersContainer.innerHTML = '';
+
+    for (let i = 1; i <= totalPages; i++) {
+      const pageButton = document.createElement('button');
+      pageButton.textContent = i;
+      pageButton.className = `px-3 py-2 border rounded-md text-sm font-medium ${
+        i === currentPage
+          ? 'bg-primary text-white border-primary'
+          : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+      }`;
+      pageButton.onclick = () => goToPage(i);
+      pageNumbersContainer.appendChild(pageButton);
+    }
+  }
+
+  function goToPage(page) {
+    currentPage = page;
+    displayUsers();
+  }
+
+  // Pagination event listeners
+  document.getElementById('prev-page').addEventListener('click', () => {
+    if (currentPage > 1) {
+      goToPage(currentPage - 1);
+    }
+  });
+
+  document.getElementById('next-page').addEventListener('click', () => {
+    const totalPages = Math.ceil((allUsers?.length || 0) / usersPerPage);
+    if (currentPage < totalPages) {
+      goToPage(currentPage + 1);
+    }
+  });
+
+  // Retry button event listener
+  document.getElementById('retry-users')?.addEventListener('click', () => {
+    window.usersLoaded = false;
+    loadUsers();
+  });
+
+  // User Management Actions
+  async function deleteUser(userId, userName) {
+    showConfirmationDialog(
+      'Kullanıcıyı Sil',
+      `"${userName}" kullanıcısını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`,
+      'Sil',
+      'İptal',
+      () => performDeleteUser(userId, userName)
+    );
+  }
+
+  async function performDeleteUser(userId, userName) {
+    try {
+      const response = await axios.post('/Settings/DeleteUserAjax', { userId }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'RequestVerificationToken': token
+        }
+      });
+
+      if (response.data.success) {
+        showNotification(response.data.message, 'success');
+        // Remove user from local array
+        allUsers = allUsers.filter(user => user.Id !== userId);
+        // Reset to first page if current page is empty
+        const totalPages = Math.ceil((allUsers?.length || 0) / usersPerPage);
+        if (currentPage > totalPages && totalPages > 0) {
+          currentPage = totalPages;
+        }
+        // Refresh display
+        if (!allUsers || (allUsers?.length || 0) === 0) {
+          showUsersEmpty();
+        } else {
+          await loadUsers();
+          updateUsersCount();
+        }
+      } else {
+        showNotification(response.data.message, 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      if (error.response && error.response.data && error.response.data.message) {
+        showNotification(error.response.data.message, 'error');
+      } else {
+        showNotification('Kullanıcı silinirken bir hata oluştu.', 'error');
+      }
+    }
+  }
+
+  async function toggleUserStatus(userId, deactivate, userName) {
+    const action = deactivate ? 'pasif yapmak' : 'aktif yapmak';
+    const actionPast = deactivate ? 'pasif yapılacak' : 'aktif yapılacak';
+
+    showConfirmationDialog(
+      'Kullanıcı Durumunu Değiştir',
+      `"${userName}" kullanıcısı ${actionPast}. Bu işlemi yapmak istediğinizden emin misiniz?`,
+      'Evet',
+      'İptal',
+      () => performToggleUserStatus(userId, deactivate)
+    );
+  }
+
+  async function performToggleUserStatus(userId, deactivate) {
+    try {
+      const response = await axios.post('/Settings/DeactivateUserAjax', {
+        userId,
+        deactivate
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'RequestVerificationToken': token
+        }
+      });
+
+      if (response.data.success) {
+        showNotification(response.data.message, 'success');
+        // Update user in local array
+        const userIndex = allUsers.findIndex(user => user.Id === userId);
+        if (userIndex !== -1) {
+          allUsers[userIndex].isActive = !deactivate;
+          allUsers[userIndex].status = !deactivate ? 'Aktif' : 'Pasif';
+        }
+        // Refresh display
+        await loadUsers();
+      } else {
+        showNotification(response.data.message, 'error');
+      }
+    } catch (error) {
+      console.error('Error updating user.Status:', error);
+      if (error.response && error.response.data && error.response.data.message) {
+        showNotification(error.response.data.message, 'error');
+      } else {
+        showNotification('Kullanıcı durumu güncellenirken bir hata oluştu.', 'error');
+      }
+    }
+  }
+
+  // Invitation Management Functions
+  let allInvitations = [];
+  let invitationFormVisible = false;
+
+  async function loadInvitations() {
+    try {
+      const response = await axios.get('/Settings/GetCompanyInvitationsAjax');
+      if (response.data.success) {
+        allInvitations = response.data.data.pendingInvitations || [];
+        displayInvitations();
+        updateInvitationCounts(response.data.data);
+      } else {
+        console.error('Failed to load invitations:', response.data.message);
+      }
+    } catch (error) {
+      console.error('Error loading invitations:', error);
+    }
+  }
+
+  function displayInvitations() {
+    const invitationsList = document.getElementById('invitations-list');
+    const pendingInvitationsDiv = document.getElementById('pending-invitations');
+
+    if (!allInvitations || allInvitations.length === 0) {
+      pendingInvitationsDiv.classList.add('hidden');
+      return;
+    }
+
+    pendingInvitationsDiv.classList.remove('hidden');
+    invitationsList.innerHTML = '';
+
+    allInvitations.forEach(invitation => {
+      const invitationElement = createInvitationElement(invitation);
+      invitationsList.appendChild(invitationElement);
+    });
+  }
+
+  function createInvitationElement(invitation) {
+    const div = document.createElement('div');
+    div.className = 'flex items-center justify-between p-3 bg-white border border-amber-100 rounded-lg';
+    div.innerHTML = `
+      <div class="flex-1">
+        <div class="flex items-center space-x-3">
+          <div class="flex-1">
+            <p class="text-sm font-medium text-gray-900">${invitation.email}</p>
+            <p class="text-xs text-gray-500">
+              ${invitation.createdByName} tarafından davet edildi • ${formatDate(invitation.createdAt)}
+            </p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="px-2 py-1 text-xs font-medium rounded-full ${invitation.statusBadgeClass}">
+              ${invitation.statusText}
+            </span>
+            ${invitation.isValid ? `<span class="text-xs text-gray-500">${invitation.timeRemaining}</span>` : ''}
+          </div>
+        </div>
+      </div>
+      ${invitation.isValid ? `
+        <button onclick="cancelInvitation(${invitation.id}, '${invitation.email}')"
+                class="ml-3 inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-rose-700 bg-rose-50 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+          İptal
+        </button>
+      ` : ''}
+    `;
+    return div;
+  }
+
+  function updateInvitationCounts(data) {
+    const inviteBtn = document.getElementById('invite-user-btn');
+    const totalUsersSpan = document.getElementById('total-users');
+
+    if (data.currentUserCount !== undefined) {
+      totalUsersSpan.textContent = data.currentUserCount;
+    }
+
+    // Disable invite button if limit reached
+    if (!data.canSendMoreInvitations) {
+      inviteBtn.disabled = true;
+      inviteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      inviteBtn.title = 'Maksimum kullanıcı sayısına ulaşıldı';
+    } else {
+      inviteBtn.disabled = false;
+      inviteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      inviteBtn.title = '';
+    }
+  }
+
+  async function sendInvitation(email) {
+    try {
+      const response = await axios.post('/Settings/SendInvitationAjax', { email }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'RequestVerificationToken': token
+        }
+      });
+
+      if (response.data.success) {
+        showNotification(response.data.message, 'success');
+        hideInvitationForm();
+        await loadInvitations();
+      } else {
+        showNotification(response.data.message, 'error');
+      }
+    } catch (error) {
+      console.error('Error sending invitation:', error);
+      if (error.response && error.response.data && error.response.data.message) {
+        showNotification(error.response.data.message, 'error');
+      } else {
+        showNotification('Davetiye gönderilirken bir hata oluştu.', 'error');
+      }
+    }
+  }
+
+  async function cancelInvitation(invitationId, email) {
+    showConfirmationDialog(
+      'Davetiyeyi İptal Et',
+      `"${email}" adresine gönderilen davetiyeyi iptal etmek istediğinizden emin misiniz?`,
+      'İptal Et',
+      'İptal',
+      () => performCancelInvitation(invitationId)
+    );
+  }
+
+  async function performCancelInvitation(invitationId) {
+    try {
+      const response = await axios.post('/Settings/CancelInvitationAjax', { invitationId }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'RequestVerificationToken': token
+        }
+      });
+
+      if (response.data.success) {
+        showNotification(response.data.message, 'success');
+        await loadInvitations();
+      } else {
+        showNotification(response.data.message, 'error');
+      }
+    } catch (error) {
+      console.error('Error cancelling invitation:', error);
+      if (error.response && error.response.data && error.response.data.message) {
+        showNotification(error.response.data.message, 'error');
+      } else {
+        showNotification('Davetiye iptal edilirken bir hata oluştu.', 'error');
+      }
+    }
+  }
+
+  function showInvitationForm() {
+    const form = document.getElementById('invitation-form');
+    const emailInput = document.getElementById('invitation-email');
+
+    form.classList.remove('hidden');
+    emailInput.focus();
+    invitationFormVisible = true;
+  }
+
+  function hideInvitationForm() {
+    const form = document.getElementById('invitation-form');
+    const emailInput = document.getElementById('invitation-email');
+
+    form.classList.add('hidden');
+    emailInput.value = '';
+    invitationFormVisible = false;
+  }
+
+  function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('tr-TR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  // Event Listeners for Invitation Management
+  document.getElementById('invite-user-btn').addEventListener('click', () => {
+    if (!invitationFormVisible) {
+      showInvitationForm();
+    }
+  });
+
+  document.getElementById('cancel-invitation-btn').addEventListener('click', () => {
+    hideInvitationForm();
+  });
+
+  document.getElementById('send-invitation-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('invitation-email').value.trim();
+
+    if (!email) {
+      showNotification('E-posta adresi gereklidir.', 'error');
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      showNotification('Geçerli bir e-posta adresi giriniz.', 'error');
+      return;
+    }
+
+    const submitBtn = document.getElementById('send-invitation-btn');
+    const originalText = submitBtn.innerHTML;
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Gönderiliyor...';
+
+    try {
+      await sendInvitation(email);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalText;
+    }
+  });
+
+  function isValidEmail(email) {
+    const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+    return emailRegex.test(email);
+  }
+
+  // Load invitations when users tab is loaded
+  const originalLoadUsers = loadUsers;
+  loadUsers = async function() {
+    await originalLoadUsers();
+    await loadInvitations();
+  };
+
+  // Make functions globally available
+  window.deleteUser = deleteUser;
+  window.toggleUserStatus = toggleUserStatus;
+
+  window.cancelInvitation = cancelInvitation;
+</script>
+
+
+

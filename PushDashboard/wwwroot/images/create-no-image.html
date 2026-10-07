@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create No Image PNG</title>
+</head>
+<body>
+    <canvas id="canvas" width="200" height="200" style="border: 1px solid #ccc;"></canvas>
+    <br><br>
+    <button onclick="downloadImage()">Download PNG</button>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Background
+        ctx.fillStyle = '#f3f4f6';
+        ctx.fillRect(0, 0, 200, 200);
+        
+        // Image placeholder rectangle
+        ctx.fillStyle = '#e5e7eb';
+        ctx.fillRect(50, 50, 100, 100);
+        
+        // Simple image icon
+        ctx.fillStyle = '#9ca3af';
+        ctx.beginPath();
+        ctx.arc(75, 75, 8, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Mountain shape
+        ctx.beginPath();
+        ctx.moveTo(60, 130);
+        ctx.lineTo(90, 100);
+        ctx.lineTo(120, 115);
+        ctx.lineTo(140, 100);
+        ctx.lineTo(140, 130);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Text
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Resim Yok', 100, 170);
+        
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'no-image.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>

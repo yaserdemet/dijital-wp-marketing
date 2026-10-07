@@ -1,0 +1,80 @@
+@model PushDashboard.ViewModels.LoginViewModel
+
+<!-- Giriş Formu -->
+<form class="space-y-4" asp-controller="Account" asp-action="Login" method="post">
+  <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+
+  <!-- Hata Mesajları -->
+  @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+  {
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-md" role="alert">
+      <div class="flex items-start">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3 flex-1">
+          <h3 class="text-sm font-medium text-red-800">Giriş Başarısız</h3>
+          <div class="mt-2 text-sm text-red-700">
+            <ul class="list-disc list-inside space-y-1">
+              @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+              {
+                <li>@error.ErrorMessage</li>
+              }
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- E-posta -->
+  <div>
+    <label asp-for="Email" class="block text-sm font-medium text-gray-700 mb-1">E-posta</label>
+    <input
+      asp-for="Email"
+      type="email"
+      placeholder="ornek@sirket.com"
+      class="w-full px-3 py-2 border @(ViewData.ModelState.IsValid ? "border-gray-300" : "border-red-300") rounded-md focus:outline-none focus:ring-2 @(ViewData.ModelState.IsValid ? "focus:ring-primary" : "focus:ring-red-500") focus:border-transparent"
+      required>
+    <span asp-validation-for="Email" class="text-red-500 text-sm"></span>
+  </div>
+
+  <!-- Şifre -->
+  <div>
+    <label asp-for="Password" class="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
+    <div class="relative">
+      <input
+        asp-for="Password"
+        type="password"
+        id="password"
+        placeholder="Şifrenizi girin"
+        class="w-full px-3 py-2 pr-10 border @(ViewData.ModelState.IsValid ? "border-gray-300" : "border-red-300") rounded-md focus:outline-none focus:ring-2 @(ViewData.ModelState.IsValid ? "focus:ring-primary" : "focus:ring-red-500") focus:border-transparent"
+        required>
+      <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      </button>
+      <span asp-validation-for="Password" class="text-red-500 text-sm"></span>
+    </div>
+  </div>
+
+  <!-- Beni Hatırla -->
+  <div class="flex items-center">
+    <input
+      asp-for="RememberMe"
+      type="checkbox"
+      class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+    <label asp-for="RememberMe" class="ml-2 block text-sm text-gray-700">Beni hatırla</label>
+  </div>
+
+  <!-- Giriş Butonu -->
+  <button
+    type="submit"
+    class="w-full py-2 px-4 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+    Giriş Yap
+  </button>
+</form>

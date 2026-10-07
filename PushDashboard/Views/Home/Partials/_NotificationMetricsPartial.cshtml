@@ -1,0 +1,279 @@
+@model List<PushDashboard.ViewModels.NotificationMetricsViewModel>
+
+<div class="bg-white rounded-xl border border-gray-100 flex flex-col h-full relative overflow-hidden transition-shadow hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+    
+    <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white rounded-full blur-3xl opacity-70 pointer-events-none"></div>
+
+    <div class="flex items-center justify-between p-6 lg:p-8 pb-4 relative z-10">
+        <div>
+            <h3 class="text-xl font-bold text-gray-800 tracking-tight">Bildirim Metrikleri</h3>
+            <p class="text-sm text-gray-500 mt-1">Kanal bazlı anlık performans ve maliyet analizi</p>
+        </div>
+        <div>
+            <button class="group p-2.5 bg-gray-50 border border-gray-100 hover:bg-white hover:border-gray-200 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:border-gray-300" onclick="refreshMetrics(this)" title="Yenile">
+                <svg class="w-4 h-4 text-gray-500 group-hover:text-gray-500 transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 px-6 lg:px-8 pb-2 flex-grow relative z-10 min-h-0">
+        
+        <div class="flex flex-col min-h-0">
+            @if (Model != null && Model.Any())
+            {
+                <div class="space-y-4 overflow-y-auto pr-2 custom-scrollbar pb-4" style="max-height: 500px;">
+                    @foreach (var metric in Model)
+                    {
+                        <div class="group bg-white rounded-xl border border-gray-100 p-5 hover:border-gray-200 transition-all duration-300 transition-shadow hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                            
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-xl @GetChannelColorClass(metric.ChannelType) flex items-center justify-center ring-4 ring-white">
+                                        @await Html.PartialAsync("Partials/_ChannelIconPartial", metric.ChannelIcon)
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-gray-800 group-hover:text-gray-700 transition-colors">@metric.ChannelName</h4>
+                                        <span class="inline-flex items-center px-2 py-0.5 mt-0.5 rounded-md text-[10px] font-medium bg-gray-50 text-gray-500 tracking-wide uppercase border border-gray-100">
+                                            Kanal
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-xl font-black tracking-tight text-gray-800">@metric.FormattedDeliveryRate</div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="flex justify-between text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                                    <span>Gönderim Kapasitesi</span>
+                                    <span class="text-gray-700">@metric.SentToday</span>
+                                </div>
+                                <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                                    <div class="@GetProgressBarColor(metric.DeliveryRateToday) h-full rounded-full transition-all duration-1000 ease-out relative" 
+                                         style="width: @(metric.DeliveryRateToday)%">
+                                         <div class="absolute top-0 right-0 bottom-0 left-0 bg-white/20"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-4 gap-2 bg-gray-50 rounded-xl p-3 mb-3 border border-gray-100">
+                                <div class="text-center border-r border-gray-200 last:border-0">
+                                    <div class="text-xs font-bold text-gray-800">@metric.SentToday</div>
+                                    <div class="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-0.5">Bugün</div>
+                                </div>
+                                <div class="text-center border-r border-gray-200 last:border-0">
+                                    <div class="text-xs font-bold text-gray-800">@metric.SentThisWeek</div>
+                                    <div class="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-0.5">Hafta</div>
+                                </div>
+                                <div class="text-center border-r border-gray-200 last:border-0">
+                                    <div class="text-xs font-bold text-gray-800">@metric.SentThisMonth</div>
+                                    <div class="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-0.5">Ay</div>
+                                </div>
+                                <div class="text-center border-r border-gray-200 last:border-0">
+                                    <div class="text-xs font-bold text-gray-500">@metric.FormattedCostThisMonth</div>
+                                    <div class="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-0.5">Maliyet</div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-1">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex items-center px-2 py-1 bg-emerald-50 border border-gray-200 rounded-md">
+                                        <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5"></div>
+                                        <span class="text-[11px] font-semibold text-gray-700">Başarılı: @metric.DeliveredToday</span>
+                                    </div>
+                                    @if (metric.FailedToday > 0)
+                                    {
+                                        <div class="flex items-center px-2 py-1 bg-rose-50 border border-gray-200 rounded-md">
+                                            <div class="w-1.5 h-1.5 bg-rose-500 rounded-full mr-1.5"></div>
+                                            <span class="text-[11px] font-semibold text-gray-700">Hata: @metric.FailedToday</span>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="text-[11px] font-semibold text-gray-500">
+                                    Günlük: <span class="text-gray-800">@metric.FormattedCostToday</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="flex flex-col items-center justify-center h-full min-h-[300px] text-center border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
+                    <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 ring-8 ring-gray-50">
+                        <svg class="w-8 h-8 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-5 5v-5zM4 19h6v-2H4v2zM4 15h8v-2H4v2zM4 11h10V9H4v2z" />
+                        </svg>
+                    </div>
+                    <h4 class="text-base font-bold text-gray-800 mb-1">Veri Yok</h4>
+                    <p class="text-xs text-gray-500 max-w-xs mb-4">Analiz edilecek bildirim metriği bulunmuyor.</p>
+                </div>
+            }
+        </div>
+
+        <div class="flex flex-col h-full bg-gray-50 rounded-xl border border-gray-100 p-6 relative overflow-hidden">
+            <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-gray-50 rounded-full blur-2xl opacity-60"></div>
+            
+            <div class="mb-6 relative z-10">
+                <h4 class="text-sm font-bold text-gray-800">Kanal Performans Analizi</h4>
+                <p class="text-[11px] text-gray-500 mt-0.5">Bugünkü Gönderim vs Teslimat Karşılaştırması</p>
+            </div>
+            
+            <div class="relative flex-grow min-h-[300px] w-full z-10">
+                <canvas id="notificationPerformanceChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="bg-white via-white to-gray-50 border-t border-gray-100 p-6 lg:p-8 rounded-b-3xl mt-auto relative z-10">
+        <div class="grid grid-cols-3 gap-6 divide-x divide-gray-200">
+            <div class="text-center">
+                <div class="text-2xl font-black text-gray-800">@(Model?.Sum(m => m.SentToday) ?? 0)</div>
+                <div class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-1">Toplam Gönderim</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-black text-emerald-600">@(Model?.Sum(m => m.DeliveredToday) ?? 0)</div>
+                <div class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-1">Net Teslimat</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-black text-rose-600">₺@(Model?.Sum(m => m.CostToday).ToString("N2") ?? "0,00")</div>
+                <div class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-1">Günlük Harcama</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+
+<script>
+function refreshMetrics(btn) {
+    const svg = btn.querySelector('svg');
+    svg.classList.add('animate-spin');
+    btn.disabled = true;
+    setTimeout(() => {
+        svg.classList.remove('animate-spin');
+        btn.disabled = false;
+        if(typeof showNotification === 'function') {
+            showNotification('Metrikler başarıyla güncellendi', 'success');
+        }
+    }, 1000);
+}
+
+// Chart.js Entegrasyonu
+document.addEventListener('DOMContentLoaded', function() {
+    // C# Modelinden verileri güvenli şekilde JS'e alıyoruz
+    var rawData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model ?? new List<PushDashboard.ViewModels.NotificationMetricsViewModel>()));
+    
+    // Sadece gönderimi olanları filtrele (Boş kanallar grafikte kalabalık yapmasın)
+    var chartData = rawData.filter(function(d) { return d.SentToday > 0 || d.DeliveredToday > 0; });
+
+    var canvas = document.getElementById('notificationPerformanceChart');
+    if (canvas && typeof Chart !== 'undefined' && chartData.length > 0) {
+        var ctx = canvas.getContext('2d');
+        
+        var existingChart = Chart.getChart(canvas);
+        if (existingChart) existingChart.destroy();
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartData.map(function(d) { return d.ChannelName; }),
+                datasets: [
+                    {
+                        label: 'Gönderilen',
+                        data: chartData.map(function(d) { return d.SentToday; }),
+                        backgroundColor: 'rgba(99, 102, 241, 0.9)', // Indigo 500
+                        borderRadius: 6,
+                        barPercentage: 0.6,
+                        categoryPercentage: 0.8
+                    },
+                    {
+                        label: 'Teslim Edilen',
+                        data: chartData.map(function(d) { return d.DeliveredToday; }),
+                        backgroundColor: 'rgba(16, 185, 129, 0.9)', // Emerald 500
+                        borderRadius: 6,
+                        barPercentage: 0.6,
+                        categoryPercentage: 0.8
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        align: 'end',
+                        labels: { boxWidth: 10, usePointStyle: true, font: { size: 11, family: "'Inter', sans-serif" }, color: '#64748b' }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: '#f8fafc',
+                        bodyColor: '#e2e8f0',
+                        padding: 10,
+                        cornerRadius: 8,
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 }, color: '#64748b' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.03)', drawBorder: false },
+                        ticks: { font: { size: 11 }, color: '#94a3b8' }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+
+@functions {
+    private string GetChannelColorClass(string channelType)
+    {
+        if (string.IsNullOrEmpty(channelType)) return "bg-white text-gray-600 border border-gray-200";
+        var key = channelType.ToLowerInvariant();
+        return key switch
+        {
+            "email" => "bg-white text-gray-500 border border-gray-200",
+            "whatsapp" => "bg-white text-emerald-600 border border-gray-200",
+            "sms" => "bg-white text-gray-500 border border-gray-200",
+            "hediye_çarkı" or "hediye_çarki" => "bg-white text-gray-500 border border-gray-200",
+            "video_yükleme" or "video_yukleme" => "bg-white text-gray-500 border border-gray-200",
+            "trendyol" => "bg-white text-gray-500 border border-gray-200",
+            "çoklu_kanal" or "coklu_kanal" => "bg-white text-gray-500 border border-gray-200",
+            "toplu_mesaj" => "bg-white text-gray-500 border border-gray-200",
+            "yorum_taşıma" or "yorum_tasima" => "bg-white text-gray-500 border border-gray-200",
+            "hediye_ceki" => "bg-white text-rose-600 border border-gray-200",
+            _ => "bg-white text-gray-600 border border-gray-200"
+        };
+    }
+
+    private string GetProgressBarColor(double deliveryRate)
+    {
+        return deliveryRate switch
+        {
+            >= 90 => "bg-gray-900",
+            >= 70 => "bg-gray-900",
+            >= 50 => "bg-gray-900",
+            _ => "bg-gray-900"
+        };
+    }
+}

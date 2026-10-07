@@ -1,0 +1,1037 @@
+@{
+    ViewData["Title"] = "Yorum Taşıma";
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+    .store-item {
+        transition: background .15s ease, border-color .15s ease;
+        cursor: pointer;
+        border-left: 3px solid transparent;
+    }
+
+    .store-item:hover {
+        background-color: #f0f7ff;
+    }
+
+    .store-item.active {
+        background-color: #eff6ff;
+        border-left-color: #2563eb;
+    }
+
+    .product-select-card {
+        border: 1.5px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 0.875rem;
+        cursor: pointer;
+        transition: all .15s ease;
+        background: #fff;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .product-select-card:hover {
+        border-color: #93c5fd;
+        background: #f0f7ff;
+    }
+
+    .product-select-card.selected {
+        border-color: #2563eb;
+        background: #eff6ff;
+    }
+
+    .select-indicator {
+        width: 1.125rem;
+        height: 1.125rem;
+        border-radius: 50%;
+        border: 2px solid #d1d5db;
+        background: #fff;
+        flex-shrink: 0;
+        margin-top: 0.125rem;
+        transition: all .15s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .product-select-card.selected .select-indicator {
+        background: #2563eb;
+        border-color: #2563eb;
+    }
+
+    .product-select-card.selected .select-indicator::after {
+        content: "";
+        display: block;
+        width: 4px;
+        height: 7px;
+        border: 2px solid white;
+        border-top: none;
+        border-left: none;
+        transform: rotate(45deg) translate(-1px, -1px);
+    }
+
+    .star-filter-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.5rem 0.875rem;
+        border-radius: 0.625rem;
+        border: 1.5px solid #e5e7eb;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: #374151;
+        background: #fff;
+        cursor: pointer;
+        transition: all .15s ease;
+    }
+
+    .star-filter-btn:hover {
+        border-color: #93c5fd;
+        background: #f0f7ff;
+    }
+
+    .star-filter-btn.selected {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        border-color: #3b82f6;
+        color: white;
+    }
+
+    .star-filter-btn.selected .star-yellow {
+        color: white;
+    }
+
+    .wf-step-circle {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 50%;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f3f4f6;
+        color: #9ca3af;
+        margin: 0 auto 0.5rem;
+        transition: all .3s ease;
+        position: relative;
+        z-index: 1;
+    }
+
+    .wf-step.done .wf-step-circle {
+        background: #d1fae5;
+        color: #059669;
+    }
+
+    .wf-step.active .wf-step-circle {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, .35);
+    }
+
+    .wf-step.done .wf-label,
+    .wf-step.active .wf-label {
+        color: #111827;
+        font-weight: 600;
+    }
+
+    .badge-pending {
+        background: #fef9c3;
+        color: #92400e;
+    }
+
+    .badge-running {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .badge-completed {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .badge-failed {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .badge-cancelled {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+</style>
+
+<main class="min-h-screen bg-gray-50/50 pb-20">
+
+    <!-- STICKY HEADER -->
+    <div class="sticky top-2 lg:top-4 z-20 px-2 lg:px-6 mb-6">
+        <div
+            class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-3 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm px-4 py-3 lg:px-6 lg:py-4">
+            <div class="flex items-center gap-3 lg:gap-4 w-full md:w-auto">
+                <div
+                    class="p-2.5 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-xl text-white shadow-sm flex-shrink-0">
+                    <i class="fas fa-star text-lg"></i>
+                </div>
+                <div class="min-w-0">
+                    <h2 class="text-lg lg:text-xl font-bold text-gray-900 truncate">Yorum Taşıma</h2>
+                    <div class="text-xs text-gray-500">Trendyol ürün yorumlarını otomatik aktarın</div>
+                </div>
+            </div>
+            <div class="hidden md:flex items-center gap-2">
+                <span
+                    class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg px-3 py-1.5">
+                    <i class="fas fa-store text-gray-400 text-[10px]"></i>
+                    <span id="headerStoreCount">—</span> mağaza
+                </span>
+                <span
+                    class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg px-3 py-1.5">
+                    <i class="fas fa-box text-gray-400 text-[10px]"></i>
+                    <span id="headerProductCount">—</span> ürün
+                </span>
+                <span id="activeJobsBadge"
+                    class="hidden items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg px-3 py-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                    <span id="headerActiveJobs">0</span> aktif iş
+                </span>
+
+                <!-- QUOTA ICON BUTTON -->
+                <div class="relative" id="quotaIconWrapper" style="display:none">
+                    <button id="quotaIconBtn" onclick="toggleQuotaPopover()"
+                        class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#02379c] bg-[#02379c]/8 hover:bg-[#02379c]/15 border border-[#02379c]/20 rounded-lg px-3 py-1.5 transition-all"
+                        title="Paket kullanım durumu">
+                        <i class="fas fa-box-open text-[10px]"></i>
+                        <span id="quotaHeaderPct">—</span>% kaldı
+                    </button>
+                    <!-- POPOVER -->
+                    <div id="quotaPopover"
+                        class="hidden absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 bg-[#02379c]/10 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-box-open text-[#02379c] text-xs"></i>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Aktif
+                                        Paket</p>
+                                    <p class="text-sm font-bold text-gray-900" id="popoverPackageName">—</p>
+                                </div>
+                            </div>
+                            <button onclick="toggleQuotaPopover()"
+                                class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all">
+                                <i class="fas fa-times text-[10px]"></i>
+                            </button>
+                        </div>
+                        <div class="mb-3">
+                            <div class="flex items-center justify-between text-[11px] text-gray-500 mb-1.5">
+                                <span><strong class="text-gray-800" id="popoverRemaining">—</strong> kullanım
+                                    kaldı</span>
+                                <span id="popoverTotal" class="text-gray-400">— toplam</span>
+                            </div>
+                            <div class="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div id="popoverBar" class="h-2.5 rounded-full bg-[#02379c] transition-all duration-700"
+                                    style="width:0%"></div>
+                            </div>
+                            <p class="text-right text-[10px] text-gray-400 mt-1" id="popoverPctText">— kullanıldı</p>
+                        </div>
+                        <a href="@Url.Action("Index", "Store")"
+                            class="flex items-center justify-center gap-1.5 w-full py-2 bg-[#02379c] hover:bg-[#001f5c] text-white text-xs font-semibold rounded-xl transition-all">
+                            <i class="fas fa-plus text-[9px]"></i> Paket Yükselt / Yenile
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <button onclick="openAddStoreModal()"
+                class="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gray-900 rounded-xl hover:bg-black shadow-sm transition-all whitespace-nowrap w-full md:w-auto">
+                <i class="fas fa-plus text-xs"></i> Yeni Mağaza Ekle
+            </button>
+        </div>
+    </div>
+
+    <div class="max-w-[1600px] mx-auto px-2 lg:px-6">
+
+        <!-- STATS CARDS -->
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+                <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-store text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Mağazalar</p>
+                    <p class="text-2xl font-extrabold text-gray-900" id="statStoreCount">—</p>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+                <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-box-open text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Senkronize Ürün</p>
+                    <p class="text-2xl font-extrabold text-gray-900" id="statProductCount">—</p>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+                <div class="w-12 h-12 bg-yellow-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-circle-notch fa-spin text-yellow-500 text-xl" id="activeJobsSpinner"
+                        style="display:none"></i>
+                    <i class="fas fa-tasks text-yellow-600 text-xl" id="activeJobsIcon"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Aktif İşler</p>
+                    <p class="text-2xl font-extrabold text-gray-900" id="statActiveJobs">—</p>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+                <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tamamlanan</p>
+                    <p class="text-2xl font-extrabold text-gray-900" id="statCompletedJobs">—</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- WORKFLOW GUIDE -->
+        @* <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-6 py-5 mb-6">
+        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-5">Nasıl Çalışır?</p>
+        <div class="relative hidden md:flex items-start justify-between">
+        <div class="absolute top-[1.05rem] h-px bg-gray-100 z-0" style="left:8%;right:8%;"></div>
+        <div class="wf-step active flex flex-col items-center text-center flex-1" id="wf1">
+        <div class="wf-step-circle">1</div>
+        <span class="wf-label text-xs font-medium text-gray-400 leading-tight">Mağaza Ekle</span>
+        <span class="text-[10px] text-gray-300 mt-0.5">Trendyol URL ile</span>
+        </div>
+        <div class="wf-step flex flex-col items-center text-center flex-1" id="wf2">
+        <div class="wf-step-circle">2</div>
+        <span class="wf-label text-xs font-medium text-gray-400 leading-tight">Ürün Senkronizasyonu</span>
+        <span class="text-[10px] text-gray-300 mt-0.5">Ürünleri çek</span>
+        </div>
+        <div class="wf-step flex flex-col items-center text-center flex-1" id="wf3">
+        <div class="wf-step-circle">3</div>
+        <span class="wf-label text-xs font-medium text-gray-400 leading-tight">Ürün Seçimi</span>
+        <span class="text-[10px] text-gray-300 mt-0.5">Hangi ürünler?</span>
+        </div>
+        <div class="wf-step flex flex-col items-center text-center flex-1" id="wf4">
+        <div class="wf-step-circle">4</div>
+        <span class="wf-label text-xs font-medium text-gray-400 leading-tight">Transfer Ayarları</span>
+        <span class="text-[10px] text-gray-300 mt-0.5">Filtre ve sayı</span>
+        </div>
+        <div class="wf-step flex flex-col items-center text-center flex-1" id="wf5">
+        <div class="wf-step-circle">5</div>
+        <span class="wf-label text-xs font-medium text-gray-400 leading-tight">Sonuçları İncele</span>
+        <span class="text-[10px] text-gray-300 mt-0.5">Transfer tamamlandı</span>
+        </div>
+        </div>
+        <ol class="md:hidden list-none flex flex-col gap-2">
+        <li class="flex items-center gap-3 text-sm text-gray-600"><span class="w-6 h-6 rounded-full bg-blue-600
+        text-white text-xs flex items-center justify-center font-bold flex-shrink-0">1</span>Mağaza ekle</li>
+        <li class="flex items-center gap-3 text-sm text-gray-500"><span class="w-6 h-6 rounded-full bg-gray-100
+        text-gray-400 text-xs flex items-center justify-center font-bold flex-shrink-0">2</span>Ürünleri senkronize
+        et</li>
+        <li class="flex items-center gap-3 text-sm text-gray-500"><span class="w-6 h-6 rounded-full bg-gray-100
+        text-gray-400 text-xs flex items-center justify-center font-bold flex-shrink-0">3</span>Aktarmak istediğin
+        ürünleri seç</li>
+        <li class="flex items-center gap-3 text-sm text-gray-500"><span class="w-6 h-6 rounded-full bg-gray-100
+        text-gray-400 text-xs flex items-center justify-center font-bold flex-shrink-0">4</span>Ayarları yap ve
+        başlat</li>
+        <li class="flex items-center gap-3 text-sm text-gray-500"><span class="w-6 h-6 rounded-full bg-gray-100
+        text-gray-400 text-xs flex items-center justify-center font-bold flex-shrink-0">5</span>Sonuçları incele</li>
+        </ol>
+        </div> *@
+
+        <!-- MAIN 2-PANE: Stores + Products -->
+        <div class="flex flex-col lg:flex-row gap-5 mb-6">
+
+            <!-- LEFT: Store List -->
+            <div class="w-full lg:w-[38%] xl:w-[32%] flex-shrink-0">
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden h-full flex flex-col">
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-store text-gray-600 text-sm"></i>
+                            </div>
+                            <span class="text-sm font-bold text-gray-900">Mağazalarım</span>
+                        </div>
+                        <span
+                            class="text-xs font-semibold text-gray-500 bg-gray-100 rounded-full px-2.5 py-1 min-w-[1.75rem] text-center"
+                            id="storeCountBadge">0</span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto" style="max-height:520px;">
+                        <div id="storesLoading" class="flex flex-col items-center justify-center py-16">
+                            <div
+                                class="w-8 h-8 border-[3px] border-blue-600 border-t-transparent rounded-full animate-spin mb-3">
+                            </div>
+                            <p class="text-sm text-gray-400">Yükleniyor...</p>
+                        </div>
+                        <div id="storesEmpty"
+                            class="hidden flex flex-col items-center justify-center py-14 px-6 text-center">
+                            <div class="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-store-slash text-gray-300 text-2xl"></i>
+                            </div>
+                            <h4 class="text-sm font-semibold text-gray-700 mb-1">Henüz mağaza yok</h4>
+                            <p class="text-xs text-gray-400 mb-4 leading-relaxed">Trendyol mağaza URL'nizi ekleyerek
+                                başlayın.</p>
+                            <button onclick="openAddStoreModal()"
+                                class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700">
+                                <i class="fas fa-plus text-[10px]"></i> İlk Mağazayı Ekle
+                            </button>
+                        </div>
+                        <div id="storesList" class="hidden divide-y divide-gray-50"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Product Panel -->
+            <div class="flex-1 min-w-0">
+                <div id="productsEmptyState"
+                    class="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center py-20 px-8 h-full min-h-[380px]">
+                    <div
+                        class="w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl flex items-center justify-center mb-6">
+                        <i class="fas fa-hand-point-left text-blue-400 text-3xl"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-800 mb-2">Bir mağaza seçin</h3>
+                    <p class="text-sm text-gray-400 max-w-xs leading-relaxed">Soldaki mağazalardan birine tıklayarak
+                        ürünleri görüntüleyebilir ve yorum transferi başlatabilirsiniz.</p>
+                </div>
+
+                <div id="productsPanel"
+                    class="hidden bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div class="px-5 py-4 border-b border-gray-100">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-box-open text-purple-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-bold text-gray-900" id="productsPanelTitle">Ürünler</h3>
+                                    <p class="text-xs text-gray-400" id="productsPanelSubtitle">Aktarmak istediğiniz
+                                        ürünleri seçin</p>
+                                </div>
+                            </div>
+                            <button onclick="closeProductsPanel()"
+                                class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-300 hover:text-gray-600 transition-all">
+                                <i class="fas fa-times text-sm"></i>
+                            </button>
+                        </div>
+                        <div class="flex flex-wrap items-center justify-between gap-3 bg-gray-50 rounded-xl px-4 py-3">
+                            <div class="flex items-center gap-3">
+                                <button onclick="selectAllProducts()"
+                                    class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                                    <i class="fas fa-check-double text-[10px]"></i> Tümünü Seç
+                                </button>
+                                <span class="text-gray-200 select-none">|</span>
+                                <button onclick="clearProductSelection()"
+                                    class="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-gray-700 transition-colors">
+                                    <i class="fas fa-times text-[10px]"></i> Seçimi Temizle
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-gray-500">
+                                    <span id="selectedProductCount" class="font-extrabold text-gray-900">0</span> ürün
+                                    seçildi
+                                </span>
+                                <button id="startTransferBtn" onclick="showTransferModal()" disabled
+                                    class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none">
+                                    <i class="fas fa-download text-[10px]"></i> Transfer Başlat
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="productsLoading" class="flex flex-col items-center justify-center py-16">
+                        <div
+                            class="w-8 h-8 border-[3px] border-blue-600 border-t-transparent rounded-full animate-spin mb-3">
+                        </div>
+                        <p class="text-sm text-gray-400">Ürünler yükleniyor...</p>
+                    </div>
+                    <div id="productsGrid"
+                        class="hidden p-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 overflow-y-auto"
+                        style="max-height:430px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRANSFER JOBS -->
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-yellow-50 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-tasks text-yellow-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-900">Transfer İşleri</h3>
+                        <p class="text-xs text-gray-400">Tüm aktarım geçmişi ve canlı ilerleme durumu</p>
+                    </div>
+                </div>
+                <button onclick="loadTransferJobs()"
+                    class="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors">
+                    <i class="fas fa-sync-alt text-[10px]"></i> Yenile
+                </button>
+            </div>
+            <div class="p-6">
+                <div id="transfersLoading" class="flex flex-col items-center justify-center py-12">
+                    <div
+                        class="w-8 h-8 border-[3px] border-blue-600 border-t-transparent rounded-full animate-spin mb-3">
+                    </div>
+                    <p class="text-sm text-gray-400">Transfer işleri yükleniyor...</p>
+                </div>
+                <div id="transfersEmpty" class="hidden flex flex-col items-center justify-center py-12 text-center">
+                    <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-5">
+                        <i class="fas fa-inbox text-gray-300 text-2xl"></i>
+                    </div>
+                    <h4 class="text-sm font-semibold text-gray-700 mb-1">Henüz transfer işi yok</h4>
+                    <p class="text-xs text-gray-400">Ürün seçip transfer başlattığınızda burada takip edebilirsiniz.</p>
+                </div>
+                <div id="transfersList" class="hidden space-y-3"></div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- MODAL: Add New Store -->
+<div id="addStoreModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" onclick="closeAddStoreModal()"></div>
+    <div class="fixed inset-0 z-10 flex items-center justify-center p-4">
+        <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+            <div class="bg-gray-50/50 border-b border-gray-100 px-6 py-5 flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Yeni Mağaza Ekle</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">Trendyol mağaza bilgilerini girin</p>
+                </div>
+                <button onclick="closeAddStoreModal()"
+                    class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+            <form id="addStoreForm" class="p-6 space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Mağaza Adı</label>
+                    <div class="relative">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                            <i class="fas fa-tag text-gray-400 text-sm"></i>
+                        </div>
+                        <input type="text" id="storeName" name="storeName" required placeholder="Örn: Moda Dünyası"
+                            class="block w-full rounded-xl border-0 py-3 pl-10 pr-4 text-gray-900 ring-1 ring-inset ring-gray-200 bg-gray-50/50 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all text-sm">
+                    </div>
+                    <p class="mt-1.5 text-xs text-gray-400">Size hatırlatmak için bir takma ad</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Mağaza URL'si</label>
+                    <div class="relative">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                            <i class="fas fa-link text-gray-400 text-sm"></i>
+                        </div>
+                        <input type="url" id="storeUrl" name="storeUrl" required
+                            placeholder="https://www.trendyol.com/magaza/..."
+                            class="block w-full rounded-xl border-0 py-3 pl-10 pr-4 text-gray-900 ring-1 ring-inset ring-gray-200 bg-gray-50/50 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all text-sm">
+                    </div>
+                    <p class="mt-1.5 text-xs text-gray-400">Trendyol mağaza sayfasının tam adresi</p>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeAddStoreModal()"
+                        class="flex-1 py-3 rounded-xl text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 bg-white hover:bg-gray-50 transition-all">
+                        Vazgeç
+                    </button>
+                    <button type="submit" id="addStoreSubmitBtn"
+                        class="flex-1 py-3 rounded-xl text-sm font-semibold text-white bg-gray-900 hover:bg-black shadow-sm transition-all flex items-center justify-center gap-2">
+                        <i class="fas fa-plus text-xs"></i> Mağaza Ekle
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Transfer Settings -->
+<div id="transferModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" onclick="closeTransferModal()"></div>
+    <div class="fixed inset-0 z-10 flex items-center justify-center p-4">
+        <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+            <div class="bg-gray-50/50 border-b border-gray-100 px-6 py-5 flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Transfer Ayarları</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">
+                        <span id="transferProductCount" class="font-bold text-gray-700">0</span> ürün için yorum
+                        aktarımı yapılacak
+                    </p>
+                </div>
+                <button onclick="closeTransferModal()"
+                    class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Ürün Başına Yorum Sayısı</label>
+                    <div class="relative">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                            <i class="fas fa-comment text-gray-400 text-sm"></i>
+                        </div>
+                        <input type="number" id="commentCount" value="100" min="10" max="1000"
+                            class="block w-full rounded-xl border-0 py-3 pl-10 pr-4 text-gray-900 ring-1 ring-inset ring-gray-200 bg-gray-50/50 focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all text-sm">
+                    </div>
+                    <p class="mt-1.5 text-xs text-gray-400">Minimum 10, maksimum 1000 yorum</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">
+                        Yıldız Filtresi <span class="text-xs font-normal text-gray-400">(Opsiyonel)</span>
+                    </label>
+                    <p class="text-xs text-gray-400 mb-3">Boş bırakırsanız tüm yıldızlardan aktarır.</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" class="star-filter-btn" data-star="1"><span
+                                class="star-yellow text-yellow-400">★</span> 1</button>
+                        <button type="button" class="star-filter-btn" data-star="2"><span
+                                class="star-yellow text-yellow-400">★★</span> 2</button>
+                        <button type="button" class="star-filter-btn" data-star="3"><span
+                                class="star-yellow text-yellow-400">★★★</span> 3</button>
+                        <button type="button" class="star-filter-btn" data-star="4"><span
+                                class="star-yellow text-yellow-400">★★★★</span> 4</button>
+                        <button type="button" class="star-filter-btn" data-star="5"><span
+                                class="star-yellow text-yellow-400">★★★★★</span> 5</button>
+                    </div>
+                </div>
+                <div class="border-t border-gray-100 pt-5">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <div class="flex items-center pt-0.5">
+                            <input type="checkbox" id="autoSync"
+                                class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <span class="block text-sm font-semibold text-gray-800">Otomatik Aktarım</span>
+                            <span class="text-xs text-gray-400 leading-relaxed">Bu seçenek aktifken sistem bu ayarları
+                                hafızaya alır ve Trendyol'a gelen yeni yorumları otomatik olarak aktarmaya devam
+                                eder.</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <div class="px-6 pb-6 flex gap-3">
+                <button type="button" onclick="closeTransferModal()"
+                    class="flex-1 py-3 rounded-xl text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 bg-white hover:bg-gray-50 transition-all">
+                    İptal
+                </button>
+                <button type="button" id="confirmTransferBtn" onclick="confirmTransfer()"
+                    class="flex-1 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-download text-xs"></i> Transfer Başlat
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentStoreId = null;
+        let selectedProducts = new Set();
+        let allStores = [];
+
+        $(document).ready(function () {
+            loadStores();
+            loadTransferJobs();
+            loadQuotaInfo();
+            $('#commentCount').on('input', function () {
+                const v = parseInt($(this).val());
+                if (v < 10) $(this).val(10);
+                if (v > 1000) $(this).val(1000);
+            });
+            $(document).on('click', '.star-filter-btn', function () { $(this).toggleClass('selected'); });
+            setInterval(loadTransferJobs, 30000);
+        });
+
+        function loadQuotaInfo() {
+            $.ajax({
+                url: '@Url.Action("GetQuotaInfo")', type: 'GET',
+                success: function (r) {
+                    if (!r.success || !r.data) return;
+                    const d = r.data;
+                    const total = d.totalQuota || 0;
+                    const remaining = d.remainingQuota || 0;
+                    const pct = total > 0 ? Math.round((remaining / total) * 100) : 0;
+                    const usedPct = 100 - pct;
+                    const barColor = pct > 50 ? 'bg-[#02379c]' : (pct > 20 ? 'bg-orange-400' : 'bg-red-500');
+
+                    // Header icon button
+                    $('#quotaHeaderPct').text(pct);
+                    $('#quotaIconWrapper').show();
+
+                    // Popover content
+                    $('#popoverPackageName').text(d.packageName || 'Paket');
+                    $('#popoverRemaining').text(remaining.toLocaleString('tr-TR'));
+                    $('#popoverTotal').text(total.toLocaleString('tr-TR') + ' toplam');
+                    $('#popoverBar').css('width', pct + '%')
+                                   .removeClass('bg-[#02379c] bg-orange-400 bg-red-500')
+                                   .addClass(barColor);
+                    $('#popoverPctText').text('%' + usedPct + ' kullanıldı');
+                }
+            });
+        }
+
+        function toggleQuotaPopover() {
+            const popover = $('#quotaPopover');
+            popover.toggleClass('hidden');
+        }
+
+        // Close popover when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#quotaIconWrapper').length) {
+                $('#quotaPopover').addClass('hidden');
+            }
+        });
+
+        function highlightWorkflowStep(step) {
+            for (let i = 1; i <= 5; i++) {
+                const el = document.getElementById('wf' + i);
+                if (!el) continue;
+                el.classList.remove('active', 'done');
+                if (i < step) el.classList.add('done');
+                else if (i === step) el.classList.add('active');
+            }
+        }
+
+        function loadStores() {
+            $('#storesLoading').show();
+            $('#storesList, #storesEmpty').hide();
+            $.ajax({
+                url: '@Url.Action("GetStores")', type: 'GET',
+                success: function (r) {
+                    $('#storesLoading').hide();
+                    if (r.success && r.data.length > 0) {
+                        allStores = r.data;
+                        renderStores(r.data);
+                        $('#storesList').show();
+                    } else {
+                        allStores = [];
+                        $('#storesEmpty').show();
+                        highlightWorkflowStep(1);
+                    }
+                    updateStatCards();
+                },
+                error: function () { $('#storesLoading').hide(); showNotification('Mağazalar yüklenirken hata oluştu.', 'error'); }
+            });
+        }
+
+        function renderStores(stores) {
+            const c = $('#storesList').empty();
+            $('#storeCountBadge, #statStoreCount, #headerStoreCount').text(stores.length);
+            const sm = {
+                Syncing: { cls: 'text-blue-600 bg-blue-50', icon: 'fa-sync fa-spin', lbl: 'Senkronize ediliyor' },
+                Synced: { cls: 'text-green-600 bg-green-50', icon: 'fa-check-circle', lbl: 'Senkronize' },
+                Failed: { cls: 'text-red-500 bg-red-50', icon: 'fa-exclamation-circle', lbl: 'Hata' },
+                Pending: { cls: 'text-yellow-600 bg-yellow-50', icon: 'fa-clock', lbl: 'Bekliyor' }
+            };
+            stores.forEach(s => {
+                const si = sm[s.syncStatus] || { cls: 'text-gray-500 bg-gray-50', icon: 'fa-minus', lbl: s.syncStatus };
+                c.append(`<div class="store-item px-5 py-4 flex items-center gap-3 group" data-store-id="${s.id}"
+                              onclick="selectStore(${s.id},'${escapeHtml(s.storeName || 'Mağaza')}')">
+                    <div class="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
+                        <i class="fas fa-store text-gray-500 text-sm group-hover:text-blue-600 transition-colors"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-gray-900 truncate">${escapeHtml(s.storeName || 'Mağaza')}</p>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <span class="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md ${si.cls}">
+                                <i class="fas ${si.icon} text-[9px]"></i> ${si.lbl}
+                            </span>
+                            ${s.productCount ? `<span class="text-[10px] text-gray-400">${s.productCount} ürün</span>` : ''}
+                        </div>
+                        ${s.errorMessage ? `<p class="text-[10px] text-red-500 mt-0.5 truncate">${escapeHtml(s.errorMessage)}</p>` : ''}
+                    </div>
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation()">
+                        <button onclick="syncStore(${s.id})" title="Senkronize et"
+                                class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-all"
+                                ${s.syncStatus === 'Syncing' ? 'disabled' : ''}>
+                            <i class="fas fa-sync-alt text-xs ${s.syncStatus === 'Syncing' ? 'fa-spin' : ''}"></i>
+                        </button>
+                        <button onclick="deleteStore(${s.id})" title="Sil"
+                                class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all">
+                            <i class="fas fa-trash-alt text-xs"></i>
+                        </button>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-200 text-xs flex-shrink-0"></i>
+                </div>`);
+            });
+            if (currentStoreId && stores.find(s => s.id === currentStoreId))
+                $(`[data-store-id="${currentStoreId}"]`).addClass('active');
+        }
+
+        function selectStore(storeId, storeName) {
+            currentStoreId = storeId;
+            $('.store-item').removeClass('active');
+            $(`[data-store-id="${storeId}"]`).addClass('active');
+            const store = allStores.find(s => s.id === storeId);
+            const hasProducts = store && store.productCount > 0;
+            openProductsPanel(storeId, storeName, !hasProducts);
+            highlightWorkflowStep(hasProducts ? 3 : 2);
+        }
+
+        function syncStore(storeId) {
+            showNotification('Senkronizasyon başlatılıyor...', 'info');
+            $.ajax({
+                url: '@Url.Action("SyncStoreProducts")', type: 'POST',
+                data: JSON.stringify({ storeId: storeId, productCount: 100 }),
+                contentType: 'application/json',
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                success: function (r) {
+                    r.success ? (showNotification('Senkronizasyon başlatıldı.', 'success'), setTimeout(loadStores, 2000))
+                        : showNotification(r.message, 'error');
+                },
+                error: function () { showNotification('Senkronizasyon başlatılırken hata oluştu.', 'error'); }
+            });
+        }
+
+        function deleteStore(storeId) {
+            showConfirmationDialog('Mağazayı Sil', 'Bu mağazayı silmek istediğinizden emin misiniz?', 'Evet, Sil', 'İptal', () => {
+                $.ajax({
+                    url: '@Url.Action("DeleteStore")', type: 'POST',
+                    data: JSON.stringify({ storeId: storeId }),
+                    contentType: 'application/json',
+                    headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                    success: function (r) {
+                        if (r.success) {
+                            showNotification('Mağaza silindi.', 'success');
+                            if (currentStoreId === storeId) closeProductsPanel();
+                            loadStores();
+                        } else showNotification(r.message, 'error');
+                    },
+                    error: function () { showNotification('Mağaza silinirken hata oluştu.', 'error'); }
+                });
+            });
+        }
+
+        function openAddStoreModal() { $('#addStoreForm')[0].reset(); $('#addStoreModal').removeClass('hidden'); }
+        function closeAddStoreModal() { $('#addStoreModal').addClass('hidden'); }
+
+        $('#addStoreForm').on('submit', function (e) {
+            e.preventDefault();
+            const btn = $('#addStoreSubmitBtn');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin text-xs"></i> Ekleniyor...');
+            $.ajax({
+                url: '@Url.Action("CreateStore")', type: 'POST',
+                data: JSON.stringify({ storeUrl: $('#storeUrl').val(), storeName: $('#storeName').val() }),
+                contentType: 'application/json',
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                success: function (r) {
+                    btn.prop('disabled', false).html('<i class="fas fa-plus text-xs"></i> Mağaza Ekle');
+                    if (r.success) { showNotification('Mağaza başarıyla eklendi.', 'success'); closeAddStoreModal(); loadStores(); highlightWorkflowStep(2); }
+                    else showNotification(r.message, 'error');
+                },
+                error: function () { btn.prop('disabled', false).html('<i class="fas fa-plus text-xs"></i> Mağaza Ekle'); showNotification('Hata oluştu.', 'error'); }
+            });
+        });
+
+        function openProductsPanel(storeId, storeName, noProducts) {
+            selectedProducts.clear(); updateTransferButton();
+            $('#productsEmptyState').addClass('hidden');
+            $('#productsPanel').removeClass('hidden');
+            $('#productsPanelTitle').text(storeName);
+            if (noProducts) {
+                $('#productsLoading').hide();
+                $('#productsPanelSubtitle').text('Ürünler henüz senkronize edilmemiş');
+                $('#productsGrid').html(`
+                    <div class="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                        <div class="w-14 h-14 bg-yellow-50 rounded-full flex items-center justify-center mb-4">
+                            <i class="fas fa-sync-alt text-yellow-500 text-xl"></i>
+                        </div>
+                        <h4 class="text-sm font-semibold text-gray-700 mb-2">Ürünler senkronize edilmemiş</h4>
+                        <p class="text-xs text-gray-400 mb-4 max-w-xs">Ürünleri görmek için önce senkronizasyon başlatın.</p>
+                        <button onclick="syncStore(${storeId})"
+                                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-sm">
+                            <i class="fas fa-sync-alt text-xs"></i> Ürünleri Senkronize Et
+                        </button>
+                    </div>`).show();
+                return;
+            }
+            $('#productsLoading').show(); $('#productsGrid').hide();
+            $('#productsPanelSubtitle').text('Aktarmak istediğiniz ürünleri seçin');
+            $.ajax({
+                url: '@Url.Action("GetStoreProducts")', type: 'GET',
+                data: { storeId: storeId, pageSize: 100 },
+                success: function (r) {
+                    $('#productsLoading').hide();
+                    r.success ? renderProductGrid(r.data.products, r.data.stats)
+                        : $('#productsGrid').html(`<div class="col-span-full text-center py-8 text-sm text-red-500">${escapeHtml(r.message)}</div>`).show();
+                },
+                error: function () { $('#productsLoading').hide(); $('#productsGrid').html('<div class="col-span-full text-center py-8 text-sm text-red-500">Ürünler yüklenirken hata oluştu.</div>').show(); }
+            });
+        }
+
+        function renderProductGrid(products, stats) {
+            const grid = $('#productsGrid').empty();
+            if (!products || products.length === 0) {
+                grid.html('<div class="col-span-full flex flex-col items-center justify-center py-12 text-center"><i class="fas fa-box-open text-gray-200 text-4xl mb-3"></i><p class="text-sm text-gray-400">Bu mağazada ürün bulunamadı.</p></div>').show();
+                return;
+            }
+            if (stats) { $('#productsPanelSubtitle').text(`${stats.totalProducts} ürün bulundu`); }
+            products.forEach(p => {
+                grid.append(`<div class="product-select-card" data-product-id="${p.id}" onclick="toggleProduct(${p.id},this)">
+                    <div class="select-indicator"></div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-semibold text-gray-900 leading-snug line-clamp-2" title="${escapeHtml(p.title)}">${escapeHtml(p.shortTitle)}</p>
+                        <p class="text-[10px] text-gray-400 mt-1">ID: ${p.productId}</p>
+                        <a href="${p.fullUrl}" target="_blank" onclick="event.stopPropagation()"
+                           class="inline-flex items-center gap-0.5 text-[10px] font-medium text-blue-500 hover:text-blue-700 mt-1 transition-colors">
+                            Görüntüle <i class="fas fa-external-link-alt" style="font-size:9px"></i>
+                        </a>
+                    </div>
+                </div>`);
+            });
+            grid.show();
+        }
+
+        function closeProductsPanel() {
+            $('#productsPanel').addClass('hidden');
+            $('#productsEmptyState').removeClass('hidden');
+            $('.store-item').removeClass('active');
+            currentStoreId = null; selectedProducts.clear(); updateTransferButton();
+            highlightWorkflowStep(allStores.length > 0 ? 2 : 1);
+        }
+
+        function toggleProduct(id, el) {
+            selectedProducts.has(id) ? (selectedProducts.delete(id), $(el).removeClass('selected'))
+                : (selectedProducts.add(id), $(el).addClass('selected'));
+            updateTransferButton();
+        }
+        function selectAllProducts() {
+            $('.product-select-card').each(function () { selectedProducts.add(parseInt($(this).data('product-id'))); $(this).addClass('selected'); });
+            updateTransferButton();
+        }
+        function clearProductSelection() { selectedProducts.clear(); $('.product-select-card').removeClass('selected'); updateTransferButton(); }
+        function updateTransferButton() {
+            const n = selectedProducts.size;
+            $('#selectedProductCount').text(n);
+            $('#startTransferBtn').prop('disabled', n === 0);
+            if (n > 0) highlightWorkflowStep(4);
+            else if (currentStoreId) highlightWorkflowStep(3);
+        }
+
+        function showTransferModal() {
+            if (selectedProducts.size === 0) { showNotification('Lütfen en az bir ürün seçin.', 'warning'); return; }
+            $('#transferProductCount').text(selectedProducts.size);
+            $('#commentCount').val(100); $('#autoSync').prop('checked', false);
+            $('.star-filter-btn').removeClass('selected');
+            $('#transferModal').removeClass('hidden');
+        }
+        function closeTransferModal() { $('#transferModal').addClass('hidden'); }
+
+        function confirmTransfer() {
+            const cnt = parseInt($('#commentCount').val());
+            if (cnt < 10 || cnt > 1000) { showNotification('Yorum sayısı 10-1000 arasında olmalıdır.', 'warning'); return; }
+            const stars = [];
+            $('.star-filter-btn.selected').each(function () { stars.push(parseInt($(this).data('star'))); });
+            const btn = $('#confirmTransferBtn');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin text-xs"></i> Başlatılıyor...');
+            $.ajax({
+                url: '@Url.Action("TransferSelectedProducts")', type: 'POST',
+                data: JSON.stringify({ storeId: currentStoreId, productIds: Array.from(selectedProducts), commentCount: cnt, starRatings: stars.length > 0 ? stars : null, autoSync: $('#autoSync').is(':checked') }),
+                contentType: 'application/json',
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                success: function (r) {
+                    btn.prop('disabled', false).html('<i class="fas fa-download text-xs"></i> Transfer Başlat');
+                    if (r.success) { showNotification('Transfer başlatıldı!', 'success'); closeTransferModal(); closeProductsPanel(); highlightWorkflowStep(5); loadTransferJobs(); }
+                    else showNotification(r.message, 'error');
+                },
+                error: function () { btn.prop('disabled', false).html('<i class="fas fa-download text-xs"></i> Transfer Başlat'); showNotification('Hata oluştu.', 'error'); }
+            });
+        }
+
+        function loadTransferJobs() {
+            $('#transfersLoading').show(); $('#transfersList, #transfersEmpty').hide();
+            $.ajax({
+                url: '@Url.Action("GetTransferJobs")', type: 'GET',
+                success: function (r) {
+                    $('#transfersLoading').hide();
+                    if (r.success && r.data.length > 0) { renderTransferJobs(r.data); $('#transfersList').show(); updateJobStats(r.data); }
+                    else { $('#transfersEmpty').show(); updateJobStats([]); }
+                },
+                error: function () { $('#transfersLoading').hide(); }
+            });
+        }
+
+        function renderTransferJobs(jobs) {
+            const c = $('#transfersList').empty();
+            const sm = {
+                Pending: { cls: 'badge-pending', icon: 'fa-clock', lbl: 'Bekliyor' },
+                Running: { cls: 'badge-running', icon: 'fa-circle-notch fa-spin', lbl: 'Çalışıyor' },
+                Completed: { cls: 'badge-completed', icon: 'fa-check', lbl: 'Tamamlandı' },
+                Failed: { cls: 'badge-failed', icon: 'fa-times', lbl: 'Hata' },
+                Cancelled: { cls: 'badge-cancelled', icon: 'fa-ban', lbl: 'İptal' }
+            };
+            jobs.forEach(job => {
+                const s = sm[job.status] || { cls: 'badge-cancelled', icon: 'fa-minus', lbl: job.status };
+                const dt = new Date(job.createdAt).toLocaleString('tr-TR');
+                const active = job.status === 'Running' || job.status === 'Pending';
+                const strip = job.status === 'Completed' ? 'bg-green-400' : active ? 'bg-blue-500' : job.status === 'Failed' ? 'bg-red-400' : 'bg-gray-200';
+                c.append(`<div class="flex rounded-xl border border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm transition-all overflow-hidden">
+                    <div class="w-1 flex-shrink-0 ${strip}"></div>
+                    <div class="flex-1 px-5 py-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                    <span class="text-sm font-bold text-gray-900">${escapeHtml(job.jobTypeDisplay || job.jobType)}</span>
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.cls}">
+                                        <i class="fas ${s.icon}" style="font-size:9px"></i> ${s.lbl}
+                                    </span>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400">
+                                    <span><i class="fas fa-store text-[9px]"></i> ${escapeHtml(job.storeName || 'Bilinmeyen')}</span>
+                                    ${job.totalProducts ? `<span><i class="fas fa-box text-[9px]"></i> ${job.totalProducts} ürün</span>` : ''}
+                                    ${job.totalComments ? `<span><i class="fas fa-comment text-[9px]"></i> ${job.totalComments} yorum</span>` : ''}
+                                    <span><i class="fas fa-calendar-alt text-[9px]"></i> ${dt}</span>
+                                </div>
+                                ${job.progressPercent ? `<div class="mt-3">
+                                    <div class="flex items-center justify-between text-[10px] mb-1">
+                                        <span class="text-gray-500">${escapeHtml(job.currentStep || 'İşleniyor...')}</span>
+                                        <span class="font-bold text-gray-700">${job.progressPercent}%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                        <div class="h-full rounded-full transition-all duration-500 ${job.status === 'Completed' ? 'bg-green-500' : 'bg-blue-500'}" style="width:${job.progressPercent}%"></div>
+                                    </div>
+                                </div>`: ''}
+                                ${job.errorMessage ? `<p class="text-[11px] text-red-500 mt-2"><i class="fas fa-exclamation-circle text-[9px]"></i> ${escapeHtml(job.errorMessage)}</p>` : ''}
+                            </div>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                ${job.status === 'Completed' && job.jobType === 'Comments' ? `<a href="@Url.Action("TransferJobDetails")?jobId=${job.id}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"><i class="fas fa-list text-[10px]"></i> Detaylar</a>` : ''}
+                                ${job.resultFileUrl ? `<a href="${job.resultFileUrl}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"><i class="fas fa-download text-[10px]"></i> İndir</a>` : ''}
+                                ${active ? `<button onclick="cancelTransferJob(${job.id})" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"><i class="fas fa-times text-[10px]"></i> İptal</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`);
+            });
+        }
+
+        function cancelTransferJob(jobId) {
+            showConfirmationDialog('İptal Et', 'Bu transfer işini iptal etmek istediğinizden emin misiniz?', 'Evet, İptal Et', 'Hayır', () => {
+                $.ajax({
+                    url: '@Url.Action("CancelTransferJob")', type: 'POST',
+                    data: JSON.stringify({ jobId: jobId }),
+                    contentType: 'application/json',
+                    headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                    success: function (r) { r.success ? (showNotification('İptal edildi.', 'success'), loadTransferJobs()) : showNotification(r.message, 'error'); },
+                    error: function () { showNotification('İptal sırasında hata oluştu.', 'error'); }
+                });
+            });
+        }
+
+        function updateStatCards() {
+            $('#statStoreCount, #headerStoreCount').text(allStores.length);
+            const tp = allStores.reduce((s, x) => s + (x.productCount || 0), 0);
+            $('#statProductCount, #headerProductCount').text(tp);
+        }
+
+        function updateJobStats(jobs) {
+            const active = jobs.filter(j => j.status === 'Running' || j.status === 'Pending').length;
+            const done = jobs.filter(j => j.status === 'Completed').length;
+            $('#statActiveJobs').text(active); $('#statCompletedJobs').text(done); $('#headerActiveJobs').text(active);
+            if (active > 0) { $('#activeJobsBadge').css('display', 'inline-flex'); $('#activeJobsSpinner').show(); $('#activeJobsIcon').hide(); }
+            else { $('#activeJobsBadge').hide(); $('#activeJobsSpinner').hide(); $('#activeJobsIcon').show(); }
+        }
+
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+    </script>
+}
